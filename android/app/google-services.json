@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "888055527021",
+    "project_id": "homemate-20240",
+    "storage_bucket": "homemate-20240.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:888055527021:android:581199b2f11ef62fe37164",
+        "android_client_info": {
+          "package_name": "com.example.homemate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsRK-LYALRaf_ocq-hMsIHRpWIttNi2I0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

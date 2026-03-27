@@ -1,11 +1,32 @@
 import 'package:flutter/material.dart';
+
+// --- NUOVE IMPORTAZIONI FIREBASE ---
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart'; 
+// -----------------------------------
+
 import 'schermate/home_screen.dart';
 import 'theme/app_colors.dart';
 import 'schermate/finanze_screen.dart';
+import 'schermate/login_page.dart';
 
-void main() {
+// --- FUNZIONE MAIN AGGIORNATA ---
+Future<void> main() async {
+  // Assicura che Flutter sia pronto prima di avviare Firebase
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inizializza Firebase con le chiavi del tuo progetto
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // DISABILITATO, solo in caso di test del logout:
+  //await FirebaseAuth.instance.signOut();
+
   runApp(const MyApp());
 }
+// --------------------------------
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -20,8 +41,18 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
       ),
-      // Impostiamo la nostra nuova HomeScreen come pagina principale
-      home: const HomeScreen(),
+      // Se l'utente è loggato, mostra HomeScreen, altrimenti mostra LoginPage
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // Se snapshot ha dati, l'utente è già loggato
+          if (snapshot.hasData) {
+            return HomeScreen(); // La pagina principale dei tuoi amici
+          }
+          // Altrimenti, mostra la pagina di Login
+          return LoginPage();
+        },
+      ),
     );
   }
 }
