@@ -1,0 +1,24 @@
+import 'package:flutter/material.dart';
+
+class AppColors {
+  // Verde salvia principale usato per bottoni, icone attive e barre di progresso
+  static const Color primaryGreen = Color(0xFF6B8E7E);
+  
+  // Colore di sfondo dell'app (grigio chiarissimo per far risaltare le card bianche)
+  static const Color background = Color(0xFFF8F9FA);
+  
+  // Colore di sfondo delle card e dei contenitori principali
+  static const Color cardBackground = Colors.white;
+  
+  // Colore del testo principale (titoli e scritte importanti)
+  static const Color textPrimary = Color(0xFF2D3142);
+  
+  // Colore del testo secondario (descrizioni, date o scritte meno rilevanti)
+  static const Color textSecondary = Color(0xFF9094A6);
+  
+  // Colore di accento rosso per debiti o avvisi urgenti
+  static const Color accentRed = Color(0xFFE57373);
+  
+  // Verde brillante per indicare crediti positivi o azioni completate
+  static const Color accentGreen = Color(0xFF81C784);
+}
