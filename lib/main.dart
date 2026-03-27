@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'schermate/home_screen.dart';
 import 'theme/app_colors.dart';
+import 'schermate/finanze_screen.dart';
 
 void main() {
   runApp(const MyApp());

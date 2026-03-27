@@ -21,4 +21,13 @@ class AppColors {
   
   // Verde brillante per indicare crediti positivi o azioni completate
   static const Color accentGreen = Color(0xFF81C784);
+
+  // --- Colori per la sezione Finanze ---
+  static const Color primaryDark = Color(0xFF4A6054);
+  static const Color finanzeBackground = Color(0xFFF6F5F2);
+  static const Color lightGreen = Color(0xFFC8E6C9);
+  static const Color textGreen = Color(0xFF5A7D6C);
+  static const Color progressBrown = Color(0xFFB08C66);
+  static const Color iconBgBeige = Color(0xFFFDF3EF);
+  static const Color iconBgBlue = Color(0xFFEEF7F8);
 }
