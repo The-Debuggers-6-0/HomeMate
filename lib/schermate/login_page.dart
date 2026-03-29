@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
+import 'registration_page.dart';
+
 // import 'package:google_sign_in/google_sign_in.dart'; // Scommenta quando configuri Google
 
 class LoginPage extends StatefulWidget {
@@ -252,7 +254,12 @@ class _LoginPageState extends State<LoginPage> {
               // --- Testo Footer (Non hai un account? Registrati) ---
               Center(
                 child: GestureDetector(
-                  onTap: _disableActions ? null : () { /* Logica vai a Registrazione */ },
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => RegistrationPage()),
+                    );
+                  },
                   child: RichText(
                     text: TextSpan(
                       style: TextStyle(color: greyTextColor, fontSize: 16),
