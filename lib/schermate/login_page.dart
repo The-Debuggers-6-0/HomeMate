@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
 import 'registration_page.dart';
+import 'forgot_password_page.dart';
 
 // import 'package:google_sign_in/google_sign_in.dart'; // Scommenta quando configuri Google
 
@@ -172,10 +173,18 @@ class _LoginPageState extends State<LoginPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text("Password", style: TextStyle(color: greyTextColor, fontWeight: FontWeight.w500)),
-                        GestureDetector(
-                          onTap: _disableActions ? null : () { /* Logica Password Dimenticata */ },
-                          child: Text("Hai dimenticato la password?", style: TextStyle(color: darkGreen, fontSize: 12, fontWeight: FontWeight.w500)),
-                        ),
+                        GestureDetector( // O TextButton, a seconda di cosa hai usato
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                            );
+                          },
+                          child: Text(
+                            "Hai dimenticato la password?",
+                            style: TextStyle(color: darkGreen, fontWeight: FontWeight.bold),
+                          ),
+                        ),  
                       ],
                     ),
                     SizedBox(height: 8),
