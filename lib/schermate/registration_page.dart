@@ -86,23 +86,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
       );  
 
     } on FirebaseAuthException catch (e) {
-
-
-      // Tenta la registrazione su Firebase
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Se arriva qui, la registrazione è andata a buon fine!
-      Navigator.pop(context); // Chiude il dialog di caricamento
-      
-      // NOTA: Non serve fare Navigator.push alla Home. 
-      // Lo StreamBuilder nel main.dart vedrà il nuovo utente e cambierà pagina da solo!
-      // Chiudiamo solo questa pagina di registrazione in modo pulito:
-      Navigator.pop(context); 
-
-    } on FirebaseAuthException catch (e) {
       Navigator.pop(context); // Chiude il dialog
       String message = "Errore durante la registrazione.";
       if (e.code == 'weak-password') {
@@ -136,34 +119,22 @@ class _RegistrationPageState extends State<RegistrationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Barra Superiore (Icona + Registrati) ---
-              Row(
-                children: [
-                  Icon(Icons.person_add_alt_1, color: darkGreen),
-                  SizedBox(width: 8),
-                  Text("Registrati", style: TextStyle(color: darkGreen, fontWeight: FontWeight.bold, fontSize: 16)),
-                ],
-              ),
-              SizedBox(height: 32),
+              SizedBox(height: 24),
 
               // --- Titolo Principale ---
-              Text(
-                "Unisciti alla casa",
-                style: TextStyle(
-                  color: Colors.black87, // Nel design questo testo sembra più nero rispetto al verde del login
-                  fontSize: 40,
+              Center(
+                child: Text(
+                  "Unisciti\nalla casa",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: darkGreen,  
+                    fontSize: 60,
                   fontWeight: FontWeight.bold,
                   height: 1.1,
                 ),
+                ),
               ),
-              SizedBox(height: 16),
-
-              // --- Sottotitolo ---
-              Text(
-                "Inizia il tuo viaggio verso una gestione domestica armoniosa e curata.",
-                style: TextStyle(color: greyTextColor, fontSize: 16, height: 1.5),
-              ),
-              SizedBox(height: 40),
+              SizedBox(height: 24),
 
               // --- Scheda Bianca Arrotondata del Form ---
               Container(
@@ -182,7 +153,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       controller: _emailController,
                       hint: "esempio@sanctuary.com",
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: 32),
 
                     // --- Campo Password ---
                     Text("Password", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
@@ -195,7 +166,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
                       iconRight: Icons.visibility_outlined, // Icona occhio
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: 32),
 
                     // --- Campo Conferma Password ---
                     Text("Conferma Password", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
@@ -208,7 +179,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       onToggleObscure: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                       iconRight: Icons.lock_reset_outlined, // Icona lucchetto con freccia del design
                     ),
-                    SizedBox(height: 32),
+                    SizedBox(height: 40),
 
                     // --- Pulsante REGISTRATI ---
                     ElevatedButton(
@@ -224,10 +195,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       ),
                       child: Text("Registrati", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
+                    SizedBox(height: 4),
                   ],
                 ),
               ),
-              SizedBox(height: 48),
+              SizedBox(height: 32),
 
               // --- Testo Footer (Hai già un account? Accedi) ---
               Center(
@@ -238,9 +210,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   },
                   child: RichText(
                     text: TextSpan(
-                      style: TextStyle(color: darkGreen, fontSize: 16, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: greyTextColor, fontSize: 16),
                       children: [
-                        TextSpan(text: "Hai già un account? Accedi "),
+                        TextSpan(text: "Hai già un account? "),
+                        TextSpan(text: "Accedi", style: TextStyle(color: darkGreen, fontWeight: FontWeight.bold)),
                         WidgetSpan(
                           child: Icon(Icons.login, size: 16, color: darkGreen),
                           alignment: PlaceholderAlignment.middle,

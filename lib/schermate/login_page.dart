@@ -154,40 +154,21 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Barra Superiore (Icona Casa, Accedi, Aiuto) ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.home_outlined, color: darkGreen),
-                      SizedBox(width: 8),
-                      Text("Accedi", style: TextStyle(color: darkGreen, fontWeight: FontWeight.bold, fontSize: 16)),
-                    ],
-                  ),
-                  Icon(Icons.help_outline, color: Colors.grey[400]),
-                ],
-              ),
-              SizedBox(height: 32),
-
+              SizedBox(height: 24),
               // --- Titolo Principale ---
-              Text(
-                "Bentornato a\ncasa",
-                style: TextStyle(
-                  color: darkGreen,
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  height: 1.1, // Spaziatura interlinea stretta come nel prototipo
+              Center(
+                child: Text(
+                  "Bentornato\na casa", // Il '\n' forza l'andata a capo
+                  textAlign: TextAlign.center, // Centra il testo all'interno del widget Text
+                  style: TextStyle(
+                    color: darkGreen,
+                    fontSize: 60, // Dimensione grande per il titolo
+                    fontWeight: FontWeight.bold,
+                    height: 1.1, // Spaziatura interlinea stretta per un look moderno
+                  ),
                 ),
               ),
-              SizedBox(height: 16),
-
-              // --- Sottotitolo ---
-              Text(
-                "Il tuo rifugio digitale ti aspetta. Gestisci i tuoi compiti e le tue finanze in totale armonia.",
-                style: TextStyle(color: greyTextColor, fontSize: 16, height: 1.5),
-              ),
-              SizedBox(height: 40),
+              SizedBox(height: 24), // Spazio tra titolo e form
 
               // --- Scheda Bianca Arrotondata del Form ---
               Container(
@@ -200,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // --- Campo Email ---
-                    Text("Email", style: TextStyle(color: greyTextColor, fontWeight: FontWeight.w500)),
+                    Text("Email", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
                     SizedBox(height: 8),
                     _buildInputField(
                       controller: _emailController,
@@ -213,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Password", style: TextStyle(color: greyTextColor, fontWeight: FontWeight.w500)),
+                        Text("Password", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
                         GestureDetector( // O TextButton, a seconda di cosa hai usato
                           onTap: () {
                             Navigator.push(
@@ -299,7 +280,7 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
-              SizedBox(height: 48),
+              SizedBox(height: 32),
 
               // --- Testo Footer (Non hai un account? Registrati) ---
               Center(
@@ -321,7 +302,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              SizedBox(height: 16), // Spazio finale
+              SizedBox(height: 32), // Spazio finale
             ],
           ),
         ),
