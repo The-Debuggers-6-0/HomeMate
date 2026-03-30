@@ -4,7 +4,8 @@ import 'home_screen.dart';
 import 'registration_page.dart';
 import 'forgot_password_page.dart';
 
-// import 'package:google_sign_in/google_sign_in.dart'; // Scommenta quando configuri Google
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -75,24 +76,64 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // --- LOGICA (ABBOZZO) GOOGLE SIGN-IN ---
+  // --- LOGICA GOOGLE SIGN-IN ---
   Future<void> _loginWithGoogle() async {
-    _showErrorSnackBar("Login con Google non ancora configurato (richiede SHA-1).");
-    /* Scommenta e usa questo codice dopo la configurazione SHA-1
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth?.accessToken,
-        idToken: googleAuth?.idToken,
+      // Mostra un caricamento per far capire che sta lavorando
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(child: CircularProgressIndicator(color: darkGreen)),
       );
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      print("Login Google riuscito!");
-      // Navigator.pushReplacementNamed(context, '/home');
+
+      // 1. Inizializza il nuovo Google Sign In
+      await GoogleSignIn.instance.initialize(
+        serverClientId: '888055527021-qnbqpe4o7dp1io5mo6vln0eq75g8uate.apps.googleusercontent.com',
+      );
+
+      // 2. Avvia la finestra di Google usando l'istanza corretta
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+
+      // Se l'utente clicca "Indietro" o chiude la finestra senza scegliere l'account
+      if (googleUser == null) {
+        if (!mounted) return;
+        Navigator.pop(context); // Chiude il caricamento
+        return; 
+      }
+
+      // 3. Ottieni i "documenti" da Google
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // 4. Trasforma i documenti in una chiave per Firebase
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      // 5. Entra in Firebase
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+
+      // 6. Salva l'utente nel tuo Database Firestore!
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+        'email': userCredential.user!.email,
+        'name': userCredential.user!.displayName ?? 'Utente Google',
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // 7. Login completato!
+      if (!mounted) return;
+      Navigator.pop(context); // Chiude il caricamento
+      
+      // Andiamo alla Home
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+
     } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Chiude il caricamento
       _showErrorSnackBar("Errore Google Sign-In: ${e.toString()}");
     }
-    */
   }
 
   // Funzione utility per mostrare errori
