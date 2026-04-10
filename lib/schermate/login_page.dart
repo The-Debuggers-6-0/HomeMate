@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'home_screen.dart';
 import 'registration_page.dart';
 import 'forgot_password_page.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../auth/auth_checker.dart'; // Nuova schermata di controllo
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -48,17 +50,17 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       // Tenta il login con Firebase
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Login riuscito: chiudi il caricamento e vai alla Home
+      // Login riuscito: chiudi il caricamento e controlla il profilo
       Navigator.pop(context); // Chiude il dialog
       print("Login riuscito!");
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => AuthChecker(user: userCredential.user!)),
       );
 
     } on FirebaseAuthException catch (e) {
@@ -92,17 +94,10 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       // 2. Avvia la finestra di Google usando l'istanza corretta
-      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
-
-      // Se l'utente clicca "Indietro" o chiude la finestra senza scegliere l'account
-      if (googleUser == null) {
-        if (!mounted) return;
-        Navigator.pop(context); // Chiude il caricamento
-        return; 
-      }
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate();
 
       // 3. Ottieni i "documenti" da Google
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       // 4. Trasforma i documenti in una chiave per Firebase
       final credential = GoogleAuthProvider.credential(
@@ -123,10 +118,10 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       Navigator.pop(context); // Chiude il caricamento
       
-      // Andiamo alla Home
+      // Controlla se andare alla home o al setup profilo!
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => AuthChecker(user: userCredential.user!)),
       );
 
     } catch (e) {

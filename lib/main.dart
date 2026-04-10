@@ -6,11 +6,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart'; 
 // -----------------------------------
 
-import 'schermate/home_screen.dart';
 import 'theme/app_colors.dart';
-import 'schermate/finanze_screen.dart';
 import 'schermate/login_page.dart';
 import 'schermate/verify_email_page.dart';
+import 'auth/auth_checker.dart'; // Spostato in cartella auth
 
 // --- FUNZIONE MAIN AGGIORNATA ---
 Future<void> main() async {
@@ -51,7 +50,7 @@ class MyApp extends StatelessWidget {
           if (snapshot.hasData) {
             // Controlla se la mail è verificata!
             if (snapshot.data!.emailVerified) {
-              return HomeScreen(); // Va alla Home
+              return AuthChecker(user: snapshot.data!); // Va al controllo profilo
             } else {
               return VerifyEmailPage(); // Lo blocca qui!
             }

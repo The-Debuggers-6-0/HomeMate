@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import 'finanze_screen.dart';
+// Aggiunto import del profilo
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -109,47 +109,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-      
-      // --- BOTTOM NAVIGATION BAR ---
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(Icons.home_filled, 'HOME', true),
-            _buildNavItem(
-              Icons.account_balance_wallet, 
-              'FINANZE', 
-              false,
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation1, animation2) => const FinanzeScreen(),
-                    transitionDuration: Duration.zero,
-                    reverseTransitionDuration: Duration.zero,
-                  ),
-                );
-              },
-            ),
-            _buildNavItem(Icons.calendar_month, 'ORGANIZZAZIONE', false),
-            _buildNavItem(Icons.person, 'PROFILO', false),
-          ],
-        ),
-      ),
     );
   }
 
@@ -177,56 +136,6 @@ class HomeScreen extends StatelessWidget {
           const Icon(Icons.radio_button_unchecked, color: Colors.grey),
         ],
       ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isSelected, {VoidCallback? onTap}) {
-    Widget child;
-    if (isSelected) {
-      child = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.primaryDark,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      child = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: AppColors.textSecondary, size: 24),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: child,
     );
   }
 }
