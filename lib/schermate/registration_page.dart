@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../theme/app_colors.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -10,101 +11,79 @@ class RegistrationPage extends StatefulWidget {
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
-  // Controller per leggere i dati inseriti
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
-  // Variabili per mostrare/nascondere le password
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
-  // Colori presi dal prototipo
-  final Color darkGreen = Color(0xFF2C5542);
-  final Color lightBackground = Color(0xFFF2F6F3);
-  final Color greyTextColor = Color(0xFF707070);
-  final Color inputFieldColor = Color(0xFFE0E0E0);
+  final Color _titleGreen = const Color(0xFF324A3D);
+  final Color _inputBg = const Color(0xFFE5E3DD);
 
-  // --- LOGICA FIREBASE: REGISTRAZIONE ---
+  // --- LOGICA REGISTRAZIONE ---
   Future<void> _registerWithEmail() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    // 1. Controlla che i campi non siano vuoti
     if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showErrorSnackBar("Per favore, compila tutti i campi.");
       return;
     }
 
-    // 2. Controlla che le password coincidano
     if (password != confirmPassword) {
       _showErrorSnackBar("Le password non coincidono.");
       return;
     }
 
-    // 3. Controlla la lunghezza minima della password
     if (password.length < 8) {
       _showErrorSnackBar("La password deve avere almeno 8 caratteri.");
       return;
     }
 
-    try {
-      // Mostra un caricamento
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(child: CircularProgressIndicator(color: darkGreen)),
-      );
+    setState(() => _isLoading = true);
 
-      // PASSO 1: Crea l'utente nell'Autenticazione (La "Chiave")
+    try {
       final UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // INVIA L'EMAIL DI VERIFICA ---
+      // Invia email di verifica
       await userCredential.user!.sendEmailVerification();
 
-      // PASSO 2: Salva il profilo nel Database (La "Cartellina")
-      // Usiamo l'UID dell'utente come nome del documento per trovarlo facilmente in futuro
+      // Crea il profilo base su Firestore
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
         'email': email,
-        'createdAt': FieldValue.serverTimestamp(), // Salva l'ora esatta della registrazione
-        'role': 'membro', // Un dato di esempio che potrebbe servirti
-        // In futuro, se aggiungi un campo "Nome" nel design, potrai salvarlo qui!
+        'createdAt': FieldValue.serverTimestamp(),
+        'profileCompleted': false,
+        'homeId': "",
       });
 
-      // Se arriva qui, tutto è andato a buon fine!
-      Navigator.pop(context); // Chiude il dialog di caricamento
-      Navigator.pop(context); // Chiude la pagina di registrazione e lo StreamBuilder fa il resto
+      if (!mounted) return;
+      Navigator.pop(context); // Torna al login (lo StreamBuilder gestirà la VerifyEmailPage)
 
-      // Avvisa l'utente di controllare la posta!
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Registrazione completata! Ti abbiamo inviato un'email di verifica. Controlla la posta!"), 
-          backgroundColor: darkGreen, // Usiamo il verde perché è un successo, non un errore!
+        const SnackBar(
+          content: Text("Registrazione completata! Verifica la tua email."), 
+          backgroundColor: AppColors.primaryGreen,
         ),
       );  
 
     } on FirebaseAuthException catch (e) {
-      Navigator.pop(context); // Chiude il dialog
       String message = "Errore durante la registrazione.";
-      if (e.code == 'weak-password') {
-        message = "La password fornita è troppo debole.";
-      } else if (e.code == 'email-already-in-use') {
-        message = "Esiste già un account con questa email.";
-      } else if (e.code == 'invalid-email') {
-        message = "Il formato dell'email non è valido.";
-      }
+      if (e.code == 'weak-password') message = "La password è troppo debole.";
+      else if (e.code == 'email-already-in-use') message = "Email già in uso.";
       _showErrorSnackBar(message);
     } catch (e) {
-      Navigator.pop(context);
-      _showErrorSnackBar("Errore imprevisto: ${e.toString()}");
+      _showErrorSnackBar("Errore imprevisto.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Funzione utility per mostrare errori
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
@@ -114,118 +93,151 @@ class _RegistrationPageState extends State<RegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 24),
-
-              // --- Titolo Principale ---
+              // --- ICONA CASA IN ALTO ---
               Center(
-                child: Text(
-                  "Unisciti\nalla casa",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: darkGreen,  
-                    fontSize: 60,
-                  fontWeight: FontWeight.bold,
-                  height: 1.1,
-                ),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFD3E4D8),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.home, size: 40, color: Color(0xFF324A3D)),
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-              // --- Scheda Bianca Arrotondata del Form ---
+              // --- TITOLO ---
+              Text(
+                "Registrati",
+                style: TextStyle(
+                  color: _titleGreen,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Crea il tuo profilo e inizia a gestire la\nconvivenza con facilità.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 40),
+
+              // --- CARD FORM ---
               Container(
-                padding: EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(24.0),
                 decoration: BoxDecoration(
-                  color: lightBackground,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- Campo Email ---
-                    Text("Email", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
-                    SizedBox(height: 8),
-                    _buildInputField(
-                      controller: _emailController,
-                      hint: "esempio@sanctuary.com",
-                    ),
-                    SizedBox(height: 32),
-
-                    // --- Campo Password ---
-                    Text("Password", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
-                    SizedBox(height: 8),
-                    _buildInputField(
-                      controller: _passwordController,
-                      hint: "Minimo 8 caratteri",
+                    const Text("Email", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    _buildField(controller: _emailController, hint: "esempio@home.it", icon: Icons.email_outlined),
+                    
+                    const SizedBox(height: 24),
+                    const Text("Password", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    _buildField(
+                      controller: _passwordController, 
+                      hint: "Minimo 8 caratteri", 
+                      icon: Icons.lock_outline, 
                       isPassword: true,
-                      obscureState: _obscurePassword,
-                      onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
-                      iconRight: Icons.visibility_outlined, // Icona occhio
+                      obscure: _obscurePassword,
+                      onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
-                    SizedBox(height: 32),
 
-                    // --- Campo Conferma Password ---
-                    Text("Conferma Password", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
-                    SizedBox(height: 8),
-                    _buildInputField(
-                      controller: _confirmPasswordController,
-                      hint: "Ripeti la tua password",
+                    const SizedBox(height: 24),
+                    const Text("Conferma Password", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    _buildField(
+                      controller: _confirmPasswordController, 
+                      hint: "Ripeti la password", 
+                      icon: Icons.lock_reset_outlined, 
                       isPassword: true,
-                      obscureState: _obscureConfirmPassword,
-                      onToggleObscure: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                      iconRight: Icons.lock_reset_outlined, // Icona lucchetto con freccia del design
+                      obscure: _obscureConfirmPassword,
+                      onToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                     ),
-                    SizedBox(height: 40),
 
-                    // --- Pulsante REGISTRATI ---
-                    ElevatedButton(
-                      onPressed: _registerWithEmail,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: darkGreen,
-                        foregroundColor: Colors.white,
-                        minimumSize: Size(double.infinity, 56),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                    const SizedBox(height: 32),
+                    // Pulsante Registrati
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _registerWithEmail,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
                         ),
-                        elevation: 0,
+                        child: _isLoading 
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text("Registrati", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                SizedBox(width: 8),
+                                Icon(Icons.chevron_right, size: 18),
+                              ],
+                            ),
                       ),
-                      child: Text("Registrati", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
-                    SizedBox(height: 4),
                   ],
                 ),
               ),
-              SizedBox(height: 32),
-
-              // --- Testo Footer (Hai già un account? Accedi) ---
+              
+              const SizedBox(height: 40),
+              // Footer: Accedi ora
               Center(
-                child: GestureDetector(
-                  onTap: () {
-                    // Torna alla pagina di login precedente
-                    Navigator.pop(context); 
-                  },
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(color: greyTextColor, fontSize: 16),
-                      children: [
-                        TextSpan(text: "Hai già un account? "),
-                        TextSpan(text: "Accedi", style: TextStyle(color: darkGreen, fontWeight: FontWeight.bold)),
-                        WidgetSpan(
-                          child: Icon(Icons.login, size: 16, color: darkGreen),
-                          alignment: PlaceholderAlignment.middle,
+                child: Column(
+                  children: [
+                    const Text("Hai già un account?", style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Text(
+                        "Accedi ora",
+                        style: TextStyle(
+                          color: Color(0xFF324A3D),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          decoration: TextDecoration.underline,
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -233,36 +245,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-  // Widget utility personalizzato per questa pagina (senza icone a sinistra)
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String hint,
+  Widget _buildField({
+    required TextEditingController controller, 
+    required String hint, 
+    required IconData icon, 
     bool isPassword = false,
-    bool? obscureState,
-    VoidCallback? onToggleObscure,
-    IconData? iconRight,
+    bool? obscure,
+    VoidCallback? onToggle,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: inputFieldColor,
+        color: _inputBg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
         controller: controller,
-        obscureText: isPassword ? obscureState! : false,
-        style: TextStyle(color: Colors.black87),
+        obscureText: isPassword ? obscure! : false,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey[500]),
-          // Aggiunge l'icona a destra solo se viene passata alla funzione
-          suffixIcon: isPassword && iconRight != null
-              ? IconButton(
-                  icon: Icon(iconRight, color: Colors.black87),
-                  onPressed: onToggleObscure,
-                )
-              : null,
+          prefixIcon: Icon(icon, color: Colors.grey, size: 20),
+          suffixIcon: isPassword ? IconButton(
+            icon: Icon(obscure! ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
+            onPressed: onToggle,
+          ) : null,
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         ),
       ),
     );

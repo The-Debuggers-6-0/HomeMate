@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Necessario per copiare il codice negli appunti
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
@@ -29,6 +30,65 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
     return List.generate(6, (index) => caratteri[random.nextInt(caratteri.length)]).join();
   }
 
+  // MOSTRA DIALOG DI SUCCESSO CON IL CODICE
+  void _mostraCodiceCreato(String codice, User user) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Casa creata con successo!", 
+          style: TextStyle(color: Color(0xFF324A3D), fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Condividi questo codice con i tuoi coinquilini per farli unire:"),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F2EE),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+              ),
+              child: SelectableText(
+                codice,
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 4, color: Color(0xFF324A3D)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: codice));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Codice copiato!"), duration: Duration(seconds: 1)),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 18),
+              label: const Text("Copia Codice"),
+            )
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => AuthChecker(user: user)),
+                (route) => false,
+              );
+            },
+            child: const Text("VAI ALLA HOME"),
+          ),
+        ],
+      ),
+    );
+  }
+
   // LOGICA: CREA NUOVA CASA
   Future<void> _creaNuovaCasa() async {
     setState(() => _isLoading = true);
@@ -53,11 +113,9 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
 
       if (!mounted) return;
       
-      // Naviga all'AuthChecker per rinfrescare lo stato e andare alla Home
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => AuthChecker(user: user)),
-        (route) => false,
-      );
+      // MOSTRA IL CODICE ALL'UTENTE
+      _mostraCodiceCreato(nuovoCodice, user);
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Errore durante la creazione: $e"), backgroundColor: Colors.redAccent),
@@ -83,16 +141,13 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      // 1. Controlla se la casa esiste
       var houseDoc = await FirebaseFirestore.instance.collection('houses').doc(codice).get();
 
       if (houseDoc.exists) {
-        // 2. Aggiungi l'utente ai membri della casa
         await houseDoc.reference.update({
           'membri': FieldValue.arrayUnion([user.uid]),
         });
 
-        // 3. Aggiorna l'homeId dell'utente
         await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
           'homeId': codice,
         });
@@ -129,11 +184,7 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
         ),
         title: const Text(
           'Benvenuto a Casa',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: const [
           Padding(
@@ -154,20 +205,12 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
             const SizedBox(height: 20),
             const Text(
               'Inizia il tuo viaggio.',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF324A3D),
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF324A3D)),
             ),
             const SizedBox(height: 12),
             Text(
               'La gestione della tua casa non è mai stata così semplice e armoniosa. Scegli come vuoi cominciare oggi.',
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.5),
             ),
             const SizedBox(height: 40),
 
@@ -180,39 +223,23 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD3E4D8),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                        decoration: BoxDecoration(color: const Color(0xFFD3E4D8), borderRadius: BorderRadius.circular(20)),
                         child: const Icon(Icons.home_outlined, size: 50, color: Color(0xFF324A3D)),
                       ),
                       Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF0D6C1),
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: const BoxDecoration(color: Color(0xFFF0D6C1), shape: BoxShape.circle),
                         child: const Icon(Icons.add, size: 16, color: Colors.white),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Crea una nuova casa',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  const Text('Crea una nuova casa', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   const SizedBox(height: 8),
                   Text(
                     'Inizia da zero, definisci le stanze e invita i tuoi coinquilini o familiari.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -246,10 +273,7 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
                         child: const Icon(Icons.person_add_outlined, color: Color(0xFF6B8073)),
                       ),
                       const SizedBox(width: 16),
@@ -257,33 +281,15 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Unisciti a una casa esistente',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              'Inserisci il codice ricevuto dal proprietario.',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
+                            Text('Unisciti a una casa esistente', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                            Text('Inserisci il codice ricevuto dal proprietario.', style: TextStyle(fontSize: 12, color: Colors.grey)),
                           ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'CODICE CASA',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
+                  const Text('CODICE CASA', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.1)),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _codiceController,
@@ -291,10 +297,7 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
                       hintText: 'ABC - 123',
                       filled: true,
                       fillColor: const Color(0xFFE5E3DD),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
@@ -334,11 +337,7 @@ class _AggiungiCasaScreenState extends State<AggiungiCasaScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           if (backgroundColor == Colors.white)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 10)),
         ],
       ),
       child: child,
