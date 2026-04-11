@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'main_layout.dart';
+import 'aggiungi_casa.dart'; // IMPORTATA LA TUA PAGINA
 
 class SetupProfilePage extends StatefulWidget {
   const SetupProfilePage({super.key});
@@ -57,12 +57,14 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
           'bio': bio,
           'profileCompleted': true,
           'createdAt': FieldValue.serverTimestamp(),
+          'homeId': "", // Inizializziamo il campo homeId vuoto
         }, SetOptions(merge: true));
 
         if (!mounted) return;
-        // Naviga alla Home (il MainLayout che gestisce i tab)
+        
+        // LA CORREZIONE: Dopo il profilo, vai alla scelta della casa
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const MainLayout()),
+          MaterialPageRoute(builder: (context) => const AggiungiCasaScreen()),
           (Route<dynamic> route) => false,
         );
       }
@@ -89,7 +91,6 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // TITOLO E SOTTOTITOLO
               Text(
                 "Raccontaci di te",
                 style: TextStyle(
@@ -110,7 +111,6 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
               ),
               const SizedBox(height: 40),
 
-              // FOTO PROFILO
               Center(
                 child: Column(
                   children: [
@@ -154,7 +154,6 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
               ),
               const SizedBox(height: 48),
 
-              // CAMPI DI INPUT
               _buildLabel("Nome"),
               _buildTextField(_nameController, "Es. Marco"),
               const SizedBox(height: 24),
@@ -185,11 +184,10 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
               ),
               const SizedBox(height: 32),
 
-              // BOX INFORMATIVO
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F5F3), // Colore box
+                  color: const Color(0xFFF3F5F3), 
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(8),
                     bottomRight: Radius.circular(8),
@@ -234,7 +232,6 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
               ),
               const SizedBox(height: 48),
 
-              // AZIONI (PULSANTI)
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(

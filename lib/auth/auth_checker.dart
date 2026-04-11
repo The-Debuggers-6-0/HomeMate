@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../schermate/main_layout.dart'; // Riferimento modificato
-import '../schermate/setup_profile_page.dart'; // Riferimento modificato
+import '../schermate/main_layout.dart';
+import '../schermate/setup_profile_page.dart';
+import '../schermate/aggiungi_casa.dart'; // Importo la tua nuova pagina
 
 class AuthChecker extends StatefulWidget {
   final User user;
@@ -32,7 +33,6 @@ class _AuthCheckerState extends State<AuthChecker> {
           );
         }
 
-        // Mostra un caricamento mentre controlla Firebase
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             backgroundColor: Color(0xFFF9FAF9),
@@ -40,19 +40,25 @@ class _AuthCheckerState extends State<AuthChecker> {
           );
         }
 
-        // Recupera i dati del documento Firestore
         if (snapshot.hasData && snapshot.data!.exists) {
           final data = snapshot.data!.data() as Map<String, dynamic>?;
           final profileCompleted = data?['profileCompleted'] ?? false;
+          // Controlliamo se l'utente è già associato a una casa
+          final homeId = data?['homeId'] ?? "";
 
           if (profileCompleted == true) {
-            return const MainLayout(); // Se completato, vai alla Home master
+            if (homeId.isEmpty) {
+              // Se ha il profilo OK ma non ha una casa, mostra la tua pagina
+              return const AggiungiCasaScreen();
+            } else {
+              // Se ha tutto, vai alla Home master
+              return const MainLayout();
+            }
           } else {
-            return const SetupProfilePage(); // Altrimenti completa il profilo
+            return const SetupProfilePage();
           }
         }
 
-        // Se il documento non esiste ancora
         return const SetupProfilePage();
       },
     );
