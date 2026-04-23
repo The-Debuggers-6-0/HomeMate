@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'aggiungi_casa.dart'; // IMPORTATA LA TUA PAGINA
+import 'package:provider/provider.dart';
+import '../view_model/setup_profile_view_model.dart';
+import '../../../ui/auth/view_model/auth_view_model.dart';
+import '../../core/ui/loading_overlay.dart';
 
-class SetupProfilePage extends StatefulWidget {
-  const SetupProfilePage({super.key});
+/// Schermata di configurazione profilo. View pura che delega al [SetupProfileViewModel].
+class SetupProfileScreen extends StatefulWidget {
+  const SetupProfileScreen({super.key});
 
   @override
-  State<SetupProfilePage> createState() => _SetupProfilePageState();
+  State<SetupProfileScreen> createState() => _SetupProfileScreenState();
 }
 
-class _SetupProfilePageState extends State<SetupProfilePage> {
+class _SetupProfileScreenState extends State<SetupProfileScreen> {
   final _nameController = TextEditingController();
   final _surnameController = TextEditingController();
   final _bioController = TextEditingController();
-  bool _isLoading = false;
 
   final Color _buttonGreen = const Color(0xFF758D7B);
   final Color _backgroundColor = const Color(0xFFF9FAF9);
@@ -30,59 +31,33 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
     super.dispose();
   }
 
-  Future<void> _saveProfile() async {
-    final name = _nameController.text.trim();
-    final surname = _surnameController.text.trim();
-    final bio = _bioController.text.trim();
+  Future<void> _handleSaveProfile() async {
+    final viewModel = context.read<SetupProfileViewModel>();
+    final success = await viewModel.saveProfile(
+      name: _nameController.text.trim(),
+      surname: _surnameController.text.trim(),
+      bio: _bioController.text.trim(),
+    );
 
-    if (name.isEmpty || surname.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Nome e Cognome sono obbligatori."),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
+    if (!mounted) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        // Salva i dati utente su Firestore
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'name': name,
-          'surname': surname,
-          'bio': bio,
-          'profileCompleted': true,
-          'createdAt': FieldValue.serverTimestamp(),
-          'homeId': "", // Inizializziamo il campo homeId vuoto
-        }, SetOptions(merge: true));
-
-        if (!mounted) return;
-        
-        // LA CORREZIONE: Dopo il profilo, vai alla scelta della casa
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AggiungiCasaScreen()),
-          (Route<dynamic> route) => false,
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
+    if (success) {
+      // Refresh dell'AuthViewModel per passare allo stato successivo
+      await context.read<AuthViewModel>().refreshAuthState();
+    } else if (viewModel.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Errore durante il salvataggio: $e"),
+          content: Text(viewModel.errorMessage!),
           backgroundColor: Colors.redAccent,
         ),
       );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<SetupProfileViewModel>();
+
     return Scaffold(
       backgroundColor: _backgroundColor,
       body: SafeArea(
@@ -120,7 +95,8 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
                         CircleAvatar(
                           radius: 50,
                           backgroundColor: const Color(0xFFDEDFDE),
-                          child: Icon(Icons.camera_alt_outlined, size: 36, color: _subtitleColor),
+                          child: Icon(Icons.camera_alt_outlined,
+                              size: 36, color: _subtitleColor),
                         ),
                         Container(
                           padding: const EdgeInsets.all(4),
@@ -134,7 +110,8 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
                               color: _buttonGreen,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.add, size: 16, color: Colors.white),
+                            child: const Icon(Icons.add,
+                                size: 16, color: Colors.white),
                           ),
                         ),
                       ],
@@ -187,7 +164,7 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F5F3), 
+                  color: const Color(0xFFF3F5F3),
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(8),
                     bottomRight: Radius.circular(8),
@@ -201,7 +178,8 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lightbulb_outline, color: _buttonGreen, size: 24),
+                    Icon(Icons.lightbulb_outline,
+                        color: _buttonGreen, size: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -233,7 +211,8 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
               const SizedBox(height: 48),
 
               ElevatedButton(
-                onPressed: _isLoading ? null : _saveProfile,
+                onPressed:
+                    viewModel.isLoading ? null : _handleSaveProfile,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _buttonGreen,
                   foregroundColor: Colors.white,
@@ -243,16 +222,14 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
                   ),
                   elevation: 0,
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : Row(
+                child: viewModel.isLoading
+                    ? const ButtonLoadingIndicator()
+                    : const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text("Salva e Continua", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        children: [
+                          Text("Salva e Continua",
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
                           SizedBox(width: 8),
                           Icon(Icons.chevron_right),
                         ],
@@ -280,7 +257,8 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, {int maxLines = 1}) {
+  Widget _buildTextField(TextEditingController controller, String hint,
+      {int maxLines = 1}) {
     return Container(
       decoration: BoxDecoration(
         color: _fieldColor,
@@ -295,7 +273,8 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.black38),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );

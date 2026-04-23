@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
-import 'home_screen.dart';
-import 'finanze_screen.dart';
-import 'profile_page.dart';
+import '../../core/themes/app_colors.dart';
+import '../../home/widgets/home_screen.dart';
+import '../../finanze/widgets/finanze_screen.dart';
+import '../../profile/widgets/profile_screen.dart';
 
+/// Layout principale con bottom navigation bar animata.
 class MainLayout extends StatefulWidget {
   final int initialIndex;
   const MainLayout({super.key, this.initialIndex = 0});
@@ -24,9 +25,12 @@ class _MainLayoutState extends State<MainLayout> {
     _pages = [
       const HomeScreen(),
       const FinanzeScreen(),
-      // Mettiamo un segnaposto per la pagina organizzazione che non esiste ancora
-      const Scaffold(body: Center(child: Text("Organizzazione", style: TextStyle(fontSize: 24)))),
-      const ProfilePage(),
+      // Segnaposto per la pagina organizzazione
+      const Scaffold(
+          body: Center(
+              child:
+                  Text("Organizzazione", style: TextStyle(fontSize: 24)))),
+      const ProfileScreen(),
     ];
   }
 
@@ -44,14 +48,14 @@ class _MainLayoutState extends State<MainLayout> {
                 return FadeTransition(opacity: animation, child: child);
               },
               child: ColoredBox(
-                key: ValueKey<int>(_currentIndex), // Forza l'animazione di switcher
+                key: ValueKey<int>(_currentIndex),
                 color: AppColors.background,
                 child: _pages[_currentIndex],
               ),
             ),
           ),
-          
-          // NUOVA BOTTOM NAVIGATION BAR ANIMATA FLOTTANTE
+
+          // BOTTOM NAVIGATION BAR ANIMATA FLOTTANTE
           Positioned(
             left: 20,
             right: 20,
@@ -59,7 +63,8 @@ class _MainLayoutState extends State<MainLayout> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 400),
               curve: Curves.easeOutQuint,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
@@ -102,7 +107,6 @@ class _MainLayoutState extends State<MainLayout> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutQuint,
-        // Allarga il padding se selezionato, lo riduce se non selezionato
         padding: EdgeInsets.symmetric(
           horizontal: isSelected ? 16.0 : 6.0,
           vertical: isSelected ? 10.0 : 4.0,
@@ -111,7 +115,6 @@ class _MainLayoutState extends State<MainLayout> {
           color: isSelected ? AppColors.primaryDark : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
-        // Adatta dinamicamente le dimensioni al contenuto che sfuma
         child: AnimatedSize(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutQuint,

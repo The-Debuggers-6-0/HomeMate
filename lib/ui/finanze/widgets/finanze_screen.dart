@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
-// Aggiunto import del profilo
+import 'package:provider/provider.dart';
+import '../view_model/finanze_view_model.dart';
+import '../../core/themes/app_colors.dart';
 
+/// Schermata Finanze. View pura che legge i dati da [FinanzeViewModel].
 class FinanzeScreen extends StatelessWidget {
   const FinanzeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<FinanzeViewModel>();
+
     return Scaffold(
       backgroundColor: AppColors.finanzeBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -24,7 +29,8 @@ class FinanzeScreen extends StatelessWidget {
                       children: [
                         const CircleAvatar(
                           radius: 20,
-                          backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/150?img=11'),
                         ),
                         const SizedBox(width: 12),
                         const Text(
@@ -38,14 +44,15 @@ class FinanzeScreen extends StatelessWidget {
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.notifications, color: AppColors.primaryDark),
+                      icon: const Icon(Icons.notifications,
+                          color: AppColors.primaryDark),
                       onPressed: () {},
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
 
-                // --- TAB BAR LATERALE ---
+                // --- TAB BAR ---
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -129,9 +136,9 @@ class FinanzeScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Ti bastano €25,00 a Giulia\nper saldare tutto',
-                        style: TextStyle(
+                      Text(
+                        viewModel.debtSummary,
+                        style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -142,17 +149,17 @@ class FinanzeScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Mese quasi saldato',
-                            style: TextStyle(
+                          Text(
+                            viewModel.debtProgressLabel,
+                            style: const TextStyle(
                               color: AppColors.primaryDark,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
                           ),
-                          const Text(
-                            '75%',
-                            style: TextStyle(
+                          Text(
+                            '${(viewModel.debtProgress * 100).toInt()}%',
+                            style: const TextStyle(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -164,9 +171,10 @@ class FinanzeScreen extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
-                          value: 0.75,
+                          value: viewModel.debtProgress,
                           backgroundColor: Colors.grey[200],
-                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryDark),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.primaryDark),
                           minHeight: 8,
                         ),
                       ),
@@ -183,13 +191,12 @@ class FinanzeScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          icon: const Icon(Icons.account_balance_wallet, size: 20),
+                          icon: const Icon(Icons.account_balance_wallet,
+                              size: 20),
                           label: const Text(
                             'Salda ora',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           onPressed: () {},
                         ),
@@ -225,35 +232,21 @@ class FinanzeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // LISTA TRANSAZIONI
-                _buildTransactionItem(
-                  'Spesa Carrefour',
-                  'Pagato da Giulia • 2 ore fa',
-                  '€12,50',
-                  'LA TUA QUOTA',
-                  isCredit: false,
-                  imageUrl: 'https://i.pravatar.cc/150?img=5',
-                ),
-                const SizedBox(height: 20),
-                _buildTransactionItem(
-                  'Bolletta Luce',
-                  'Pagato da Marco • Ieri',
-                  '€45,80',
-                  'LA TUA QUOTA',
-                  isCredit: false,
-                  imageUrl: 'https://i.pravatar.cc/150?img=11',
-                ),
-                const SizedBox(height: 20),
-                _buildTransactionItem(
-                  'Netflix Premium',
-                  'Pagato da Te • 3 giorni fa',
-                  '€4,50',
-                  'DA RICEVERE',
-                  isCredit: true,
-                  icon: Icons.person,
-                ),
+                // LISTA TRANSAZIONI DAL VIEWMODEL
+                ...viewModel.transactions.map((t) => Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: _buildTransactionItem(
+                        t.title,
+                        t.subtitle,
+                        t.amount,
+                        t.amountLabel,
+                        isCredit: t.isCredit,
+                        imageUrl: t.imageUrl,
+                        icon: t.isCredit ? Icons.person : null,
+                      ),
+                    )),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 12),
 
                 // --- WIDGET BUDGET & RISPARMIATI ---
                 Row(
@@ -277,17 +270,19 @@ class FinanzeScreen extends StatelessWidget {
                                     color: AppColors.iconBgBlue,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.pie_chart, color: AppColors.primaryDark),
+                                  child: const Icon(Icons.pie_chart,
+                                      color: AppColors.primaryDark),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: AppColors.lightGreen,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Text(
-                                    '64%',
-                                    style: TextStyle(
+                                  child: Text(
+                                    viewModel.budgetPercentage,
+                                    style: const TextStyle(
                                       color: AppColors.primaryDark,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
@@ -306,9 +301,9 @@ class FinanzeScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              '€342,00',
-                              style: TextStyle(
+                            Text(
+                              viewModel.budgetAmount,
+                              style: const TextStyle(
                                 color: AppColors.textPrimary,
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -338,9 +333,11 @@ class FinanzeScreen extends StatelessWidget {
                                     color: AppColors.iconBgBeige,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.savings, color: AppColors.progressBrown),
+                                  child: const Icon(Icons.savings,
+                                      color: AppColors.progressBrown),
                                 ),
-                                const Icon(Icons.arrow_upward, color: AppColors.textSecondary, size: 16),
+                                const Icon(Icons.arrow_upward,
+                                    color: AppColors.textSecondary, size: 16),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -353,9 +350,9 @@ class FinanzeScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              '€128,40',
-                              style: TextStyle(
+                            Text(
+                              viewModel.savingsAmount,
+                              style: const TextStyle(
                                 color: AppColors.textPrimary,
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -367,8 +364,8 @@ class FinanzeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                
-                const SizedBox(height: 100), // Spazio extra per far scorrere sopra la BottomNavBar
+
+                const SizedBox(height: 100),
               ],
             ),
           ),
@@ -392,7 +389,9 @@ class FinanzeScreen extends StatelessWidget {
           radius: 24,
           backgroundColor: Colors.grey[200],
           backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-          child: imageUrl == null ? Icon(icon, color: AppColors.textSecondary) : null,
+          child: imageUrl == null
+              ? Icon(icon, color: AppColors.textSecondary)
+              : null,
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -433,7 +432,8 @@ class FinanzeScreen extends StatelessWidget {
             Text(
               amountLabel,
               style: TextStyle(
-                color: isCredit ? AppColors.primaryDark : AppColors.textPrimary,
+                color:
+                    isCredit ? AppColors.primaryDark : AppColors.textPrimary,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
