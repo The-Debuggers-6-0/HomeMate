@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../view_model/profile_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import 'edit_profile_screen.dart';
-import '../../auth/view_model/auth_view_model.dart';
 import 'dart:convert';
 
 /// Schermata Profilo. View pura che legge i dati da [ProfileViewModel].
@@ -114,8 +113,6 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(
                 height: 24,
               ), // Spazio tra la bio e il nuovo bottone
-
-
               // --- PULSANTE MODIFICA PROFILO ---
               OutlinedButton.icon(
                 onPressed: () async {
@@ -163,10 +160,57 @@ class ProfileScreen extends StatelessWidget {
 
               // --- PULSANTE LOGOUT ---
               TextButton.icon(
-                onPressed: () => viewModel.logout(),
+                onPressed: () async {
+                  // 1. Mostra il pop-up
+                  final bool? confirmLogout = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Disconnessione'),
+                        content: const Text(
+                          'Vuoi davvero effettuare il logout?',
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        actions: [
+                          // Bottone NO
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text(
+                              'No',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          // Bottone SI
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: Text(
+                              'Sì',
+                              style: TextStyle(
+                                color: AppColors.accentRed,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+
+                  // 2. Se l'utente clicca Sì (true), eseguiamo il logout vero e proprio
+                  if (confirmLogout == true) {
+                    viewModel.logout();
+                  }
+                },
+                // --- PARTE GRAFICA DEL BOTTONE ---
                 icon: const Icon(Icons.logout, color: AppColors.accentRed),
                 label: const Text(
-                  "Disconnetti Account",
+                  "Logout",
                   style: TextStyle(
                     color: AppColors.accentRed,
                     fontSize: 16,
