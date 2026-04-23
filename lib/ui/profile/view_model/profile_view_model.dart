@@ -14,6 +14,7 @@ class ProfileViewModel extends ChangeNotifier {
   bool _isLoading = true;
   StreamSubscription<AppUser?>? _profileSubscription;
 
+
   ProfileViewModel({
     required UserRepository userRepository,
     required AuthRepository authRepository,
@@ -30,25 +31,52 @@ class ProfileViewModel extends ChangeNotifier {
       '${_userProfile?.name ?? ''} ${_userProfile?.surname ?? ''}'.trim();
   String get bio => _userProfile?.bio ?? _userProfile?.email ?? '';
 
+  
+  /// Inizializza il ViewModel.
   void _init() {
     final user = _authRepository.currentFirebaseUser;
     if (user != null) {
-      _profileSubscription =
-          _userRepository.getUserProfileStream(user.uid).listen((profile) {
-        _userProfile = profile;
-        _isLoading = false;
-        notifyListeners();
-      });
+      _profileSubscription = _userRepository
+          .getUserProfileStream(user.uid)
+          .listen((profile) {
+            _userProfile = profile;
+            _isLoading = false;
+            notifyListeners();
+          });
     } else {
       _isLoading = false;
       notifyListeners();
     }
   }
+  
+  //AGGIUNTO RECENTE!
+  // Nel tuo ProfileViewModel:
+  Future<void> reloadProfile() async {
+    final user = _authRepository.currentFirebaseUser;
+    if (user != null) {
+      _isLoading = true;
+      notifyListeners();
 
+      // Mettiamo un try/catch per sicurezza
+      try {
+        // Usa il tuo metodo che legge una sola volta l'utente
+        // (Es. _userRepository.getUser(user.uid) o simile)
+        final updatedProfile = await _userRepository.getUserProfile(user.uid); 
+        _userProfile = updatedProfile;
+      } catch (e) {
+        debugPrint("Errore nel ricaricare il profilo: $e");
+      } finally {
+        _isLoading = false;
+        notifyListeners(); // Questo farà riapparire la schermata con i nuovi dati!
+      }
+    }
+  }
+  
   /// Esegue il logout.
   Future<void> logout() async {
     await _authRepository.logout();
   }
+  
 
   @override
   void dispose() {

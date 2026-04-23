@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../view_model/setup_profile_view_model.dart';
 import '../../../ui/auth/view_model/auth_view_model.dart';
 import '../../core/ui/loading_overlay.dart';
+import 'dart:io'; // Per usare la classe File
+import 'package:image_picker/image_picker.dart'; // Pacchetto per la selezione delle immagini
+import 'dart:convert'; // Per la codifica e decodifica base64
 
 /// Schermata di configurazione profilo. View pura che delega al [SetupProfileViewModel].
 class SetupProfileScreen extends StatefulWidget {
@@ -23,6 +26,27 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
   final Color _textColor = const Color(0xFF1E1E1E);
   final Color _subtitleColor = const Color(0xFF5A5A5A);
 
+  // Aggiungi questa variabile
+  File? _selectedImage;
+
+  // Aggiungi questa funzione
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    // Usiamo le stesse impostazioni di "dimensione ridotta" per non far arrabbiare Firestore!
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 30,
+      maxWidth: 400,
+      maxHeight: 400,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -37,6 +61,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
       name: _nameController.text.trim(),
       surname: _surnameController.text.trim(),
       bio: _bioController.text.trim(),
+      imageFile: _selectedImage, 
     );
 
     if (!mounted) return;
@@ -89,32 +114,50 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
               Center(
                 child: Column(
                   children: [
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: const Color(0xFFDEDFDE),
-                          child: Icon(Icons.camera_alt_outlined,
-                              size: 36, color: _subtitleColor),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF9FAF9),
-                            shape: BoxShape.circle,
+                    GestureDetector(
+                      onTap:
+                          _pickImage, // <--- 1. Aggiungiamo l'azione al tocco!
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: const Color(0xFFDEDFDE),
+                            // 2. Mostriamo la foto se l'utente l'ha scelta
+                            backgroundImage: _selectedImage != null
+                                ? FileImage(_selectedImage!)
+                                : null,
+                            // 3. Mostriamo l'icona della fotocamera SOLO se la foto non c'è
+                            child: _selectedImage == null
+                                ? Icon(
+                                    Icons.camera_alt_outlined,
+                                    size: 36,
+                                    color: _subtitleColor,
+                                  )
+                                : null,
                           ),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: _buttonGreen,
+                          // Il tuo fantastico badge con il "+" rimane intatto!
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF9FAF9),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.add,
-                                size: 16, color: Colors.white),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: _buttonGreen,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -148,7 +191,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: _subtitleColor.withOpacity(0.5),
+                      color: _subtitleColor,
                     ),
                   ),
                 ],
@@ -178,8 +221,11 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lightbulb_outline,
-                        color: _buttonGreen, size: 24),
+                    Icon(
+                      Icons.lightbulb_outline,
+                      color: _buttonGreen,
+                      size: 24,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -211,8 +257,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
               const SizedBox(height: 48),
 
               ElevatedButton(
-                onPressed:
-                    viewModel.isLoading ? null : _handleSaveProfile,
+                onPressed: viewModel.isLoading ? null : _handleSaveProfile,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _buttonGreen,
                   foregroundColor: Colors.white,
@@ -227,9 +272,13 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                     : const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text("Salva e Continua",
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text(
+                            "Salva e Continua",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           SizedBox(width: 8),
                           Icon(Icons.chevron_right),
                         ],
@@ -257,8 +306,11 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint,
-      {int maxLines = 1}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint, {
+    int maxLines = 1,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: _fieldColor,
@@ -273,8 +325,10 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.black38),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );

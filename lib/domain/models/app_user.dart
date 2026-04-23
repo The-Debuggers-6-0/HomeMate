@@ -15,6 +15,7 @@ abstract class AppUser with _$AppUser {
     @Default('') String bio,
     @Default(false) bool profileCompleted,
     @Default('') String homeId,
+    String? photoUrl,
   }) = _AppUser;
 
   factory AppUser.fromJson(Map<String, dynamic> json) =>
@@ -31,6 +32,7 @@ abstract class AppUser with _$AppUser {
       bio: data['bio'] as String? ?? '',
       profileCompleted: data['profileCompleted'] as bool? ?? false,
       homeId: data['homeId'] as String? ?? '',
+      photoUrl: data['photoUrl'] as String?, // <--- 2. AGGIUNTO QUI PER LEGGERLO DA FIREBASE
     );
   }
 }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_model/profile_view_model.dart';
+import '../../core/themes/app_colors.dart';
+import 'edit_profile_screen.dart';
+import '../../auth/view_model/auth_view_model.dart';
+import 'dart:convert';
 
 /// Schermata Profilo. View pura che legge i dati da [ProfileViewModel].
 class ProfileScreen extends StatelessWidget {
@@ -10,19 +14,17 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<ProfileViewModel>();
 
-    final Color darkGreen = const Color(0xFF2C5542);
-    final Color textColor = const Color(0xFF1E1E1E);
-    final Color subtitleColor = const Color(0xFF5A5A5A);
-
     if (viewModel.isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF9FAF9),
-        body: Center(child: CircularProgressIndicator(color: darkGreen)),
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primaryGreen),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAF9),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -37,8 +39,11 @@ class ProfileScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 16,
                         backgroundColor: Colors.grey.shade300,
-                        child: const Icon(Icons.person,
-                            size: 20, color: Colors.white),
+                        child: const Icon(
+                          Icons.person,
+                          size: 20,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -46,47 +51,46 @@ class ProfileScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: darkGreen,
+                          color: AppColors.primaryGreen,
                         ),
                       ),
                     ],
                   ),
-                  Icon(Icons.notifications_none, color: subtitleColor),
+                  Icon(Icons.notifications_none, color: AppColors.primaryGreen),
                 ],
               ),
               const SizedBox(height: 48),
 
               // --- FOTO PROFILO CENTRALE ---
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: darkGreen.withOpacity(0.8), width: 3),
-                    ),
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey.shade300,
-                      child: const Icon(Icons.person,
-                          size: 50, color: Colors.white),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: darkGreen,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: const Color(0xFFF9FAF9), width: 2),
-                    ),
-                    child: const Icon(Icons.edit,
-                        size: 14, color: Colors.white),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primaryGreen, width: 3),
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey.shade300,
+
+                  // 1. ORA CONTROLLIAMO SE C'È UNA FOTO SALVATA!
+                  // Sostituisci 'photoUrl' col nome esatto che hai nel tuo modello AppUser
+                  backgroundImage:
+                      (viewModel.userProfile?.photoUrl != null &&
+                          viewModel.userProfile!.photoUrl!.isNotEmpty)
+                      ? MemoryImage(
+                          base64Decode(viewModel.userProfile!.photoUrl!),
+                        )
+                      : null,
+
+                  // 2. MOSTRA L'ICONA SOLO SE LA FOTO NON C'È
+                  child:
+                      (viewModel.userProfile?.photoUrl == null ||
+                          viewModel.userProfile!.photoUrl!.isEmpty)
+                      ? const Icon(Icons.person, size: 50, color: Colors.white)
+                      : null,
+                ),
               ),
+
               const SizedBox(height: 16),
 
               // --- NOME E COGNOME ---
@@ -95,7 +99,7 @@ class ProfileScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: textColor,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -104,9 +108,54 @@ class ProfileScreen extends StatelessWidget {
               Text(
                 viewModel.bio,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: subtitleColor,
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+
+              const SizedBox(
+                height: 24,
+              ), // Spazio tra la bio e il nuovo bottone
+
+
+              // --- PULSANTE MODIFICA PROFILO ---
+              OutlinedButton.icon(
+                onPressed: () async {
+                  // 1. Apri la pagina e aspetta che l'utente finisca e la chiuda
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProfileScreen(
+                        currentName: viewModel.userProfile?.name ?? '',
+                        currentSurname: viewModel.userProfile?.surname ?? '',
+                        currentBio: viewModel.userProfile?.bio ?? '',
+                        currentPhotoUrl: viewModel.userProfile?.photoUrl,
+                      ),
+                    ),
+                  );
+                  // 2. Quando l'utente torna indietro (ha salvato o annullato),
+                  // diciamo al ViewModel di riscaricare i dati freschi!
+                  viewModel.reloadProfile();
+                },
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: AppColors.primaryGreen,
+                ),
+                label: const Text(
+                  "Modifica profilo",
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primaryGreen),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
               ),
 
@@ -115,11 +164,11 @@ class ProfileScreen extends StatelessWidget {
               // --- PULSANTE LOGOUT ---
               TextButton.icon(
                 onPressed: () => viewModel.logout(),
-                icon: const Icon(Icons.logout, color: Color(0xFFC62828)),
+                icon: const Icon(Icons.logout, color: AppColors.accentRed),
                 label: const Text(
                   "Disconnetti Account",
                   style: TextStyle(
-                    color: Color(0xFFC62828),
+                    color: AppColors.accentRed,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),

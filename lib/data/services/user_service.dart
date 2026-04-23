@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/app_user.dart';
+import 'dart:io';
+import 'dart:convert';
+//import 'package:firebase_storage/firebase_storage.dart';
 
 /// Service che gestisce le operazioni CRUD su Firestore per la collection 'users'.
 class UserService {
   final FirebaseFirestore _firestore;
 
   UserService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> get _usersCollection =>
       _firestore.collection('users');
@@ -17,7 +20,7 @@ class UserService {
     if (!doc.exists || doc.data() == null) return null;
     return AppUser.fromFirestore(uid, doc.data()!);
   }
-
+  
   /// Ottiene il profilo utente come stream in tempo reale.
   Stream<AppUser?> getUserStream(String uid) {
     return _usersCollection.doc(uid).snapshots().map((doc) {
@@ -53,15 +56,29 @@ class UserService {
     required String name,
     required String surname,
     String bio = '',
-  }) {
-    return _usersCollection.doc(uid).set({
+    File? imageFile,
+  }) async {
+    String? base64Image;
+
+    // TRUCCO BASE64: Trasformiamo il file in un testo lunghissimo!
+    if (imageFile != null) {
+      final bytes = await imageFile.readAsBytes();
+      base64Image = base64Encode(bytes); // Ecco la magia
+    }
+
+    final Map<String, dynamic> data = {
       'name': name,
       'surname': surname,
       'bio': bio,
       'profileCompleted': true,
-      'createdAt': FieldValue.serverTimestamp(),
-      'homeId': '',
-    }, SetOptions(merge: true));
+    };
+
+    // Salviamo il testo della foto nel database normale
+    if (base64Image != null) {
+      data['photoUrl'] = base64Image; 
+    }
+
+    return _usersCollection.doc(uid).set(data, SetOptions(merge: true));
   }
 
   /// Aggiorna il campo lastLogin.

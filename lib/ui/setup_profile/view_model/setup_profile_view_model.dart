@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
+import 'dart:io';
 
 /// ViewModel per la schermata di configurazione profilo.
 class SetupProfileViewModel extends ChangeNotifier {
@@ -28,6 +29,7 @@ class SetupProfileViewModel extends ChangeNotifier {
     required String name,
     required String surname,
     String bio = '',
+    File? imageFile,
   }) async {
     if (name.isEmpty || surname.isEmpty) {
       _errorMessage = 'Nome e Cognome sono obbligatori.';
@@ -52,6 +54,7 @@ class SetupProfileViewModel extends ChangeNotifier {
         name: name,
         surname: surname,
         bio: bio,
+        imageFile: imageFile,
       );
 
       _profileSaved = true;

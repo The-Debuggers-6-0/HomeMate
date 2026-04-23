@@ -1,5 +1,6 @@
 import '../../domain/models/app_user.dart';
 import '../services/user_service.dart';
+import 'dart:io';
 
 /// Repository che astrae l'accesso ai dati utente per i ViewModel.
 class UserRepository {
@@ -24,12 +25,14 @@ class UserRepository {
     required String name,
     required String surname,
     String bio = '',
+    File? imageFile,
   }) {
     return _userService.saveProfile(
       uid: uid,
       name: name,
       surname: surname,
       bio: bio,
+      imageFile: imageFile,
     );
   }
 

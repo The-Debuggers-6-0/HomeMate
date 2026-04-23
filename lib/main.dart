@@ -23,6 +23,7 @@ import 'ui/house/view_model/house_view_model.dart';
 import 'ui/home/view_model/home_view_model.dart';
 import 'ui/finanze/view_model/finanze_view_model.dart';
 import 'ui/profile/view_model/profile_view_model.dart';
+import 'ui/profile/view_model/edit_profile_view_model.dart';
 
 // --- UI Layer: Root Widget ---
 import 'ui/auth/widgets/auth_checker.dart';
@@ -118,6 +119,11 @@ class MyApp extends StatelessWidget {
           create: (_) => ProfileViewModel(
             userRepository: userRepository,
             authRepository: authRepository,
+          ),
+        ),
+        ChangeNotifierProvider<EditProfileViewModel>(
+          create: (_) => EditProfileViewModel(
+            userRepository: userRepository, // Gli passiamo il repository che abbiamo già creato nel main!
           ),
         ),
       ],

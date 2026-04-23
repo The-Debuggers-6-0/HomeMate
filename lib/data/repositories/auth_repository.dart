@@ -25,16 +25,25 @@ class AuthRepository {
     return _authService.signInWithEmail(email, password);
   }
 
-  /// Login con Google. Aggiorna anche i dati su Firestore.
+  /// Login con Google. Aggiorna i dati su Firestore SOLO al primo accesso.
   Future<UserCredential> loginWithGoogle() async {
     final userCredential = await _authService.signInWithGoogle();
     final user = userCredential.user!;
 
-    await _userService.updateLastLogin(
-      user.uid,
-      user.email ?? '',
-      user.displayName ?? 'Utente Google',
-    );
+    // 1. Dobbiamo controllare se l'utente esiste già in Firestore.
+    // (Presumo che tu abbia un metodo nel UserService per leggere l'utente. 
+    // Se si chiama in modo diverso, es: getUserProfile, cambialo qui!)
+    final existingUser = await _userService.getUser(user.uid); 
+
+    // 2. Se existingUser è null, significa che è il suo primissimo accesso!
+    if (existingUser == null) {
+      await _userService.updateLastLogin(
+        user.uid,
+        user.email ?? '',
+        user.displayName ?? 'Utente Google',
+      );
+    } 
+    // Se existingUser NON è null, non facciamo nulla e lasciamo i suoi dati intatti!
 
     return userCredential;
   }
