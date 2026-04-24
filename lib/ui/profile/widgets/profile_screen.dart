@@ -25,40 +25,23 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      // --- 1. AGGIUNGI QUESTO (Fa comparire la freccia indietro!) ---
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(
+          color: Colors.black,
+        ), // O AppColors.textDark
+      ),
+      
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
+        child: SizedBox( // <--- 1. AGGIUNTO SIZEDBOX
+          width: double.infinity, // <--- 2. PRENDE TUTTA LA LARGHEZZA DELLO SCHERMO
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center, // <--- 3. CENTRA GLI ELEMENTI
             children: [
-              // --- HEADER: Ciao, Nome ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Colors.grey.shade300,
-                        child: const Icon(
-                          Icons.person,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "Ciao, ${viewModel.displayName}",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Icon(Icons.notifications_none, color: AppColors.primaryGreen),
-                ],
-              ),
               const SizedBox(height: 48),
 
               // --- FOTO PROFILO CENTRALE ---
@@ -299,9 +282,12 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 100),
             ],
+            ), 
           ),
         ),
       ),
     );
+
+  
   }
 }

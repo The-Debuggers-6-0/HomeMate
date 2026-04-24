@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-// Usa Ctrl + . (o Cmd + .) se questo import ti dà errore per sistemare il percorso
 import '../../auth/view_model/auth_view_model.dart';
 import '../themes/app_colors.dart'; // Aggiunto per i colori
+import '../../profile/widgets/profile_screen.dart'; 
 
 class CustomUserHeader extends StatelessWidget {
   final String greetingText; // Es: "BENTORNATO" o "BENVENUTO A CASA"
@@ -31,18 +30,26 @@ class CustomUserHeader extends StatelessWidget {
         // --- PARTE SINISTRA: Foto e Testi ---
         Row(
           children: [
-            // Immagine Profilo Dinamica
-            CircleAvatar(
-              radius: 22, 
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage: photoBase64.isNotEmpty 
-                  ? MemoryImage(base64Decode(photoBase64)) 
-                  : null,
-              child: photoBase64.isEmpty 
-                  ? const Icon(Icons.person, color: Colors.white, size: 24) 
-                  : null,
+            // Immagine Profilo Dinamica e Cliccabile (con effetto onda)
+            InkWell(
+              onTap: () {
+                // Navighiamo verso la schermata Profilo
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(22),
+              child: CircleAvatar(
+                radius: 22,
+                backgroundColor: Colors.grey.shade300,
+                backgroundImage: photoBase64.isNotEmpty
+                    ? MemoryImage(base64Decode(photoBase64))
+                    : null,
+                child: photoBase64.isEmpty
+                    ? const Icon(Icons.person, color: Colors.white, size: 24)
+                    : null,
+              ),
             ),
-            const SizedBox(width: 12),
             
             // Testi ("BENTORNATO" + "Ciao, nome")
             Column(
@@ -54,7 +61,7 @@ class CustomUserHeader extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade600,
+                    color: AppColors.textSecondary,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -63,7 +70,7 @@ class CustomUserHeader extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black, // Cambia in AppColors.textDark se necessario
+                    color: AppColors.textPrimary, // Cambia in AppColors.textDark se necessario
                   ),
                 ),
               ],
