@@ -4,6 +4,7 @@ import '../view_model/profile_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import 'edit_profile_screen.dart';
 import 'dart:convert';
+import '../../auth/widgets/login_screen.dart';
 
 /// Schermata Profilo. View pura che legge i dati da [ProfileViewModel].
 class ProfileScreen extends StatelessWidget {
@@ -216,6 +217,84 @@ class ProfileScreen extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // --- PULSANTE ELIMINA ACCOUNT ---
+              TextButton.icon(
+                onPressed: () async {
+                  // 1. Mostriamo il pop-up di ALLARME ROSSO
+                  final bool? confirmDelete = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Row(
+                          children: const [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.red,
+                            ),
+                            SizedBox(width: 8),
+                            Text('Attenzione'),
+                          ],
+                        ),
+                        content: const Text(
+                          'Sei sicuro di voler eliminare definitivamente il tuo account?\n\nQuesta azione è irreversibile e tutti i tuoi dati, la tua bio e le tue foto verranno cancellati per sempre.',
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        actions: [
+                          // Bottone ANNULLA (in evidenza per salvarli)
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text(
+                              'Annulla',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          // Bottone ELIMINA (rosso e spaventoso)
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text(
+                              'Elimina per sempre',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+
+                  // 2. Se l'utente clicca "Elimina per sempre" (true)...
+                  if (confirmDelete == true) {
+                    // 1. Il ViewModel fa esplodere i dati su Firebase
+                    await viewModel.deleteAccount();
+
+                    // 2. Controllo di sicurezza di Flutter (obbligatorio dopo un 'await')
+                    if (context.mounted) {
+                      // 3. Ti butto fuori alla schermata di Login e cancello la cronologia!
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                        (Route<dynamic> route) => false,
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.delete_forever, color: Colors.red),
+                label: const Text(
+                  "Elimina Account",
+                  style: TextStyle(color: Colors.red),
                 ),
               ),
               const SizedBox(height: 100),

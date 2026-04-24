@@ -89,4 +89,9 @@ class UserService {
       'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
+
+  /// Elimina un documento utente specifico da Firestore.
+  Future<void> deleteUser(String uid) async {
+    await _usersCollection.doc(uid).delete();
+  }
 }

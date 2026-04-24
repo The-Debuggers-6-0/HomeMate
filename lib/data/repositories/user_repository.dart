@@ -40,4 +40,9 @@ class UserRepository {
   Future<void> updateHomeId(String uid, String homeId) {
     return _userService.updateUser(uid, {'homeId': homeId});
   }
+
+  /// Elimina il documento del profilo utente da Firestore.
+  Future<void> deleteProfile(String uid) {
+    return _userService.deleteUser(uid);
+  }
 }

@@ -46,4 +46,5 @@ class HouseService {
       'membri': FieldValue.arrayUnion([uid]),
     });
   }
+
 }

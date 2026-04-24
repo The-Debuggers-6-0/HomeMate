@@ -79,4 +79,9 @@ class AuthRepository {
 
   /// Logout.
   Future<void> logout() => _authService.signOut();
+
+  /// Elimina l'utente da Firebase Auth.
+  Future<void> deleteAccount() {
+    return _authService.deleteUserAccount();
+  }
 }
