@@ -5,6 +5,10 @@ import '../view_model/house_view_model.dart';
 import '../../auth/view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/ui/loading_overlay.dart';
+import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../../auth/view_model/auth_view_model.dart';
+import '../../core/ui/custom_user_header.dart';
 
 /// Schermata per creare o unirsi a una casa. View pura che delega al [HouseViewModel].
 class AddHouseScreen extends StatefulWidget {
@@ -34,8 +38,9 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
     } else if (viewModel.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(viewModel.errorMessage!),
-            backgroundColor: Colors.redAccent),
+          content: Text(viewModel.errorMessage!),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     }
   }
@@ -51,8 +56,9 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
     } else if (viewModel.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(viewModel.errorMessage!),
-            backgroundColor: Colors.orange),
+          content: Text(viewModel.errorMessage!),
+          backgroundColor: Colors.orange,
+        ),
       );
     }
   }
@@ -63,31 +69,37 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Casa creata con successo!",
-            style: TextStyle(
-                color: Color(0xFF324A3D), fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Casa creata con successo!",
+          style: TextStyle(
+            color: Color(0xFF324A3D),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-                "Condividi questo codice con i tuoi coinquilini per farli unire:"),
+              "Condividi questo codice con i tuoi coinquilini per farli unire:",
+            ),
             const SizedBox(height: 20),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
               decoration: BoxDecoration(
                 color: const Color(0xFFF3F2EE),
                 borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.primaryGreen.withOpacity(0.3),
+                ),
               ),
               child: SelectableText(
                 codice,
                 style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 4,
-                    color: Color(0xFF324A3D)),
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 4,
+                  color: Color(0xFF324A3D),
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -96,13 +108,14 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                 Clipboard.setData(ClipboardData(text: codice));
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   const SnackBar(
-                      content: Text("Codice copiato!"),
-                      duration: Duration(seconds: 1)),
+                    content: Text("Codice copiato!"),
+                    duration: Duration(seconds: 1),
+                  ),
                 );
               },
               icon: const Icon(Icons.copy, size: 18),
               label: const Text("Copia Codice"),
-            )
+            ),
           ],
         ),
         actions: [
@@ -111,7 +124,8 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
               backgroundColor: AppColors.primaryGreen,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () async {
               Navigator.of(dialogContext).pop();
@@ -133,23 +147,16 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Benvenuto a Casa',
-          style: TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 18),
+        automaticallyImplyLeading:
+            false, // Rimuove la freccia per tornare indietro (se non ti serve qui)
+
+        title: const CustomUserHeader(
+          greetingText:
+              'BENVENUTO A CASA', // Testo personalizzato per questa pagina
+          showBell: false, // Niente campanella qui
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.grey,
-              child: Icon(Icons.person, color: Colors.white, size: 20),
-            ),
-          ),
-        ],
+
+        actions: const [], // Svuotiamo le actions
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -160,17 +167,19 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
             const Text(
               'Inizia il tuo viaggio.',
               style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF324A3D)),
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF324A3D),
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               'La gestione della tua casa non è mai stata così semplice e armoniosa. Scegli come vuoi cominciare oggi.',
               style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
-                  height: 1.5),
+                fontSize: 15,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 40),
 
@@ -184,33 +193,46 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                            color: const Color(0xFFD3E4D8),
-                            borderRadius: BorderRadius.circular(20)),
-                        child: const Icon(Icons.home_outlined,
-                            size: 50, color: Color(0xFF324A3D)),
+                          color: const Color(0xFFD3E4D8),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.home_outlined,
+                          size: 50,
+                          color: Color(0xFF324A3D),
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
-                            color: Color(0xFFF0D6C1),
-                            shape: BoxShape.circle),
-                        child: const Icon(Icons.add,
-                            size: 16, color: Colors.white),
+                          color: Color(0xFFF0D6C1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text('Crea una nuova casa',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary)),
+                  const Text(
+                    'Crea una nuova casa',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Inizia da zero, definisci le stanze e invita i tuoi coinquilini o familiari.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary),
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -221,14 +243,18 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      onPressed:
-                          viewModel.isLoading ? null : _handleCreateHouse,
+                      onPressed: viewModel.isLoading
+                          ? null
+                          : _handleCreateHouse,
                       child: viewModel.isLoading
                           ? const ButtonLoadingIndicator()
-                          : const Text('Inizia una nuova avventura',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          : const Text(
+                              'Inizia una nuova avventura',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                     ),
                   ),
                 ],
@@ -248,37 +274,49 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.person_add_outlined,
-                            color: Color(0xFF6B8073)),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.person_add_outlined,
+                          color: Color(0xFF6B8073),
+                        ),
                       ),
                       const SizedBox(width: 16),
                       const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Unisciti a una casa esistente',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary)),
                             Text(
-                                'Inserisci il codice ricevuto dal proprietario.',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey)),
+                              'Unisciti a una casa esistente',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              'Inserisci il codice ricevuto dal proprietario.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text('CODICE CASA',
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                          letterSpacing: 1.1)),
+                  const Text(
+                    'CODICE CASA',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _codiceController,
@@ -287,10 +325,13 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                       filled: true,
                       fillColor: const Color(0xFFE5E3DD),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -302,16 +343,19 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                         side: const BorderSide(color: Color(0xFF6B8073)),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         backgroundColor: Colors.white.withOpacity(0.5),
                       ),
-                      onPressed:
-                          viewModel.isLoading ? null : _handleJoinHouse,
+                      onPressed: viewModel.isLoading ? null : _handleJoinHouse,
                       child: viewModel.isLoading
                           ? const ButtonLoadingIndicator(
-                              color: Color(0xFF6B8073))
-                          : const Text('Unisciti',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                              color: Color(0xFF6B8073),
+                            )
+                          : const Text(
+                              'Unisciti',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                     ),
                   ),
                 ],
@@ -324,8 +368,10 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
     );
   }
 
-  Widget _buildActionCard(
-      {required Widget child, Color backgroundColor = Colors.white}) {
+  Widget _buildActionCard({
+    required Widget child,
+    Color backgroundColor = Colors.white,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -335,9 +381,10 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
         boxShadow: [
           if (backgroundColor == Colors.white)
             BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 20,
-                offset: const Offset(0, 10)),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
         ],
       ),
       child: child,

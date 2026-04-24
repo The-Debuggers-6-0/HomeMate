@@ -4,6 +4,7 @@ import '../view_model/home_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import 'dart:convert'; // Serve per decodificare l'immagine in base64
 import '../../auth/view_model/auth_view_model.dart';
+import '../../core/ui/custom_user_header.dart'; // Import del widget personalizzato
 
 /// Schermata Home (dashboard). View pura che legge i dati da [HomeViewModel].
 class HomeScreen extends StatelessWidget {
@@ -13,14 +14,6 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<HomeViewModel>();
 
-    // Ascoltiamo l'AuthViewModel per avere i dati dell'utente sempre aggiornati
-    final authViewModel = context.watch<AuthViewModel>();
-    final userProfile = authViewModel.userProfile;
-
-    // Estraiamo nome e foto, mettendo valori di default se non ci sono
-    final String nome = userProfile?.name ?? 'Utente';
-    final String photoBase64 = userProfile?.photoUrl ?? '';
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -29,64 +22,13 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- HEADER (Profilo e Campanella) ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // PARTE SINISTRA: Foto e Testi
-                  Row(
-                    children: [
-                      // 1. La foto dinamica
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.grey.shade300,
-                        backgroundImage: photoBase64.isNotEmpty
-                            ? MemoryImage(base64Decode(photoBase64))
-                            : null,
-                        child: photoBase64.isEmpty
-                            ? const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 28,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 12), // Spazio tra foto e testo
-                      // 2. I testi di benvenuto
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'BENTORNATO',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          Text(
-                            'Ciao, $nome',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  // PARTE DESTRA: Campanella
-                  IconButton(
-                    icon: const Icon(Icons.notifications_none, size: 28),
-                    onPressed: () {
-                      // Azione notifiche (per il futuro)
-                    },
-                  ),
-                ],
+              // --- HEADER PERSONALIZZATO ---
+              const CustomUserHeader(
+                greetingText: 'BENTORNATO', // Puoi personalizzare il testo se vuoi
+                showBell: true, // Mostrare la campanella? (Vero o Falso)
               ),
+
+              
               const SizedBox(height: 30),
 
               // --- CARD BILANCIO ---

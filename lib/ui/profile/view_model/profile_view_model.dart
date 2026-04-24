@@ -144,7 +144,11 @@ class ProfileViewModel extends ChangeNotifier {
 
       } catch (e) {
         debugPrint("Errore: $e");
-        // Se Firebase si lamenta (es. login troppo vecchio), si ferma qui
+
+        // Se Firebase si arrabbia e blocca l'eliminazione dell'account, 
+        // l'utente è rimasto senza dati. Lo scolleghiamo a forza per mandarlo al Login!
+        await logout();
+        
         return false; 
       } finally {
         _isLoading = false;
