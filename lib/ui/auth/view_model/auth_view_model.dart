@@ -30,8 +30,8 @@ class AuthViewModel extends ChangeNotifier {
   AuthViewModel({
     required AuthRepository authRepository,
     required UserRepository userRepository,
-  })  : _authRepository = authRepository,
-        _userRepository = userRepository {
+  }) : _authRepository = authRepository,
+       _userRepository = userRepository {
     _init();
   }
 
@@ -75,6 +75,7 @@ class AuthViewModel extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+  
 
   Future<void> _loadUserProfile(String uid) async {
     try {

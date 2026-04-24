@@ -4,7 +4,7 @@ import '../view_model/profile_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import 'edit_profile_screen.dart';
 import 'dart:convert';
-import '../../auth/widgets/login_screen.dart';
+import '../../auth/widgets/auth_checker.dart';
 
 /// Schermata Profilo. View pura che legge i dati da [ProfileViewModel].
 class ProfileScreen extends StatelessWidget {
@@ -284,7 +284,7 @@ class ProfileScreen extends StatelessWidget {
                       // 3. Ti butto fuori alla schermata di Login e cancello la cronologia!
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
+                          builder: (context) => const AuthChecker(),
                         ),
                         (Route<dynamic> route) => false,
                       );

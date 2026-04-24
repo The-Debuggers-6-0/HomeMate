@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../domain/models/app_user.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// ViewModel per la schermata Profilo.
 /// Ascolta lo stream dei dati utente in tempo reale.
@@ -14,12 +15,36 @@ class ProfileViewModel extends ChangeNotifier {
   bool _isLoading = true;
   StreamSubscription<AppUser?>? _profileSubscription;
 
+  StreamSubscription<User?>? _authSubscription;
+
+  /*
   ProfileViewModel({
     required UserRepository userRepository,
     required AuthRepository authRepository,
   }) : _userRepository = userRepository,
        _authRepository = authRepository {
     _init();
+  }*/
+
+  ProfileViewModel({
+    required UserRepository userRepository,
+    required AuthRepository authRepository,
+  }) : _userRepository = userRepository,
+       _authRepository = authRepository {
+    
+    // Il "cane da guardia" che ascolta gli accessi e le uscite
+    _authSubscription = _authRepository.authStateChanges().listen((user) {
+      if (user != null) {
+        // L'utente è entrato: RIATTACCHIAMO LA SPINA!
+        _startListeningToProfile(user.uid);
+      } else {
+        // L'utente è uscito o è stato eliminato: STACCHIAMO TUTTO!
+        _profileSubscription?.cancel();
+        _profileSubscription = null;
+        _userProfile = null;
+        notifyListeners();
+      }
+    });
   }
 
   // --- Getters pubblici ---
@@ -30,6 +55,7 @@ class ProfileViewModel extends ChangeNotifier {
       '${_userProfile?.name ?? ''} ${_userProfile?.surname ?? ''}'.trim();
   String get bio => _userProfile?.bio ?? _userProfile?.email ?? '';
 
+  /*
   /// Inizializza il ViewModel.
   void _init() {
     final user = _authRepository.currentFirebaseUser;
@@ -45,9 +71,26 @@ class ProfileViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }*/
+
+  /// Metodo interno per attaccare la spina a Firestore
+  void _startListeningToProfile(String uid) {
+    // Se stiamo già ascoltando, non facciamo nulla per evitare doppioni
+    if (_profileSubscription != null) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    _profileSubscription = _userRepository
+        .getUserProfileStream(uid)
+        .listen((profile) {
+          _userProfile = profile;
+          _isLoading = false;
+          notifyListeners();
+        });
   }
 
-  //AGGIUNTO RECENTE!
+
   // Nel tuo ProfileViewModel:
   Future<void> reloadProfile() async {
     final user = _authRepository.currentFirebaseUser;
@@ -113,6 +156,7 @@ class ProfileViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _profileSubscription?.cancel();
     super.dispose();
   }
