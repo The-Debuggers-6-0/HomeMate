@@ -26,6 +26,7 @@ class AuthViewModel extends ChangeNotifier {
   AppUser? _userProfile;
   bool _isLoading = true;
   StreamSubscription<User?>? _authSubscription;
+  StreamSubscription<AppUser?>? _profileSubscription;
 
   AuthViewModel({
     required AuthRepository authRepository,
@@ -47,6 +48,7 @@ class AuthViewModel extends ChangeNotifier {
     );
   }
 
+  /*
   Future<void> _onAuthStateChanged(User? user) async {
     _isLoading = true;
     notifyListeners();
@@ -74,9 +76,36 @@ class AuthViewModel extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
-  }
-  
+  }*/
 
+  Future<void> _onAuthStateChanged(User? user) async {
+    _isLoading = true;
+    notifyListeners();
+
+    if (user == null) {
+      _firebaseUser = null;
+      _userProfile = null;
+      _profileSubscription?.cancel(); // Stacchiamo la spina se esce
+      _status = AuthStatus.unauthenticated;
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    _firebaseUser = user;
+
+    if (!user.emailVerified) {
+      _status = AuthStatus.emailNotVerified;
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    // Invece di leggere una volta sola, facciamo partire il "video in diretta"!
+    _startListeningToUserProfile(user.uid);
+  }
+
+  /*
   Future<void> _loadUserProfile(String uid) async {
     try {
       _userProfile = await _userRepository.getUserProfile(uid);
@@ -91,6 +120,37 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       _status = AuthStatus.profileIncomplete;
     }
+  }*/
+
+  void _startListeningToUserProfile(String uid) {
+    _profileSubscription?.cancel(); // Sicurezza anti-doppioni
+
+    _profileSubscription = _userRepository
+        .getUserProfileStream(uid)
+        .listen(
+          (profile) {
+            _userProfile = profile;
+
+            // Il nostro fidato Cane da Guardia!
+            if (_userProfile == null ||
+                !_userProfile!.profileCompleted ||
+                _userProfile!.name.trim().isEmpty) {
+              _status = AuthStatus.profileIncomplete;
+            } else if (_userProfile!.homeId.isEmpty) {
+              _status = AuthStatus.noHouse;
+            } else {
+              _status = AuthStatus.authenticated;
+            }
+
+            _isLoading = false;
+            notifyListeners(); // Questo aggiornerà istantaneamente la Home!
+          },
+          onError: (e) {
+            _status = AuthStatus.profileIncomplete;
+            _isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
   /// Forza il ricaricamento dello stato (es. dopo aver completato il profilo).
@@ -105,6 +165,7 @@ class AuthViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _authSubscription?.cancel();
+    _profileSubscription?.cancel();
     super.dispose();
   }
 }
