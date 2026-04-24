@@ -20,7 +20,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  final Color _titleGreen = const Color(0xFF324A3D);
   final Color _inputBg = const Color(0xFFE5E3DD);
 
   @override
@@ -80,25 +79,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             children: [
-              // --- ICONA CASA IN ALTO ---
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD3E4D8),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.home, size: 40,
-                      color: Color(0xFF324A3D)),
-                ),
-              ),
-              const SizedBox(height: 32),
 
               // --- TITOLO ---
               Text(
                 "Registrati",
                 style: TextStyle(
-                  color: _titleGreen,
+                  color: AppColors.primaryDark,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
@@ -123,7 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black,
+                      color: Colors.black.withAlpha(13),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -208,11 +194,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 40),
               // Footer: Accedi ora
               Center(
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text("Hai già un account?",
-                        style: TextStyle(color: Colors.grey, fontSize: 14)),
-                    const SizedBox(height: 8),
+                        style: TextStyle(color: Colors.grey, fontSize: 16)),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: const Text(
@@ -221,7 +207,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           color: Color(0xFF324A3D),
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ),

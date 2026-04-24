@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:homemate/ui/core/themes/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../view_model/auth_view_model.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -146,7 +147,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     TextSpan(
                         text: "Inviane un'altra",
                         style: TextStyle(
-                            color: darkGreen, fontWeight: FontWeight.bold)),
+                            color: AppColors.primaryDark, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),

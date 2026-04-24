@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_model/forgot_password_view_model.dart';
+import '../../core/themes/app_colors.dart';
 
 /// Schermata di recupero password. View pura che delega al [ForgotPasswordViewModel].
 class ForgotPasswordScreen extends StatefulWidget {
@@ -82,7 +83,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E1E1E),
+                    color: AppColors.primaryDark,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -135,7 +136,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ElevatedButton(
                   onPressed: viewModel.isLoading ? null : _handleReset,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF758D7B),
+                    backgroundColor: AppColors.primaryGreen,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(

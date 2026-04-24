@@ -50,6 +50,8 @@ class CustomUserHeader extends StatelessWidget {
                     : null,
               ),
             ),
+
+            SizedBox(width: 20), // Spazio tra foto e testi
             
             // Testi ("BENTORNATO" + "Ciao, nome")
             Column(

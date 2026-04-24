@@ -9,8 +9,11 @@ class AppColors {
   
   // Colore di sfondo delle card e dei contenitori principali
   static const Color cardBackground = Colors.white;
-  
+
   // Colore del testo principale (titoli e scritte importanti)
+  static const Color primaryDark = Color(0xFF4A6054);
+  
+  // Colore delle indicazioni importanti
   static const Color textPrimary = Color(0xFF2D3142);
   
   // Colore del testo secondario (descrizioni, date o scritte meno rilevanti)
@@ -23,7 +26,6 @@ class AppColors {
   static const Color accentGreen = Color(0xFF81C784);
 
   // --- Colori per la sezione Finanze ---
-  static const Color primaryDark = Color(0xFF4A6054);
   static const Color finanzeBackground = Color(0xFFF6F5F2);
   static const Color lightGreen = Color(0xFFC8E6C9);
   static const Color textGreen = Color(0xFF5A7D6C);

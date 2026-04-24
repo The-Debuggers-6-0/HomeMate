@@ -19,7 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  final Color _titleGreen = const Color(0xFF324A3D);
   final Color _inputBg = const Color(0xFFE5E3DD);
 
   @override
@@ -67,15 +66,17 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 60),
+              const SizedBox(width: double.infinity),
+
+              const SizedBox(height: 50),
 
               // --- INTESTAZIONE ---
               Text(
                 "Bentornato a casa",
                 style: TextStyle(
-                  color: _titleGreen,
+                  color: AppColors.primaryDark,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
@@ -83,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 12),
               const Text(
                 "Gestire la tua convivenza non è mai\nstato così semplice ed elegante.",
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey,
                   fontSize: 15,
@@ -99,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withAlpha(13),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -241,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           builder: (_) => const RegisterScreen())),
                   child: RichText(
                     text: const TextSpan(
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
                       children: [
                         TextSpan(text: "Non hai un account? "),
                         TextSpan(
