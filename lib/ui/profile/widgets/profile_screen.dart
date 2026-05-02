@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 import 'package:provider/provider.dart';
 import '../view_model/profile_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import 'edit_profile_screen.dart';
-import 'dart:convert';
 import '../../../ui/auth/widgets/login_screen.dart';
+import '../../house/widgets/add_house_screen.dart';
 
 /// Schermata Profilo. View pura che legge i dati da [ProfileViewModel].
 class ProfileScreen extends StatelessWidget {
@@ -39,14 +41,14 @@ class ProfileScreen extends StatelessWidget {
           // <--- 1. AGGIUNTO SIZEDBOX
           width: double
               .infinity, // <--- 2. PRENDE TUTTA LA LARGHEZZA DELLO SCHERMO
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 16.0,
-            ),
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.center, // <--- 3. CENTRA GLI ELEMENTI
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center, // <--- 3. CENTRA GLI ELEMENTI
               children: [
                 const SizedBox(height: 48),
 
@@ -153,7 +155,15 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
 
-                const Spacer(),
+                const SizedBox(height: 32),
+
+                // --- ZONA LA MIA CASA ---
+                if (viewModel.currentHouse != null)
+                  _buildHouseSection(context, viewModel),
+                if (viewModel.currentHouse == null)
+                  const Text("Non fai ancora parte di una casa.", style: TextStyle(color: Colors.grey)),
+                  
+                const SizedBox(height: 48),
 
                 /*
               // --- PULSANTE LOGOUT ---
@@ -510,13 +520,209 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(
-                  height: 32,
-                ), // Spazio finale dal fondo dello schermo
+                const SizedBox(height: 32),
               ],
             ),
           ),
         ),
+      ),
+    ),
+    );
+  }
+
+  void _mostraDialogModificaNome(BuildContext context, ProfileViewModel viewModel) {
+    final TextEditingController nameController = TextEditingController(text: viewModel.currentHouse!.nome);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Modifica Nome Casa'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(hintText: 'Nuovo nome...'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annulla'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.trim().isNotEmpty) {
+                await viewModel.updateHouseName(nameController.text);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Salva'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confermaAbbandono(BuildContext context, ProfileViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Abbandona Casa'),
+        content: const Text('Sei sicuro di voler abbandonare questa casa? Non potrai più accedere ai dati finché non sarai invitato di nuovo.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annulla'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(dialogContext); // Chiude il dialog
+              final success = await viewModel.leaveHouse();
+              if (success && context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AddHouseScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Abbandona', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHouseSection(BuildContext context, ProfileViewModel viewModel) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.finanzeBackground,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        viewModel.currentHouse!.nome,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20, color: AppColors.textSecondary),
+                      onPressed: () => _mostraDialogModificaNome(context, viewModel),
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: viewModel.currentHouse!.id));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text("Codice casa copiato negli appunti!"),
+                      backgroundColor: AppColors.primaryGreen,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primaryGreen),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        viewModel.currentHouse!.id,
+                        style: const TextStyle(
+                          color: AppColors.primaryGreen,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.copy, size: 14, color: AppColors.primaryGreen),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "Membri della casa",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Mostra avatar orizzontali dei coinquilini
+          SizedBox(
+            height: 80,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: viewModel.roommates.length,
+              itemBuilder: (context, index) {
+                final roommate = viewModel.roommates[index];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: AppColors.lightGreen,
+                        backgroundImage: (roommate.photoUrl != null && roommate.photoUrl!.isNotEmpty)
+                            ? MemoryImage(base64Decode(roommate.photoUrl!))
+                            : null,
+                        child: (roommate.photoUrl == null || roommate.photoUrl!.isEmpty)
+                            ? Text(
+                                roommate.name.isNotEmpty ? roommate.name[0].toUpperCase() : '?',
+                                style: const TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.bold),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        roommate.name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Colors.red.shade400),
+              icon: const Icon(Icons.exit_to_app),
+              label: const Text('Abbandona Casa', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: () => _confermaAbbandono(context, viewModel),
+            ),
+          ),
+        ],
       ),
     );
   }

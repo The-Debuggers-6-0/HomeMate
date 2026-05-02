@@ -18,13 +18,14 @@ class HouseRepository {
   Future<String> createHouse({
     required String uid,
     required String displayName,
+    String? customName,
   }) async {
     final code = _houseService.generateHouseCode();
 
     await _houseService.createHouse(
       code: code,
       adminUid: uid,
-      nome: 'Casa di $displayName',
+      nome: (customName != null && customName.trim().isNotEmpty) ? customName.trim() : 'Casa di $displayName',
     );
 
     await _userService.updateUser(uid, {'homeId': code});
@@ -47,8 +48,31 @@ class HouseRepository {
     return true;
   }
 
+  /// Abbandona una casa.
+  /// Rimuove l'utente dai membri della casa e cancella l'homeId dal suo profilo.
+  Future<void> leaveHouse({
+    required String uid,
+    required String code,
+  }) async {
+    await _houseService.removeMember(code, uid);
+    await _userService.updateUser(uid, {'homeId': ''});
+  }
+
+  /// Aggiorna il nome della casa.
+  Future<void> updateHouseName({
+    required String code,
+    required String newName,
+  }) async {
+    await _houseService.updateHouseName(code, newName);
+  }
+
   /// Ottiene una casa dato il suo codice.
   Future<House?> getHouse(String code) {
     return _houseService.getHouse(code);
+  }
+
+  /// Ottiene una casa in tempo reale dato il suo codice.
+  Stream<House?> getHouseStream(String code) {
+    return _houseService.getHouseStream(code);
   }
 }

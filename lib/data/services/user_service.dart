@@ -94,4 +94,21 @@ class UserService {
   Future<void> deleteUser(String uid) async {
     await _usersCollection.doc(uid).delete();
   }
+
+//recupero l'elenco di tutti gli utenti di un gruppo tramite i loro UID (dal documento House)
+  Stream<List<AppUser>> getRoommatesStream(List<String> memberIds) {
+    if (memberIds.isEmpty) return Stream.value([]);
+    
+    // Per sicurezza limitiamo agli array supportati da Firestore
+    final queryIds = memberIds.length > 30 ? memberIds.sublist(0, 30) : memberIds;
+
+    return _usersCollection
+        .where(FieldPath.documentId, whereIn: queryIds)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => AppUser.fromFirestore(doc.id, doc.data()!))
+              .toList();
+        });
+  }
 }

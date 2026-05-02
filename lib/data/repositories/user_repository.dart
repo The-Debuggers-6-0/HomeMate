@@ -45,4 +45,9 @@ class UserRepository {
   Future<void> deleteProfile(String uid) {
     return _userService.deleteUser(uid);
   }
+
+  /// Recupera l'elenco degli utenti passandogli gli UID salvati nella casa.
+  Stream<List<AppUser>> getRoommatesStream(List<String> memberIds) {
+    return _userService.getRoommatesStream(memberIds);
+  }
 }

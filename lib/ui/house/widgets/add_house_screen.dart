@@ -17,16 +17,18 @@ class AddHouseScreen extends StatefulWidget {
 
 class _AddHouseScreenState extends State<AddHouseScreen> {
   final TextEditingController _codiceController = TextEditingController();
+  final TextEditingController _houseNameController = TextEditingController();
 
   @override
   void dispose() {
     _codiceController.dispose();
+    _houseNameController.dispose();
     super.dispose();
   }
 
   Future<void> _handleCreateHouse() async {
     final viewModel = context.read<HouseViewModel>();
-    final success = await viewModel.createHouse();
+    final success = await viewModel.createHouse(customName: _houseNameController.text);
 
     if (!mounted) return;
 
@@ -239,6 +241,36 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'NOME DELLA CASA (Opzionale)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _houseNameController,
+                    decoration: InputDecoration(
+                      hintText: 'Es. Casa Studenti...',
+                      filled: true,
+                      fillColor: Colors.grey.shade200,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

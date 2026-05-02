@@ -26,7 +26,7 @@ class HouseViewModel extends ChangeNotifier {
 
   /// Crea una nuova casa.
   /// Restituisce true se la creazione ha successo.
-  Future<bool> createHouse() async {
+  Future<bool> createHouse({String? customName}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -38,6 +38,7 @@ class HouseViewModel extends ChangeNotifier {
       _createdCode = await _houseRepository.createHouse(
         uid: user.uid,
         displayName: user.displayName ?? 'Nuovo Utente',
+        customName: customName,
       );
 
       notifyListeners();

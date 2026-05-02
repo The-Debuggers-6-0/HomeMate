@@ -47,4 +47,36 @@ class HouseService {
     });
   }
 
+  /// Rimuove un membro dalla casa.
+  Future<void> removeMember(String code, String uid) {
+    return _housesCollection.doc(code).update({
+      'membri': FieldValue.arrayRemove([uid]),
+    });
+  }
+
+  /// Aggiorna il nome della casa.
+  Future<void> updateHouseName(String code, String newName) {
+    return _housesCollection.doc(code).update({
+      'nome': newName,
+    });
+  }
+
+  /// Recupera lo stream di una casa dato il suo codice.
+  Stream<House?> getHouseStream(String code) {
+    return _housesCollection.doc(code).snapshots().map((snapshot) {
+      if (!snapshot.exists || snapshot.data() == null) return null;
+      return House.fromFirestore(code, snapshot.data()!);
+    });
+  }
+
+  /// Recupera lo stream dei membri di una casa dato il suo codice.
+  Stream<List<dynamic>> getMemberIdsByHomeIdStream(String homeId) {
+    return _housesCollection
+        .doc(homeId)
+        .snapshots()
+        .map((snapshot) {
+          if (!snapshot.exists || snapshot.data() == null) return [];
+          return snapshot.data()!['membri'] as List<dynamic>;
+        });
+  }
 }

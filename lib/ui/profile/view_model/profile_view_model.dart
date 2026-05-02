@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../domain/models/app_user.dart';
+import '../../../domain/models/house.dart';
+import '../../../data/repositories/house_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// ViewModel per la schermata Profilo.
@@ -10,10 +12,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 class ProfileViewModel extends ChangeNotifier {
   final UserRepository _userRepository;
   final AuthRepository _authRepository;
+  final HouseRepository _houseRepository;
 
   AppUser? _userProfile;
+  House? _currentHouse;
+  List<AppUser> _roommates = [];
+
   bool _isLoading = true;
   StreamSubscription<AppUser?>? _profileSubscription;
+  StreamSubscription<House?>? _houseSubscription;
+  StreamSubscription<List<AppUser>>? _roommatesSubscription;
 
   StreamSubscription<User?>? _authSubscription;
 
@@ -29,8 +37,10 @@ class ProfileViewModel extends ChangeNotifier {
   ProfileViewModel({
     required UserRepository userRepository,
     required AuthRepository authRepository,
+    required HouseRepository houseRepository,
   }) : _userRepository = userRepository,
-       _authRepository = authRepository {
+       _authRepository = authRepository,
+       _houseRepository = houseRepository {
     
     // Il "cane da guardia" che ascolta gli accessi e le uscite
     _authSubscription = _authRepository.authStateChanges().listen((user) {
@@ -39,9 +49,10 @@ class ProfileViewModel extends ChangeNotifier {
         _startListeningToProfile(user.uid);
       } else {
         // L'utente è uscito o è stato eliminato: STACCHIAMO TUTTO!
-        _profileSubscription?.cancel();
-        _profileSubscription = null;
+        _cancelAllSubscriptions();
         _userProfile = null;
+        _currentHouse = null;
+        _roommates = [];
         notifyListeners();
       }
     });
@@ -49,11 +60,23 @@ class ProfileViewModel extends ChangeNotifier {
 
   // --- Getters pubblici ---
   AppUser? get userProfile => _userProfile;
+  House? get currentHouse => _currentHouse;
+  List<AppUser> get roommates => _roommates;
+
   bool get isLoading => _isLoading;
   String get displayName => _userProfile?.name ?? 'Utente';
   String get fullName =>
       '${_userProfile?.name ?? ''} ${_userProfile?.surname ?? ''}'.trim();
   String get bio => _userProfile?.bio ?? _userProfile?.email ?? '';
+
+  void _cancelAllSubscriptions() {
+    _profileSubscription?.cancel();
+    _profileSubscription = null;
+    _houseSubscription?.cancel();
+    _houseSubscription = null;
+    _roommatesSubscription?.cancel();
+    _roommatesSubscription = null;
+  }
 
   /*
   /// Inizializza il ViewModel.
@@ -84,10 +107,44 @@ class ProfileViewModel extends ChangeNotifier {
     _profileSubscription = _userRepository
         .getUserProfileStream(uid)
         .listen((profile) {
+          final previousHomeId = _userProfile?.homeId;
           _userProfile = profile;
+          
+          // Se la casa è cambiata o appena arrivata, aggiorniamo l'ascolto
+          if (profile != null && profile.homeId.isNotEmpty && profile.homeId != previousHomeId) {
+            _startListeningToHouse(profile.homeId);
+          } else if (profile?.homeId == null || profile!.homeId.isEmpty) {
+            _houseSubscription?.cancel();
+            _roommatesSubscription?.cancel();
+            _currentHouse = null;
+            _roommates = [];
+          }
+
           _isLoading = false;
           notifyListeners();
         });
+  }
+
+  void _startListeningToHouse(String homeId) {
+    _houseSubscription?.cancel();
+    _roommatesSubscription?.cancel();
+
+    _houseSubscription = _houseRepository.getHouseStream(homeId).listen((house) {
+      _currentHouse = house;
+      notifyListeners();
+
+      // Quando riceviamo la casa (o si aggiorna), ascoltiamo tutti i suoi membri
+      _roommatesSubscription?.cancel();
+      if (house != null && house.membri.isNotEmpty) {
+        _roommatesSubscription = _userRepository.getRoommatesStream(house.membri).listen((users) {
+          _roommates = users;
+          notifyListeners();
+        });
+      } else {
+        _roommates = [];
+        notifyListeners();
+      }
+    });
   }
 
 
@@ -113,6 +170,44 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> leaveHouse() async {
+    final uid = _userProfile?.uid;
+    final code = _currentHouse?.id;
+    
+    if (uid == null || code == null) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _houseRepository.leaveHouse(uid: uid, code: code);
+      _houseSubscription?.cancel();
+      _roommatesSubscription?.cancel();
+      _currentHouse = null;
+      _roommates = [];
+      return true;
+    } catch (e) {
+      debugPrint("Errore durante l'abbandono della casa: $e");
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateHouseName(String newName) async {
+    final code = _currentHouse?.id;
+    if (code == null || newName.trim().isEmpty) return false;
+
+    try {
+      await _houseRepository.updateHouseName(code: code, newName: newName.trim());
+      return true;
+    } catch (e) {
+      debugPrint("Errore nell'aggiornamento del nome: $e");
+      return false;
+    }
+  }
+
   /// Esegue il logout.
   Future<void> logout() async {
     await _authRepository.logout();
@@ -128,8 +223,7 @@ class ProfileViewModel extends ChangeNotifier {
 
       try {
         // 1. STACCHIAMO LA CORRENTE: cancella ogni ascolto al database
-        _profileSubscription?.cancel();
-        _profileSubscription = null;
+        _cancelAllSubscriptions();
 
         // 2. Eliminiamo i dati da Firestore
         await _userRepository.deleteProfile(user.uid);
@@ -162,7 +256,7 @@ class ProfileViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _authSubscription?.cancel();
-    _profileSubscription?.cancel();
+    _cancelAllSubscriptions();
     super.dispose();
   }
 }

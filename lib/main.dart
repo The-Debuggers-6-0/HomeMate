@@ -119,6 +119,7 @@ class MyApp extends StatelessWidget {
           create: (_) => ProfileViewModel(
             userRepository: userRepository,
             authRepository: authRepository,
+            houseRepository: houseRepository,
           ),
         ),
         ChangeNotifierProvider<EditProfileViewModel>(
