@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../themes/app_colors.dart';
 
 /// Widget condiviso per mostrare uno stato di caricamento centrato.
 class LoadingOverlay extends StatelessWidget {
@@ -6,13 +7,13 @@ class LoadingOverlay extends StatelessWidget {
 
   const LoadingOverlay({
     super.key,
-    this.color = const Color(0xFF2C5542),
+    this.color = AppColors.primaryDark,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAF9),
+      backgroundColor: AppColors.background,
       body: Center(
         child: CircularProgressIndicator(color: color),
       ),

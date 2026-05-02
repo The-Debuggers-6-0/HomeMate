@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
 import '../view_model/edit_profile_view_model.dart';
-import '../../auth/view_model/auth_view_model.dart';
+import '../view_model/profile_view_model.dart';
 import 'dart:io'; // Per usare la classe File
 import 'package:image_picker/image_picker.dart'; // Pacchetto per la selezione delle immagini
 import 'dart:convert'; // Per la codifica e decodifica base64
@@ -205,9 +205,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               height: 56,
               child: ElevatedButton(
                 onPressed: () async {
-                  // 1. Leggiamo l'utente attuale dall'AuthViewModel (senza ricaricare la pagina)
-                  final authViewModel = context.read<AuthViewModel>();
-                  final currentUser = authViewModel.userProfile;
+                  // 1. Leggiamo l'utente attuale dal ProfileViewModel
+                  final profileViewModel = context.read<ProfileViewModel>();
+                  final currentUser = profileViewModel.userProfile;
 
                   // Controllo di sicurezza: se per qualche motivo l'utente non c'è, ci fermiamo
                   if (currentUser == null) {

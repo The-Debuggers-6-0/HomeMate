@@ -4,6 +4,10 @@ import 'package:homemate/ui/core/themes/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../view_model/auth_view_model.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../setup_profile/widgets/setup_profile_screen.dart';
+import '../../house/widgets/add_house_screen.dart';
+import '../../main_layout/widgets/main_layout.dart';
+import 'login_screen.dart';
 
 /// Schermata di verifica email.
 /// Il polling per controllare la verifica è gestito internamente,
@@ -16,14 +20,18 @@ class VerifyEmailScreen extends StatefulWidget {
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  final Color darkGreen = const Color(0xFF2C5542);
-  final Color greyTextColor = const Color(0xFF707070);
+  // Colori sostituiti con AppColors
 
   Timer? _timer;
+  late final String _email;
 
   @override
   void initState() {
     super.initState();
+    // Salva l'email una volta sola
+    final authViewModel = context.read<AuthViewModel>();
+    _email = authViewModel.currentFirebaseUser?.email ?? 'tua email';
+
     // Controlla ogni 3 secondi se l'email è stata verificata
     _timer = Timer.periodic(
         const Duration(seconds: 3), (_) => _checkEmailVerified());
@@ -37,8 +45,37 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
   Future<void> _checkEmailVerified() async {
     final authViewModel = context.read<AuthViewModel>();
-    await authViewModel.refreshAuthState();
-    // Se lo stato cambia, AuthChecker mostrerà automaticamente la schermata corretta
+    final route = await authViewModel.getNextRoute();
+
+    if (!mounted) return;
+
+    // Se la route non è più 'verifyEmail', l'utente ha verificato!
+    if (route != 'verifyEmail') {
+      _timer?.cancel();
+      _navigateToRoute(route);
+    }
+  }
+
+  /// Naviga verso la schermata indicata dalla route.
+  void _navigateToRoute(String route) {
+    Widget nextScreen;
+    switch (route) {
+      case 'setupProfile':
+        nextScreen = const SetupProfileScreen();
+        break;
+      case 'addHouse':
+        nextScreen = const AddHouseScreen();
+        break;
+      case 'home':
+        nextScreen = const MainLayout();
+        break;
+      default:
+        nextScreen = const LoginScreen();
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => nextScreen),
+    );
   }
 
   Future<void> _sendVerificationEmail() async {
@@ -49,7 +86,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: const Text("Nuova email inviata!"),
-            backgroundColor: darkGreen),
+            backgroundColor: AppColors.primaryGreen),
       );
     } catch (e) {
       if (!mounted) return;
@@ -64,25 +101,27 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   Future<void> _logout() async {
     final authRepo = context.read<AuthRepository>();
     await authRepo.logout();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final authViewModel = context.watch<AuthViewModel>();
-    final email = authViewModel.firebaseUser?.email ?? 'tua email';
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FBF9),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: darkGreen),
+          icon: const Icon(Icons.arrow_back, color: AppColors.primaryDark),
           onPressed: _logout,
         ),
         title: const Text("HomeMate",
             style: TextStyle(
-                color: Color(0xFF2C5542), fontWeight: FontWeight.bold)),
+                color: AppColors.primaryDark, fontWeight: FontWeight.bold)),
         centerTitle: false,
       ),
       body: Padding(
@@ -93,17 +132,17 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: const Color(0xFFE9EFE9),
+                color: AppColors.lightGreen,
                 borderRadius: BorderRadius.circular(32),
               ),
-              child: Icon(Icons.mark_email_read_rounded,
-                  size: 80, color: darkGreen),
+              child: const Icon(Icons.mark_email_read_rounded,
+                  size: 80, color: AppColors.primaryDark),
             ),
             const SizedBox(height: 40),
             Text(
               "Verifica la tua mail",
-              style: TextStyle(
-                  fontSize: 32, fontWeight: FontWeight.bold, color: darkGreen),
+              style: const TextStyle(
+                  fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -111,12 +150,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               textAlign: TextAlign.center,
               text: TextSpan(
                 style:
-                    TextStyle(color: greyTextColor, fontSize: 16, height: 1.5),
+                    const TextStyle(color: AppColors.textSecondary, fontSize: 16, height: 1.5),
                 children: [
                   const TextSpan(
                       text: "Abbiamo inviato un link di conferma a\n"),
                   TextSpan(
-                      text: email,
+                      text: _email,
                       style: const TextStyle(
                           color: Colors.black87, fontWeight: FontWeight.bold)),
                   const TextSpan(
@@ -126,13 +165,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               ),
             ),
             const SizedBox(height: 40),
-            CircularProgressIndicator(color: darkGreen),
+            const CircularProgressIndicator(color: AppColors.primaryDark),
             const SizedBox(height: 48),
             TextButton(
               onPressed: _logout,
               child: Text("Torna al Login",
                   style: TextStyle(
-                      color: darkGreen,
+                      color: AppColors.primaryDark,
                       fontSize: 16,
                       fontWeight: FontWeight.bold)),
             ),
@@ -141,7 +180,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               onTap: _sendVerificationEmail,
               child: RichText(
                 text: TextSpan(
-                  style: TextStyle(color: greyTextColor, fontSize: 14),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
                   children: [
                     const TextSpan(text: "Non hai ricevuto l'email? "),
                     TextSpan(

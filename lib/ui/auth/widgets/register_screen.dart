@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../view_model/register_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/ui/loading_overlay.dart';
+import 'verify_email_screen.dart';
 
 /// Schermata di registrazione. View pura che delega tutta la logica al [RegisterViewModel].
 class RegisterScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  final Color _inputBg = const Color(0xFFE5E3DD);
+  // Colori standardizzati
 
   @override
   void dispose() {
@@ -41,12 +42,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Registrazione completata! Verifica la tua email."),
-          backgroundColor: AppColors.primaryGreen,
-        ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const VerifyEmailScreen()),
       );
     } else {
       _showErrorSnackBar(
@@ -204,7 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: const Text(
                         "Accedi ora",
                         style: TextStyle(
-                          color: Color(0xFF324A3D),
+                          color: AppColors.primaryDark,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -231,7 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: _inputBg,
+        color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(

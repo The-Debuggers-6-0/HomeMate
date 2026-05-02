@@ -13,7 +13,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
-  final Color darkGreen = const Color(0xFF2C5542);
 
   @override
   void dispose() {
@@ -31,12 +30,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (success) {
       _showSnackBar(
           "Link inviato! Se l'email è registrata, riceverai un messaggio.",
-          darkGreen);
+          AppColors.primaryGreen);
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) Navigator.pop(context);
       });
     } else if (viewModel.errorMessage != null) {
-      _showSnackBar(viewModel.errorMessage!, Colors.redAccent);
+      _showSnackBar(viewModel.errorMessage!, AppColors.accentRed);
     }
   }
 
@@ -51,7 +50,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final viewModel = context.watch<ForgotPasswordViewModel>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F7),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -67,11 +66,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEBEFEB),
+                      color: AppColors.lightGreen,
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: Icon(Icons.restore_page_outlined,
-                        size: 40, color: darkGreen),
+                    child: const Icon(Icons.restore_page_outlined,
+                        size: 40, color: AppColors.primaryDark),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -94,7 +93,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Color(0xFF5A5A5A),
+                    color: AppColors.textSecondary,
                     height: 1.4,
                   ),
                 ),
@@ -104,7 +103,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const Text(
                   "Email",
                   style: TextStyle(
-                    color: Color(0xFF1E1E1E),
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -112,18 +111,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE2E4E2),
+                    color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: TextField(
-                    controller: _emailController,
+                  child: const TextField(
                     keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(color: Colors.black87),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: "nome@esempio.it",
-                      hintStyle: TextStyle(color: Colors.black38),
-                      suffixIcon:
-                          Icon(Icons.mail_outline, color: Color(0xFF5A5A5A)),
+                      hintStyle: TextStyle(color: AppColors.textSecondary),
+                      suffixIcon: Icon(Icons.mail_outline, color: AppColors.textSecondary),
                       border: InputBorder.none,
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -137,7 +133,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   onPressed: viewModel.isLoading ? null : _handleReset,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.cardBackground,
                     minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -149,7 +145,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
+                              color: AppColors.cardBackground, strokeWidth: 2))
                       : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -170,13 +166,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   child: TextButton.icon(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back,
-                        color: Color(0xFF5A5A5A), size: 16),
+                        color: AppColors.textSecondary, size: 16),
                     label: Container(
                       padding: const EdgeInsets.only(bottom: 2),
                       decoration: const BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
-                            color: Color(0xFF5A5A5A),
+                            color: AppColors.textSecondary,
                             width: 1.0,
                           ),
                         ),
@@ -184,7 +180,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       child: const Text(
                         "Torna al login",
                         style: TextStyle(
-                          color: Color(0xFF5A5A5A),
+                          color: AppColors.textSecondary,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),

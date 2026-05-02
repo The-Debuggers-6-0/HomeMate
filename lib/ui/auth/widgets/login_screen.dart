@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_model/login_view_model.dart';
+import '../view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/ui/loading_overlay.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import 'verify_email_screen.dart';
+import '../../setup_profile/widgets/setup_profile_screen.dart';
+import '../../house/widgets/add_house_screen.dart';
+import '../../main_layout/widgets/main_layout.dart';
 
 /// Schermata di login. View pura che delega tutta la logica al [LoginViewModel].
 class LoginScreen extends StatefulWidget {
@@ -18,8 +23,57 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isCheckingAuth = true;
 
-  final Color _inputBg = const Color(0xFFE5E3DD);
+  // Colori standardizzati
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAlreadyLoggedIn();
+  }
+
+  /// Controlla se l'utente è già loggato (es. riapertura app).
+  /// Se sì, naviga direttamente alla schermata corretta.
+  Future<void> _checkAlreadyLoggedIn() async {
+    final authViewModel = context.read<AuthViewModel>();
+    final user = authViewModel.currentFirebaseUser;
+
+    if (user != null) {
+      final route = await authViewModel.getNextRoute();
+      if (!mounted) return;
+      _navigateToRoute(route);
+    }
+
+    if (mounted) {
+      setState(() => _isCheckingAuth = false);
+    }
+  }
+
+  /// Naviga verso la schermata indicata dalla route.
+  void _navigateToRoute(String route) {
+    Widget nextScreen;
+    switch (route) {
+      case 'verifyEmail':
+        nextScreen = const VerifyEmailScreen();
+        break;
+      case 'setupProfile':
+        nextScreen = const SetupProfileScreen();
+        break;
+      case 'addHouse':
+        nextScreen = const AddHouseScreen();
+        break;
+      case 'home':
+        nextScreen = const MainLayout();
+        break;
+      default:
+        return; // Resta su LoginScreen
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => nextScreen),
+    );
+  }
 
   @override
   void dispose() {
@@ -35,17 +89,30 @@ class _LoginScreenState extends State<LoginScreen> {
       _passwordController.text.trim(),
     );
 
-    if (!success && mounted) {
+    if (!mounted) return;
+
+    if (success) {
+      final authViewModel = context.read<AuthViewModel>();
+      final route = await authViewModel.getNextRoute();
+      if (!mounted) return;
+      _navigateToRoute(route);
+    } else {
       _showErrorSnackBar(viewModel.errorMessage ?? 'Errore durante il login.');
     }
-    // Se success, AuthViewModel rileverà il cambiamento di auth state automaticamente.
   }
 
   Future<void> _handleGoogleLogin() async {
     final viewModel = context.read<LoginViewModel>();
     final success = await viewModel.loginWithGoogle();
 
-    if (!success && mounted) {
+    if (!mounted) return;
+
+    if (success) {
+      final authViewModel = context.read<AuthViewModel>();
+      final route = await authViewModel.getNextRoute();
+      if (!mounted) return;
+      _navigateToRoute(route);
+    } else {
       _showErrorSnackBar(viewModel.errorMessage ?? 'Errore Google Sign-In.');
     }
   }
@@ -58,6 +125,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Se stiamo controllando la sessione, mostra un caricamento
+    if (_isCheckingAuth) {
+      return const LoadingOverlay();
+    }
+
     final viewModel = context.watch<LoginViewModel>();
 
     return Scaffold(
@@ -212,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
-                          backgroundColor: const Color(0xFFF9F9F8),
+                          backgroundColor: Colors.grey.shade50,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -249,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextSpan(
                           text: "Registrati ora",
                           style: TextStyle(
-                              color: Color(0xFF324A3D),
+                              color: AppColors.primaryDark,
                               fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -272,7 +344,7 @@ class _LoginScreenState extends State<LoginScreen> {
       bool isPassword = false}) {
     return Container(
       decoration: BoxDecoration(
-        color: _inputBg,
+        color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(

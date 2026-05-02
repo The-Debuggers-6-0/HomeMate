@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_model/home_view_model.dart';
 import '../../core/themes/app_colors.dart';
-import 'dart:convert'; // Serve per decodificare l'immagine in base64
-import '../../auth/view_model/auth_view_model.dart';
 import '../../core/ui/custom_user_header.dart'; // Import del widget personalizzato
 
 /// Schermata Home (dashboard). View pura che legge i dati da [HomeViewModel].

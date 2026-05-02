@@ -26,7 +26,7 @@ import 'ui/profile/view_model/profile_view_model.dart';
 import 'ui/profile/view_model/edit_profile_view_model.dart';
 
 // --- UI Layer: Root Widget ---
-import 'ui/auth/widgets/auth_checker.dart';
+import 'ui/auth/widgets/login_screen.dart';
 import 'ui/core/themes/app_colors.dart';
 
 Future<void> main() async {
@@ -123,7 +123,7 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<EditProfileViewModel>(
           create: (_) => EditProfileViewModel(
-            userRepository: userRepository, // Gli passiamo il repository che abbiamo già creato nel main!
+            userRepository: userRepository,
           ),
         ),
       ],
@@ -135,7 +135,7 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: AppColors.background,
           useMaterial3: true,
         ),
-        home: const AuthChecker(),
+        home: const LoginScreen(),
       ),
     );
   }

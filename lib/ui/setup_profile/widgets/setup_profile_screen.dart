@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import '../view_model/setup_profile_view_model.dart';
 import '../../../ui/auth/view_model/auth_view_model.dart';
 import '../../core/ui/loading_overlay.dart';
+import '../../house/widgets/add_house_screen.dart';
+import '../../main_layout/widgets/main_layout.dart';
 import 'dart:io'; // Per usare la classe File
 import 'package:image_picker/image_picker.dart'; // Pacchetto per la selezione delle immagini
-import 'dart:convert'; // Per la codifica e decodifica base64
+import '../../core/themes/app_colors.dart';
 
 /// Schermata di configurazione profilo. View pura che delega al [SetupProfileViewModel].
 class SetupProfileScreen extends StatefulWidget {
@@ -20,11 +22,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
   final _surnameController = TextEditingController();
   final _bioController = TextEditingController();
 
-  final Color _buttonGreen = const Color(0xFF758D7B);
-  final Color _backgroundColor = const Color(0xFFF9FAF9);
-  final Color _fieldColor = const Color(0xFFEAECEA);
-  final Color _textColor = const Color(0xFF1E1E1E);
-  final Color _subtitleColor = const Color(0xFF5A5A5A);
+  // Colori sostituiti con AppColors e standard Colors
 
   // Aggiungi questa variabile
   File? _selectedImage;
@@ -67,8 +65,26 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Refresh dell'AuthViewModel per passare allo stato successivo
-      await context.read<AuthViewModel>().refreshAuthState();
+      // Determina la prossima schermata e naviga
+      final authViewModel = context.read<AuthViewModel>();
+      final route = await authViewModel.getNextRoute();
+      if (!mounted) return;
+
+      Widget nextScreen;
+      switch (route) {
+        case 'addHouse':
+          nextScreen = const AddHouseScreen();
+          break;
+        case 'home':
+          nextScreen = const MainLayout();
+          break;
+        default:
+          return;
+      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => nextScreen),
+      );
     } else if (viewModel.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -84,7 +100,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
     final viewModel = context.watch<SetupProfileViewModel>();
 
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
@@ -96,7 +112,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
-                  color: _textColor,
+                  color: AppColors.textPrimary,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -105,7 +121,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                 "Completa il tuo profilo per iniziare a\ngestire la casa con armonia.",
                 style: TextStyle(
                   fontSize: 16,
-                  color: _subtitleColor,
+                  color: AppColors.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -122,7 +138,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 50,
-                            backgroundColor: const Color(0xFFDEDFDE),
+                            backgroundColor: Colors.grey.shade300,
                             // 2. Mostriamo la foto se l'utente l'ha scelta
                             backgroundImage: _selectedImage != null
                                 ? FileImage(_selectedImage!)
@@ -132,7 +148,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                                 ? Icon(
                                     Icons.camera_alt_outlined,
                                     size: 36,
-                                    color: _subtitleColor,
+                                    color: AppColors.textSecondary,
                                   )
                                 : null,
                           ),
@@ -140,13 +156,13 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: const BoxDecoration(
-                              color: Color(0xFFF9FAF9),
+                              color: AppColors.background,
                               shape: BoxShape.circle,
                             ),
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: _buttonGreen,
+                                color: AppColors.primaryGreen,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -165,7 +181,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: _buttonGreen,
+                        color: AppColors.primaryGreen,
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -191,7 +207,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: _subtitleColor,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -207,7 +223,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F5F3),
+                  color: AppColors.finanzeBackground,
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(8),
                     bottomRight: Radius.circular(8),
@@ -215,7 +231,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                     bottomLeft: Radius.circular(4),
                   ),
                   border: Border(
-                    left: BorderSide(color: _buttonGreen, width: 4),
+                    left: BorderSide(color: AppColors.primaryGreen, width: 4),
                   ),
                 ),
                 child: Row(
@@ -223,7 +239,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                   children: [
                     Icon(
                       Icons.lightbulb_outline,
-                      color: _buttonGreen,
+                      color: AppColors.primaryGreen,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -236,7 +252,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: Color(0xFF1E1E1E),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -244,7 +260,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                             "Una buona bio aiuta i tuoi futuri\ncoinquilini a capire come organizzare\nal meglio gli spazi comuni.",
                             style: TextStyle(
                               fontSize: 13,
-                              color: _subtitleColor,
+                              color: AppColors.textSecondary,
                               height: 1.4,
                             ),
                           ),
@@ -259,7 +275,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
               ElevatedButton(
                 onPressed: viewModel.isLoading ? null : _handleSaveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _buttonGreen,
+                  backgroundColor: AppColors.primaryGreen,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(
@@ -298,7 +314,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
       child: Text(
         text,
         style: TextStyle(
-          color: _textColor,
+          color: AppColors.textPrimary,
           fontWeight: FontWeight.w600,
           fontSize: 14,
         ),
@@ -313,7 +329,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: _fieldColor,
+        color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
@@ -323,7 +339,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
         style: const TextStyle(color: Colors.black87),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.black38),
+          hintStyle: const TextStyle(color: Colors.grey),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,

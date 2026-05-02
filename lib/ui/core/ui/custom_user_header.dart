@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../auth/view_model/auth_view_model.dart';
-import '../themes/app_colors.dart'; // Aggiunto per i colori
+import '../../profile/view_model/profile_view_model.dart';
+import '../themes/app_colors.dart';
 import '../../profile/widgets/profile_screen.dart'; 
 
 class CustomUserHeader extends StatelessWidget {
@@ -18,8 +18,8 @@ class CustomUserHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 1. Il widget ascolta in autonomia i dati dell'utente!
-    final authViewModel = context.watch<AuthViewModel>();
-    final userProfile = authViewModel.userProfile;
+    final profileViewModel = context.watch<ProfileViewModel>();
+    final userProfile = profileViewModel.userProfile;
 
     final String nome = userProfile?.name ?? 'Utente';
     final String photoBase64 = userProfile?.photoUrl ?? '';
@@ -72,7 +72,7 @@ class CustomUserHeader extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary, // Cambia in AppColors.textDark se necessario
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],

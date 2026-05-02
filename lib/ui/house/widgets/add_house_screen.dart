@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../view_model/house_view_model.dart';
-import '../../auth/view_model/auth_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/ui/loading_overlay.dart';
-import 'dart:convert';
-import 'package:provider/provider.dart';
-import '../../auth/view_model/auth_view_model.dart';
 import '../../core/ui/custom_user_header.dart';
+import '../../main_layout/widgets/main_layout.dart';
 
 /// Schermata per creare o unirsi a una casa. View pura che delega al [HouseViewModel].
 class AddHouseScreen extends StatefulWidget {
@@ -52,7 +49,11 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
     if (!mounted) return;
 
     if (success) {
-      await context.read<AuthViewModel>().refreshAuthState();
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainLayout()),
+      );
     } else if (viewModel.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -72,7 +73,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
         title: const Text(
           "Casa creata con successo!",
           style: TextStyle(
-            color: Color(0xFF324A3D),
+            color: AppColors.primaryDark,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -86,7 +87,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F2EE),
+                color: AppColors.finanzeBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: AppColors.primaryGreen.withOpacity(0.3),
@@ -98,7 +99,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 4,
-                  color: Color(0xFF324A3D),
+                  color: AppColors.primaryDark,
                 ),
               ),
             ),
@@ -127,9 +128,12 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            onPressed: () async {
+            onPressed: () {
               Navigator.of(dialogContext).pop();
-              await context.read<AuthViewModel>().refreshAuthState();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const MainLayout()),
+              );
             },
             child: const Text("VAI ALLA HOME"),
           ),
@@ -169,7 +173,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF324A3D),
+                color: AppColors.primaryDark,
               ),
             ),
             const SizedBox(height: 12),
@@ -193,19 +197,19 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD3E4D8),
+                          color: AppColors.lightGreen,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Icon(
                           Icons.home_outlined,
                           size: 50,
-                          color: Color(0xFF324A3D),
+                          color: AppColors.primaryDark,
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF0D6C1),
+                          color: AppColors.iconBgBeige,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -239,7 +243,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6B8073),
+                        backgroundColor: AppColors.primaryGreen,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -265,7 +269,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
 
             // --- CARD: UNISCITI A UNA CASA ---
             _buildActionCard(
-              backgroundColor: const Color(0xFFF3F2EE),
+              backgroundColor: AppColors.finanzeBackground,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -323,7 +327,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                     decoration: InputDecoration(
                       hintText: 'ABC - 123',
                       filled: true,
-                      fillColor: const Color(0xFFE5E3DD),
+                      fillColor: Colors.grey.shade200,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -339,8 +343,8 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                     width: double.infinity,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF6B8073),
-                        side: const BorderSide(color: Color(0xFF6B8073)),
+                        foregroundColor: AppColors.primaryGreen,
+                        side: const BorderSide(color: AppColors.primaryGreen),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -350,7 +354,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                       onPressed: viewModel.isLoading ? null : _handleJoinHouse,
                       child: viewModel.isLoading
                           ? const ButtonLoadingIndicator(
-                              color: Color(0xFF6B8073),
+                              color: AppColors.primaryGreen,
                             )
                           : const Text(
                               'Unisciti',
