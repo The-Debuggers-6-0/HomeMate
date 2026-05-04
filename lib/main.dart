@@ -7,11 +7,13 @@ import 'firebase_options.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/user_service.dart';
 import 'data/services/house_service.dart';
+import 'data/services/finance_service.dart';
 
 // --- Data Layer: Repositories ---
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/user_repository.dart';
 import 'data/repositories/house_repository.dart';
+import 'data/repositories/finance_repository.dart';
 
 // --- UI Layer: ViewModels ---
 import 'ui/auth/view_model/auth_view_model.dart';
@@ -41,6 +43,7 @@ Future<void> main() async {
   final authService = AuthService();
   final userService = UserService();
   final houseService = HouseService();
+  final financeService = FinanceService();
 
   // --- Inizializzazione Repositories (ricevono i service come dipendenza) ---
   final authRepository = AuthRepository(
@@ -52,11 +55,13 @@ Future<void> main() async {
     houseService: houseService,
     userService: userService,
   );
+  final financeRepository = FinanceRepository(financeService: financeService);
 
   runApp(MyApp(
     authRepository: authRepository,
     userRepository: userRepository,
     houseRepository: houseRepository,
+    financeRepository: financeRepository,
   ));
 }
 
@@ -64,12 +69,14 @@ class MyApp extends StatelessWidget {
   final AuthRepository authRepository;
   final UserRepository userRepository;
   final HouseRepository houseRepository;
+  final FinanceRepository financeRepository;
 
   const MyApp({
     super.key,
     required this.authRepository,
     required this.userRepository,
     required this.houseRepository,
+    required this.financeRepository,
   });
 
   @override
@@ -80,6 +87,7 @@ class MyApp extends StatelessWidget {
         Provider<AuthRepository>.value(value: authRepository),
         Provider<UserRepository>.value(value: userRepository),
         Provider<HouseRepository>.value(value: houseRepository),
+        Provider<FinanceRepository>.value(value: financeRepository),
 
         // --- ViewModel Providers ---
         ChangeNotifierProvider<AuthViewModel>(
@@ -114,7 +122,12 @@ class MyApp extends StatelessWidget {
           create: (_) => HomeViewModel(),
         ),
         ChangeNotifierProvider<FinanzeViewModel>(
-          create: (_) => FinanzeViewModel(),
+          create: (_) => FinanzeViewModel(
+            financeRepository: financeRepository,
+            authRepository: authRepository,
+            userRepository: userRepository,
+            houseRepository: houseRepository,
+          ),
         ),
         ChangeNotifierProvider<ProfileViewModel>(
           create: (_) => ProfileViewModel(

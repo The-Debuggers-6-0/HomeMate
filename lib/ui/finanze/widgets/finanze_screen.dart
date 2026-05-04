@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_model/finanze_view_model.dart';
 import '../../core/themes/app_colors.dart';
+import 'add_expense_screen.dart';
+import 'settle_debt_screen.dart';
+import '../../core/ui/custom_user_header.dart';
 
 /// Schermata Finanze. View pura che legge i dati da [FinanzeViewModel].
 class FinanzeScreen extends StatelessWidget {
@@ -13,6 +16,19 @@ class FinanzeScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.finanzeBackground,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0), // Alza il pulsante sopra la bottom bar
+        child: FloatingActionButton(
+          backgroundColor: AppColors.primaryGreen,
+          child: const Icon(Icons.add, color: Colors.white),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddExpenseScreen()),
+            );
+          },
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -22,188 +38,97 @@ class FinanzeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // --- HEADER ---
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const CircleAvatar(
-                          radius: 20,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/150?img=11'),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Ciao, Marco',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.notifications,
-                          color: AppColors.primaryDark),
-                      onPressed: () {},
-                    ),
-                  ],
+                const CustomUserHeader(
+                  greetingText: 'FINANZE DELLA CASA',
                 ),
                 const SizedBox(height: 24),
 
-                // --- TAB BAR ---
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryDark,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'Spese',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            'Bollette',
-                            style: TextStyle(
-                              color: AppColors.textPrimary.withOpacity(0.7),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            'Abbonamenti',
-                            style: TextStyle(
-                              color: AppColors.textPrimary.withOpacity(0.7),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+
+
+                // --- CARD DEBITI (ORA SALDI COINQUILINI) ---
+                const Text(
+                  'I tuoi Saldi',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 32),
-
-                // --- CARD DEBITI ---
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                const SizedBox(height: 16),
+                if (viewModel.isLoading)
+                  const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                else if (viewModel.roommateBalances.isEmpty)
+                  const Text('Nessun coinquilino trovato o nessun saldo.', style: TextStyle(color: Colors.grey))
+                else
+                  ...viewModel.roommateBalances.map((rb) {
+                    final isCredit = rb.balance > 0;
+                    final isZero = rb.balance == 0;
+                    final color = isZero ? Colors.grey : (isCredit ? AppColors.primaryGreen : Colors.red);
+                    final prefix = isZero ? '' : (isCredit ? '+' : '');
+                    
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBackground,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'SEMPLIFICAZIONE DEI DEBITI',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        viewModel.debtSummary,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Row(
                         children: [
-                          Text(
-                            viewModel.debtProgressLabel,
-                            style: const TextStyle(
-                              color: AppColors.primaryDark,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.grey[300],
+                            backgroundImage: rb.user.photoUrl != null ? NetworkImage(rb.user.photoUrl!) : null,
+                            child: rb.user.photoUrl == null ? const Icon(Icons.person, color: Colors.grey) : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              rb.user.name.isNotEmpty ? rb.user.name : rb.user.email,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          Text(
-                            '${(viewModel.debtProgress * 100).toInt()}%',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '$prefix€${rb.balance.abs().toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                isZero ? 'In pari' : (isCredit ? 'Ti deve' : 'Gli devi'),
+                                style: TextStyle(
+                                  color: color.withValues(alpha: 0.8),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
+                          if (!isCredit && !isZero) ...[
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const SettleDebtScreen()),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryGreen,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                              ),
+                              child: const Text('Paga', style: TextStyle(color: Colors.white, fontSize: 12)),
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: viewModel.debtProgress,
-                          backgroundColor: Colors.grey[200],
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppColors.primaryDark),
-                          minHeight: 8,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryGreen,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          icon: const Icon(Icons.account_balance_wallet,
-                              size: 20),
-                          label: const Text(
-                            'Salda ora',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          onPressed: () {},
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    );
+                  }),
                 const SizedBox(height: 32),
 
                 // --- TRANSAZIONI RECENTI ---
@@ -233,18 +158,35 @@ class FinanzeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // LISTA TRANSAZIONI DAL VIEWMODEL
-                ...viewModel.transactions.map((t) => Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: _buildTransactionItem(
-                        t.title,
-                        t.subtitle,
-                        t.amount,
-                        t.amountLabel,
-                        isCredit: t.isCredit,
-                        imageUrl: t.imageUrl,
-                        icon: t.isCredit ? Icons.person : null,
+                if (viewModel.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator(color: AppColors.primaryGreen)),
+                  )
+                else if (viewModel.transactions.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Text(
+                        'Nessuna spesa ancora.\nAggiungi la prima tramite il pulsante +!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
                       ),
-                    )),
+                    ),
+                  )
+                else
+                  ...viewModel.transactions.map((t) => Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: _buildTransactionItem(
+                          t.title,
+                          t.subtitle,
+                          t.amount,
+                          t.amountLabel,
+                          isCredit: t.isCredit,
+                          imageUrl: t.imageUrl,
+                          icon: t.isCredit ? Icons.person : Icons.shopping_bag,
+                        ),
+                      )),
 
                 const SizedBox(height: 12),
 
