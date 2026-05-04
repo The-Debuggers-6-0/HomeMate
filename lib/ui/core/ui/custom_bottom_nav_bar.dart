@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
 
-/// Bottom navigation bar animata flottante, riutilizzabile in tutte le schermate.
-///
-/// Parametri:
-/// - [currentIndex]: l'indice della tab attualmente selezionata.
-/// - [onTap]: callback invocata quando l'utente preme una tab.
+/// Bottom navigation bar con indicatore a scorrimento orizzontale.
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -22,10 +18,8 @@ class CustomBottomNavBar extends StatelessWidget {
       left: 20,
       right: 20,
       bottom: 20,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutQuint,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),
@@ -37,20 +31,48 @@ class CustomBottomNavBar extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(0, Icons.home_filled, 'HOME'),
-            _buildNavItem(1, Icons.account_balance_wallet, 'FINANZE'),
-            _buildNavItem(2, Icons.calendar_month, 'ORGANIZZA'),
-            _buildNavItem(3, Icons.people, 'COINQUILINI'),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Calcoliamo la larghezza esatta di ciascun elemento dividendo lo spazio per 4
+            final double itemWidth = constraints.maxWidth / 4;
+            
+            return Stack(
+              children: [
+                // 1. Lo sfondo verde che scivola a destra e sinistra
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  left: currentIndex * itemWidth,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: itemWidth,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryDark,
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                ),
+                
+                // 2. Le icone e il testo sopra lo sfondo
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(0, Icons.home_filled, 'HOME', itemWidth),
+                    _buildNavItem(1, Icons.account_balance_wallet, 'FINANZE', itemWidth),
+                    _buildNavItem(2, Icons.calendar_month, 'ORGANIZZA', itemWidth),
+                    _buildNavItem(3, Icons.people, 'COINQUILINI', itemWidth),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, double width) {
     final isSelected = currentIndex == index;
 
     return GestureDetector(
@@ -60,56 +82,27 @@ class CustomBottomNavBar extends StatelessWidget {
         }
       },
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutQuint,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16.0 : 6.0,
-          vertical: isSelected ? 10.0 : 4.0,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryDark : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutQuint,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: isSelected
-                ? Row(
-                    key: const ValueKey("selected"),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    key: const ValueKey("unselected"),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, color: AppColors.textSecondary, size: 24),
-                      const SizedBox(height: 4),
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+      child: SizedBox(
+        width: width,
+        height: 56, // Altezza fissa per mantenere stabilità
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );

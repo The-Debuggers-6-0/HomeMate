@@ -175,9 +175,30 @@ class FinanzeViewModel extends ChangeNotifier {
   // --- Getters per la UI ---
   bool get isLoading => _isLoading;
 
-  String get budgetAmount => '€342,00';
-  String get budgetPercentage => '64%';
-  String get savingsAmount => '€128,40';
+  // --- Totale Spese Mese Corrente ---
+  String get currentMonthExpenses {
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (currentUid == null) return '€0.00';
+
+    final now = DateTime.now();
+    double total = 0.0;
+
+    for (var t in _appTransactions) {
+      if (t.type == 'expense' && t.date.year == now.year && t.date.month == now.month) {
+        if (t.customShares != null && t.customShares!.isNotEmpty) {
+           if (t.customShares!.containsKey(currentUid)) {
+             total += t.customShares![currentUid]!;
+           }
+        } else {
+           final involved = t.involvedUsers ?? _roommates.map((e) => e.uid).toList();
+           if (involved.contains(currentUid)) {
+             total += t.amount / involved.length;
+           }
+        }
+      }
+    }
+    return '€${total.toStringAsFixed(2)}';
+  }
 
   // Ritorna gli altri coinquilini
   List<AppUser> get roommates => _roommates.where((r) => r.uid != authRepository.currentFirebaseUser?.uid).toList();

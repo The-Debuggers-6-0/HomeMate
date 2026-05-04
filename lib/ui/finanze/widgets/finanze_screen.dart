@@ -7,8 +7,15 @@ import 'settle_debt_screen.dart';
 import '../../core/ui/custom_user_header.dart';
 
 /// Schermata Finanze. View pura che legge i dati da [FinanzeViewModel].
-class FinanzeScreen extends StatelessWidget {
+class FinanzeScreen extends StatefulWidget {
   const FinanzeScreen({super.key});
+
+  @override
+  State<FinanzeScreen> createState() => _FinanzeScreenState();
+}
+
+class _FinanzeScreenState extends State<FinanzeScreen> {
+  bool _showAllTransactions = false;
 
   @override
   Widget build(BuildContext context) {
@@ -32,14 +39,13 @@ class FinanzeScreen extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // --- HEADER ---
                 const CustomUserHeader(
-                  greetingText: 'FINANZE DELLA CASA',
+                  greetingText: 'LE TUE SPESE',
                 ),
                 const SizedBox(height: 24),
 
@@ -131,6 +137,59 @@ class FinanzeScreen extends StatelessWidget {
                   }),
                 const SizedBox(height: 32),
 
+                // --- SPESE TOTALI MESE ---
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryDark,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryDark.withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Spese totali questo mese',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.bar_chart, color: Colors.white, size: 20),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        viewModel.currentMonthExpenses,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
                 // --- TRANSAZIONI RECENTI ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -141,16 +200,6 @@ class FinanzeScreen extends StatelessWidget {
                         color: AppColors.textPrimary,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Vedi tutto',
-                      style: TextStyle(
-                        color: AppColors.primaryDark,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        decoration: TextDecoration.underline,
-                        decorationColor: AppColors.primaryDark,
                       ),
                     ),
                   ],
@@ -174,138 +223,64 @@ class FinanzeScreen extends StatelessWidget {
                       ),
                     ),
                   )
-                else
-                  ...viewModel.transactions.map((t) => Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: _buildTransactionItem(
-                          t.title,
-                          t.subtitle,
-                          t.amount,
-                          t.amountLabel,
-                          isCredit: t.isCredit,
-                          imageUrl: t.imageUrl,
-                          icon: t.isCredit ? Icons.person : Icons.shopping_bag,
+                else ...[
+                  ...viewModel.transactions
+                      .take(_showAllTransactions ? viewModel.transactions.length : 5)
+                      .map((t) => Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: _buildTransactionItem(
+                              t.title,
+                              t.subtitle,
+                              t.amount,
+                              t.amountLabel,
+                              isCredit: t.isCredit,
+                              imageUrl: t.imageUrl,
+                              icon: t.isCredit ? Icons.person : Icons.shopping_bag,
+                            ),
+                          )),
+                  
+                  if (viewModel.transactions.length > 5 && !_showAllTransactions)
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _showAllTransactions = true;
+                          });
+                        },
+                        icon: const Icon(Icons.expand_more, color: AppColors.primaryGreen),
+                        label: const Text(
+                          'Visualizza tutte',
+                          style: TextStyle(
+                            color: AppColors.primaryGreen,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      )),
+                      ),
+                    ),
+                  
+                  if (_showAllTransactions && viewModel.transactions.length > 5)
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _showAllTransactions = false;
+                          });
+                        },
+                        icon: const Icon(Icons.expand_less, color: AppColors.primaryGreen),
+                        label: const Text(
+                          'Mostra meno',
+                          style: TextStyle(
+                            color: AppColors.primaryGreen,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
 
                 const SizedBox(height: 12),
 
-                // --- WIDGET BUDGET & RISPARMIATI ---
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.iconBgBlue,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.pie_chart,
-                                      color: AppColors.primaryDark),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.lightGreen,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    viewModel.budgetPercentage,
-                                    style: const TextStyle(
-                                      color: AppColors.primaryDark,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Budget Mensile',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              viewModel.budgetAmount,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.iconBgBeige,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.savings,
-                                      color: AppColors.progressBrown),
-                                ),
-                                const Icon(Icons.arrow_upward,
-                                    color: AppColors.textSecondary, size: 16),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Risparmiati',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              viewModel.savingsAmount,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+
 
                 const SizedBox(height: 100),
               ],
