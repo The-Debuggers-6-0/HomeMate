@@ -26,7 +26,7 @@ class HomeScreen extends StatelessWidget {
                 showBell: true, // Mostrare la campanella? (Vero o Falso)
               ),
 
-              
+              // spazio prima della card
               const SizedBox(height: 30),
 
               // --- CARD BILANCIO ---

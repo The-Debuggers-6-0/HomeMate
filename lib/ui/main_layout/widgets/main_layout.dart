@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/themes/app_colors.dart';
 import '../../home/widgets/home_screen.dart';
 import '../../finanze/widgets/finanze_screen.dart';
-import '../../profile/widgets/profile_screen.dart';
+import '../../coinquilini/widgets/coinquilini_screen.dart';
 
 /// Layout principale con bottom navigation bar animata.
 class MainLayout extends StatefulWidget {
@@ -30,7 +30,7 @@ class _MainLayoutState extends State<MainLayout> {
           body: Center(
               child:
                   Text("Organizzazione", style: TextStyle(fontSize: 24)))),
-      const ProfileScreen(),
+      const CoinquiliniScreen(),
     ];
   }
 
@@ -82,7 +82,7 @@ class _MainLayoutState extends State<MainLayout> {
                   _buildNavItem(0, Icons.home_filled, 'HOME'),
                   _buildNavItem(1, Icons.account_balance_wallet, 'FINANZE'),
                   _buildNavItem(2, Icons.calendar_month, 'ORGANIZZA'),
-                  _buildNavItem(3, Icons.person, 'PROFILO'),
+                  _buildNavItem(3, Icons.people, 'COINQUILINI'),
                 ],
               ),
             ),

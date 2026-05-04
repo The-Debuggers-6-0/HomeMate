@@ -24,6 +24,7 @@ import 'ui/home/view_model/home_view_model.dart';
 import 'ui/finanze/view_model/finanze_view_model.dart';
 import 'ui/profile/view_model/profile_view_model.dart';
 import 'ui/profile/view_model/edit_profile_view_model.dart';
+import 'ui/coinquilini/view_model/coinquilini_view_model.dart';
 
 // --- UI Layer: Root Widget ---
 import 'ui/auth/widgets/login_screen.dart';
@@ -117,6 +118,13 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<ProfileViewModel>(
           create: (_) => ProfileViewModel(
+            userRepository: userRepository,
+            authRepository: authRepository,
+            houseRepository: houseRepository,
+          ),
+        ),
+        ChangeNotifierProvider<CoinquiliniViewModel>(
+          create: (_) => CoinquiliniViewModel(
             userRepository: userRepository,
             authRepository: authRepository,
             houseRepository: houseRepository,
