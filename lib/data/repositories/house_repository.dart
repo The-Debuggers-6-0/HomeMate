@@ -13,7 +13,7 @@ class HouseRepository {
   })  : _houseService = houseService,
         _userService = userService;
 
-  /// Crea una nuova casa e associa l'utente.
+  /// Crea una nuova casa e associa l'utente in modo atomico.
   /// Restituisce il codice della casa creata.
   Future<String> createHouse({
     required String uid,
@@ -22,40 +22,33 @@ class HouseRepository {
   }) async {
     final code = _houseService.generateHouseCode();
 
-    await _houseService.createHouse(
+    await _houseService.createHouseWithAdmin(
       code: code,
       adminUid: uid,
-      nome: (customName != null && customName.trim().isNotEmpty) ? customName.trim() : 'Casa di $displayName',
+      nome: (customName != null && customName.trim().isNotEmpty)
+          ? customName.trim()
+          : 'Casa di $displayName',
     );
-
-    await _userService.updateUser(uid, {'homeId': code});
 
     return code;
   }
 
-  /// Unisce l'utente a una casa esistente.
+  /// Unisce l'utente a una casa esistente in modo atomico.
   /// Restituisce true se la casa esiste e l'utente è stato aggiunto.
   Future<bool> joinHouse({
     required String uid,
     required String code,
   }) async {
-    final house = await _houseService.getHouse(code);
-    if (house == null) return false;
-
-    await _houseService.addMember(code, uid);
-    await _userService.updateUser(uid, {'homeId': code});
-
-    return true;
+    return await _houseService.joinHouseTransaction(uid: uid, code: code);
   }
 
-  /// Abbandona una casa.
+  /// Abbandona una casa in modo atomico.
   /// Rimuove l'utente dai membri della casa e cancella l'homeId dal suo profilo.
   Future<void> leaveHouse({
     required String uid,
     required String code,
   }) async {
-    await _houseService.removeMember(code, uid);
-    await _userService.updateUser(uid, {'homeId': ''});
+    await _houseService.leaveHouseTransaction(uid: uid, code: code);
   }
 
   /// Aggiorna il nome della casa.

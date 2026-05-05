@@ -19,18 +19,52 @@ class HouseService {
     return List.generate(6, (_) => chars[random.nextInt(chars.length)]).join();
   }
 
-  /// Crea una nuova casa su Firestore.
-  Future<void> createHouse({
+  /// Crea una nuova casa su Firestore e aggiorna l'utente in un'unica operazione atomica.
+  Future<void> createHouseWithAdmin({
     required String code,
     required String adminUid,
     required String nome,
-  }) {
-    return _housesCollection.doc(code).set({
+  }) async {
+    final batch = _firestore.batch();
+    
+    final houseDoc = _housesCollection.doc(code);
+    batch.set(houseDoc, {
       'admin': adminUid,
       'membri': [adminUid],
       'nome': nome,
       'createdAt': FieldValue.serverTimestamp(),
     });
+    
+    final userDoc = _firestore.collection('users').doc(adminUid);
+    batch.update(userDoc, {'homeId': code});
+    
+    await batch.commit();
+  }
+
+  /// Unisce un utente a una casa esistente in modo atomico tramite transazione.
+  Future<bool> joinHouseTransaction({
+    required String uid,
+    required String code,
+  }) async {
+    try {
+      return await _firestore.runTransaction((transaction) async {
+        final houseDoc = _housesCollection.doc(code);
+        final houseSnapshot = await transaction.get(houseDoc);
+
+        if (!houseSnapshot.exists) return false;
+
+        transaction.update(houseDoc, {
+          'membri': FieldValue.arrayUnion([uid]),
+        });
+
+        final userDoc = _firestore.collection('users').doc(uid);
+        transaction.update(userDoc, {'homeId': code});
+
+        return true;
+      });
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Ottiene una casa dato il suo codice.
@@ -47,11 +81,22 @@ class HouseService {
     });
   }
 
-  /// Rimuove un membro dalla casa.
-  Future<void> removeMember(String code, String uid) {
-    return _housesCollection.doc(code).update({
+  /// Abbandona una casa in modo atomico.
+  Future<void> leaveHouseTransaction({
+    required String uid,
+    required String code,
+  }) async {
+    final batch = _firestore.batch();
+
+    final houseDoc = _housesCollection.doc(code);
+    batch.update(houseDoc, {
       'membri': FieldValue.arrayRemove([uid]),
     });
+
+    final userDoc = _firestore.collection('users').doc(uid);
+    batch.update(userDoc, {'homeId': ''});
+
+    await batch.commit();
   }
 
   /// Aggiorna il nome della casa.

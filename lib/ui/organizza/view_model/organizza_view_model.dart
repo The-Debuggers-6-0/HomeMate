@@ -26,6 +26,7 @@ class OrganizzaViewModel extends ChangeNotifier {
   StreamSubscription<List<HouseEvent>>? _eventsSub;
   StreamSubscription<List<StickyNote>>? _notesSub;
   StreamSubscription<List<HouseRule>>? _rulesSub;
+  StreamSubscription<Map<String, String>>? _recyclingSub;
   StreamSubscription<House?>? _houseSub;
   StreamSubscription<List<AppUser>>? _houseMembersSub;
 
@@ -34,6 +35,8 @@ class OrganizzaViewModel extends ChangeNotifier {
   List<HouseEvent> _events = [];
   List<StickyNote> _notes = [];
   List<HouseRule> _rules = [];
+  Map<String, String> _recyclingSchedule = {};
+  bool _tomorrowWasteTakenOut = false;
   List<String> _houseMembers = [];
   List<AppUser> _houseMemberUsers = [];
 
@@ -58,16 +61,69 @@ class OrganizzaViewModel extends ChangeNotifier {
   }
 
   bool get isLoading => _isLoading;
+  bool get tomorrowWasteTakenOut => _tomorrowWasteTakenOut;
   List<CleaningTask> get cleaning => List.unmodifiable(_cleaning);
+  
+  /// Task di pulizia della settimana corrente
   List<CleaningTask> get currentWeekCleaningTasks => List.unmodifiable(
         _cleaning.where((task) => _isCurrentWeek(task.weekStart)).toList(),
       );
+
+  /// Task della settimana non ancora completati
+  List<CleaningTask> get pendingCleaningTasks => List.unmodifiable(
+        currentWeekCleaningTasks.where((task) => !task.completed).toList(),
+      );
+
+  /// Tutti i task completati (storico)
+  List<CleaningTask> get completedCleaningTasks => List.unmodifiable(
+        _cleaning.where((task) => task.completed).toList(),
+      );
+
+  /// Numero totale di task completati (per il badge UI)
+  int get completedCleaningTasksCount => completedCleaningTasks.length;
+
+  List<String> get houseMembers => List.unmodifiable(_houseMembers);
+
   List<ShoppingItem> get shopping => List.unmodifiable(_shopping);
+
+  /// Elementi da acquistare
+  List<ShoppingItem> get pendingShoppingItems => List.unmodifiable(
+        _shopping.where((item) => !item.bought).toList(),
+      );
+
+  /// Elementi già acquistati
+  List<ShoppingItem> get boughtShoppingItems => List.unmodifiable(
+        _shopping.where((item) => item.bought).toList(),
+      );
+
   List<HouseEvent> get events => List.unmodifiable(_events);
   List<StickyNote> get notes => List.unmodifiable(_notes);
   List<HouseRule> get rules => List.unmodifiable(_rules);
 
+  static const List<String> wasteTypes = [
+    'Nulla',
+    'Plastica',
+    'Carta',
+    'Vetro',
+    'Organico',
+    'Indifferenziato'
+  ];
+
+  static const List<String> weekDays = [
+    'Lunedì',
+    'Martedì',
+    'Mercoledì',
+    'Giovedì',
+    'Venerdì',
+    'Sabato',
+    'Domenica'
+  ];
+
   String displayNameFor(String uid) {
+    if (uid.isEmpty) return 'Qualcuno';
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (uid == currentUid) return 'Te';
+
     try {
       final user = _houseMemberUsers.firstWhere((element) => element.uid == uid);
       if (user.name.isNotEmpty) return user.name;
@@ -78,6 +134,11 @@ class OrganizzaViewModel extends ChangeNotifier {
   }
 
   late final UserRepository _userRepository;
+
+  void setTomorrowWasteTakenOut(bool value) {
+    _tomorrowWasteTakenOut = value;
+    _safeNotify();
+  }
 
   void _init() {
     _authSub = authRepository.authStateChanges().listen((user) {
@@ -129,6 +190,40 @@ class OrganizzaViewModel extends ChangeNotifier {
     });
   }
 
+  Map<String, String> get recyclingSchedule => Map.unmodifiable(_recyclingSchedule);
+
+  String get todayWaste => _getWasteForDay(DateTime.now());
+  String get tomorrowWaste => _getWasteForDay(DateTime.now().add(const Duration(days: 1)));
+
+  String getWasteTitle(String wasteType) {
+    return wasteType == 'Nulla' ? 'Nessuna raccolta' : wasteType;
+  }
+
+  String getWasteSubtitle(String wasteType, bool isToday) {
+    if (wasteType == 'Nulla') {
+      return isToday ? 'Goditi il relax' : '';
+    }
+    return isToday ? 'Non dimenticare!' : 'Ricordati di uscire il sacco!';
+  }
+
+  String _getWasteForDay(DateTime date) {
+    final dayName = _weekdayToString(date.weekday);
+    return _recyclingSchedule[dayName] ?? 'Nulla';
+  }
+
+  String _weekdayToString(int weekday) {
+    switch (weekday) {
+      case 1: return 'Lunedì';
+      case 2: return 'Martedì';
+      case 3: return 'Mercoledì';
+      case 4: return 'Giovedì';
+      case 5: return 'Venerdì';
+      case 6: return 'Sabato';
+      case 7: return 'Domenica';
+      default: return '';
+    }
+  }
+
   void startListening(String houseId) {
     _houseId = houseId;
     _cleaningSub?.cancel();
@@ -136,6 +231,7 @@ class OrganizzaViewModel extends ChangeNotifier {
     _eventsSub?.cancel();
     _notesSub?.cancel();
     _rulesSub?.cancel();
+    _recyclingSub?.cancel();
 
     _cleaningSub = organizeRepository.getCleaningTasksStream(houseId).listen((list) {
       if (_disposed) return;
@@ -164,6 +260,12 @@ class OrganizzaViewModel extends ChangeNotifier {
     _rulesSub = organizeRepository.getHouseRulesStream(houseId).listen((list) {
       if (_disposed) return;
       _rules = list;
+      _safeNotify();
+    });
+
+    _recyclingSub = organizeRepository.getRecyclingScheduleStream(houseId).listen((map) {
+      if (_disposed) return;
+      _recyclingSchedule = map;
       _safeNotify();
     });
   }
@@ -251,12 +353,28 @@ class OrganizzaViewModel extends ChangeNotifier {
     await organizeRepository.toggleCleaningTaskCompleted(_houseId!, taskId, completed);
   }
 
+  Future<void> addCleaningTask(String title, String assigneeUid) async {
+    if (_houseId == null || title.isEmpty) return;
+    final task = CleaningTask(
+      id: '',
+      title: title,
+      assigneeUid: assigneeUid,
+      weekStart: _currentWeekStart(),
+    );
+    await organizeRepository.addOrUpdateCleaningTask(_houseId!, task);
+  }
+
+  Future<void> removeCleaningTask(String taskId) async {
+    if (_houseId == null) return;
+    await organizeRepository.deleteCleaningTask(_houseId!, taskId);
+  }
+
   Future<void> addShoppingItem(ShoppingItem item) async {
     if (_houseId == null) return;
     await organizeRepository.addShoppingItem(_houseId!, item);
   }
 
-  Future<bool> addShoppingItemByName(String name) async {
+  Future<bool> addShoppingItemByName(String name, {String quantity = ''}) async {
     if (_houseId == null) return false;
 
     final currentUid = authRepository.currentFirebaseUser?.uid;
@@ -265,6 +383,7 @@ class OrganizzaViewModel extends ChangeNotifier {
     final item = ShoppingItem(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: name.trim(),
+      quantity: quantity.trim(),
       addedByUid: currentUid,
     );
 
@@ -282,6 +401,42 @@ class OrganizzaViewModel extends ChangeNotifier {
 
   Future<void> markItemBought(String itemId, bool bought) async {
     if (_houseId == null) return;
-    await organizeRepository.markItemBought(_houseId!, itemId, bought);
+    
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (currentUid == null) return;
+
+    await organizeRepository.markItemBought(_houseId!, itemId, bought, currentUid);
+  }
+
+  Future<void> removeShoppingItem(String itemId) async {
+    if (_houseId == null) return;
+    await organizeRepository.deleteShoppingItem(_houseId!, itemId);
+  }
+
+  // Eventi
+  Future<void> addEvent(String title, DateTime start, {DateTime? end, String? notes}) async {
+    if (_houseId == null || title.isEmpty) return;
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (currentUid == null) return;
+
+    final event = HouseEvent(
+      id: '',
+      title: title,
+      start: start,
+      end: end,
+      creatorUid: currentUid,
+      notes: notes,
+    );
+    await organizeRepository.addOrUpdateEvent(_houseId!, event);
+  }
+
+  Future<void> removeEvent(String eventId) async {
+    if (_houseId == null) return;
+    await organizeRepository.deleteEvent(_houseId!, eventId);
+  }
+
+  Future<void> updateRecyclingSchedule(Map<String, String> schedule) async {
+    if (_houseId == null) return;
+    await organizeRepository.updateRecyclingSchedule(_houseId!, schedule);
   }
 }

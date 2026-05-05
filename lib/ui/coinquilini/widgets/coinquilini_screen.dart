@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +5,7 @@ import '../../core/themes/app_colors.dart';
 import '../view_model/coinquilini_view_model.dart';
 import '../../house/widgets/add_house_screen.dart';
 import '../../core/ui/custom_user_header.dart';
+import '../../core/ui/user_avatar.dart';
 
 class CoinquiliniScreen extends StatelessWidget {
   const CoinquiliniScreen({super.key});
@@ -49,7 +49,7 @@ class CoinquiliniScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
+                        color: Colors.black.withValues(alpha: 0.02),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -110,8 +110,8 @@ class CoinquiliniScreen extends StatelessWidget {
                                 color: AppColors.finanzeBackground,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: AppColors.primaryGreen.withOpacity(
-                                    0.2,
+                                  color: AppColors.primaryGreen.withValues(
+                                    alpha: 0.2,
                                   ),
                                 ),
                               ),
@@ -160,29 +160,10 @@ class CoinquiliniScreen extends StatelessWidget {
                               padding: const EdgeInsets.only(right: 16.0),
                               child: Column(
                                 children: [
-                                  CircleAvatar(
+                                  UserAvatar(
+                                    user: roommate,
                                     radius: 26,
                                     backgroundColor: AppColors.lightGreen,
-                                    backgroundImage:
-                                        (roommate.photoUrl != null &&
-                                            roommate.photoUrl!.isNotEmpty)
-                                        ? MemoryImage(
-                                            base64Decode(roommate.photoUrl!),
-                                          )
-                                        : null,
-                                    child:
-                                        (roommate.photoUrl == null ||
-                                            roommate.photoUrl!.isEmpty)
-                                        ? Text(
-                                            roommate.name.isNotEmpty
-                                                ? roommate.name[0].toUpperCase()
-                                                : '?',
-                                            style: const TextStyle(
-                                              color: AppColors.primaryDark,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          )
-                                        : null,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -230,43 +211,6 @@ class CoinquiliniScreen extends StatelessWidget {
 
               const SizedBox(height: 36),
 
-              // --- CLASSIFICA ---
-              if (viewModel.currentHouse != null) ...[
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Classifica Miglior\nCoinquilino',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryDark,
-                        height: 1.2,
-                      ),
-                    ),
-                    Icon(
-                      Icons.emoji_events_outlined,
-                      color: AppColors.primaryDark,
-                      size: 32,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  height: 350,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryDark,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '🚧 Qui costruiremo il Podio! 🚧',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ),
-                ),
-              ],
               const SizedBox(height: 100),
             ],
           ),
