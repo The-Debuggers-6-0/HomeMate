@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
 import '../view_model/finanze_view_model.dart';
 
 class SettleDebtScreen extends StatefulWidget {
-  const SettleDebtScreen({super.key});
+  final String? roommateUid;
+  final String? roommateName;
+
+  const SettleDebtScreen({
+    super.key,
+    this.roommateUid,
+    this.roommateName,
+  });
 
   @override
   State<SettleDebtScreen> createState() => _SettleDebtScreenState();
@@ -15,7 +23,13 @@ class _SettleDebtScreenState extends State<SettleDebtScreen> {
   final TextEditingController _amountController = TextEditingController();
   String? _selectedRoommate;
 
-
+  @override
+  void initState() {
+    super.initState();
+    if (widget.roommateUid != null) {
+      _selectedRoommate = widget.roommateUid;
+    }
+  }
 
   @override
   void dispose() {
@@ -61,31 +75,50 @@ class _SettleDebtScreenState extends State<SettleDebtScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedRoommate,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
+                if (widget.roommateUid != null && widget.roommateName != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
+                      border: Border.all(color: Colors.grey[300]!),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    child: Text(
+                      widget.roommateName!,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedRoommate,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    ),
+                    hint: const Text('Seleziona coinquilino'),
+                    items: roommates.map((user) {
+                      return DropdownMenuItem<String>(
+                        value: user.uid,
+                        child: Text(user.name.isNotEmpty ? user.name : user.email),
+                      );
+                    }).toList(),
+                    onChanged: (newValue) {
+                      setState(() {
+                        _selectedRoommate = newValue;
+                      });
+                    },
+                    validator: (value) => value == null ? 'Seleziona un destinatario' : null,
                   ),
-                  hint: const Text('Seleziona coinquilino'),
-                  items: roommates.map((user) {
-                    return DropdownMenuItem<String>(
-                      value: user.uid,
-                      child: Text(user.name.isNotEmpty ? user.name : user.email),
-                    );
-                  }).toList(),
-                  onChanged: (newValue) {
-                    setState(() {
-                      _selectedRoommate = newValue;
-                    });
-                  },
-                  validator: (value) => value == null ? 'Seleziona un destinatario' : null,
-                ),
                 const SizedBox(height: 24),
 
                 // -- Importo --
@@ -101,6 +134,9 @@ class _SettleDebtScreenState extends State<SettleDebtScreen> {
                 TextFormField(
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                  ],
                   decoration: InputDecoration(
                     hintText: '0.00',
                     prefixText: '€ ',

@@ -107,7 +107,7 @@ class UserService {
         .snapshots()
         .map((snapshot) {
           return snapshot.docs
-              .map((doc) => AppUser.fromFirestore(doc.id, doc.data()!))
+              .map((doc) => AppUser.fromFirestore(doc.id, doc.data()))
               .toList();
         });
   }

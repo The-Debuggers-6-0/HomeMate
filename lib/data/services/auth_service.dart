@@ -32,19 +32,43 @@ class AuthService {
     );
   }
 
-  /// Login con Google.
+  // /// Login con Google.
+  // Future<UserCredential> signInWithGoogle() async {
+  //   await GoogleSignIn.instance.initialize(
+  //     serverClientId: AppConfig.googleServerClientId,
+  //   );
+
+  //   final GoogleSignInAccount googleUser =
+  //       await GoogleSignIn.instance.authenticate();
+  //   final GoogleSignInAuthentication googleAuth =
+  //       await googleUser.authentication;
+  //   final credential =
+  //       GoogleAuthProvider.credential(idToken: googleAuth.idToken);
+
+  //   return _firebaseAuth.signInWithCredential(credential);
+  // }
+
   Future<UserCredential> signInWithGoogle() async {
-    await GoogleSignIn.instance.initialize(
+    final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+    await googleSignIn.initialize(
       serverClientId: AppConfig.googleServerClientId,
     );
-
-    final GoogleSignInAccount googleUser =
-        await GoogleSignIn.instance.authenticate();
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
-    final credential =
-        GoogleAuthProvider.credential(idToken: googleAuth.idToken);
-
+ 
+    final GoogleSignInAccount? googleUser = await googleSignIn.authenticate();
+   
+    if (googleUser == null) {
+      throw FirebaseAuthException(
+        code: 'ERROR_ABORTED_BY_USER',
+        message: 'Accesso Google annullato dall\'utente.',
+      );
+    }
+ 
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+   
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+    );
+ 
     return _firebaseAuth.signInWithCredential(credential);
   }
 

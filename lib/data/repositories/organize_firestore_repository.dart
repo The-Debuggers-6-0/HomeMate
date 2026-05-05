@@ -1,0 +1,206 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../domain/models/cleaning_task.dart';
+import '../../domain/models/shopping_item.dart';
+import '../../domain/models/house_event.dart';
+import '../../domain/models/sticky_note.dart';
+import '../../domain/models/house_rule.dart';
+import 'organize_repository.dart';
+
+class OrganizeFirestoreRepository implements OrganizeRepository {
+  final FirebaseFirestore _firestore;
+  static const Duration _shoppingItemExpiry = Duration(days: 1);
+  static const Duration _cleaningTaskExpiry = Duration(days: 1);
+
+  OrganizeFirestoreRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> _houseCollection(String houseId, String sub) =>
+      _firestore.collection('houses').doc(houseId).collection(sub);
+
+  // Cleaning tasks
+  @override
+  Stream<List<CleaningTask>> getCleaningTasksStream(String houseId) {
+    return _houseCollection(houseId, 'cleaning_tasks')
+        .orderBy('weekStart', descending: false)
+        .snapshots()
+        .asyncMap((snap) async {
+      final tasks = <CleaningTask>[];
+      final now = DateTime.now();
+
+      for (final d in snap.docs) {
+        final data = Map<String, dynamic>.from(d.data());
+        data['id'] = d.id;
+        final task = CleaningTask.fromMap(data);
+
+        final isExpired = task.completed && task.completedAt != null && now.difference(task.completedAt!) >= _cleaningTaskExpiry;
+        if (isExpired) {
+          await d.reference.delete();
+          continue;
+        }
+
+        tasks.add(task);
+      }
+
+      return tasks;
+    });
+  }
+
+  @override
+  Future<void> addOrUpdateCleaningTask(String houseId, CleaningTask task) async {
+    final col = _houseCollection(houseId, 'cleaning_tasks');
+    final doc = task.id.isEmpty ? col.doc() : col.doc(task.id);
+    await doc.set({
+      'title': task.title,
+      'assigneeUid': task.assigneeUid,
+      'weekStart': task.weekStart.toIso8601String(),
+      'completed': task.completed,
+      'completedAt': task.completedAt?.toIso8601String(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
+  Future<void> toggleCleaningTaskCompleted(String houseId, String taskId, bool completed) async {
+    final doc = _houseCollection(houseId, 'cleaning_tasks').doc(taskId);
+    await doc.update({
+      'completed': completed,
+      'completedAt': completed ? FieldValue.serverTimestamp() : null,
+    });
+  }
+
+  // Shopping
+  @override
+  Stream<List<ShoppingItem>> getShoppingListStream(String houseId) {
+    return _houseCollection(houseId, 'shopping_list')
+        .orderBy('addedAt', descending: false)
+        .snapshots()
+        .asyncMap((snap) async {
+      final items = <ShoppingItem>[];
+      final now = DateTime.now();
+
+      for (final d in snap.docs) {
+        final data = Map<String, dynamic>.from(d.data());
+        data['id'] = d.id;
+        final item = ShoppingItem.fromMap(data);
+
+        final boughtAt = item.boughtAt;
+        final isExpired = item.bought && boughtAt != null && now.difference(boughtAt) >= _shoppingItemExpiry;
+        if (isExpired) {
+          await d.reference.delete();
+          continue;
+        }
+
+        items.add(item);
+      }
+
+      return items;
+    });
+  }
+
+  @override
+  Future<bool> addShoppingItem(String houseId, ShoppingItem item) async {
+    final col = _houseCollection(houseId, 'shopping_list');
+    final doc = item.id.isEmpty ? col.doc() : col.doc(item.id);
+    await doc.set({
+      'name': item.name,
+      'addedByUid': item.addedByUid,
+      'bought': item.bought,
+      'addedAt': item.addedAt.toIso8601String(),
+      'boughtAt': item.boughtAt?.toIso8601String(),
+    });
+    return true;
+  }
+
+  @override
+  Future<void> markItemBought(String houseId, String itemId, bool bought) async {
+    final doc = _houseCollection(houseId, 'shopping_list').doc(itemId);
+    await doc.update({
+      'bought': bought,
+      'boughtAt': bought ? FieldValue.serverTimestamp() : null,
+    });
+  }
+
+  @override
+  Future<void> deleteShoppingItem(String houseId, String itemId) async {
+    await _houseCollection(houseId, 'shopping_list').doc(itemId).delete();
+  }
+
+  // Events
+  @override
+  Stream<List<HouseEvent>> getEventsStream(String houseId) {
+    return _houseCollection(houseId, 'events')
+        .orderBy('start', descending: false)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) {
+              final data = Map<String, dynamic>.from(d.data());
+              data['id'] = d.id;
+              return HouseEvent.fromMap(data);
+            }).toList());
+  }
+
+  @override
+  Future<void> addOrUpdateEvent(String houseId, HouseEvent event) async {
+    final col = _houseCollection(houseId, 'events');
+    final doc = event.id.isEmpty ? col.doc() : col.doc(event.id);
+    await doc.set({
+      'title': event.title,
+      'start': event.start.toIso8601String(),
+      'end': event.end?.toIso8601String(),
+      'creatorUid': event.creatorUid,
+      'notes': event.notes,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
+  Future<void> deleteEvent(String houseId, String eventId) async {
+    await _houseCollection(houseId, 'events').doc(eventId).delete();
+  }
+
+  // Sticky notes
+  @override
+  Stream<List<StickyNote>> getStickyNotesStream(String houseId) {
+    return _houseCollection(houseId, 'sticky_notes')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) {
+              final data = Map<String, dynamic>.from(d.data());
+              data['id'] = d.id;
+              return StickyNote.fromMap(data);
+            }).toList());
+  }
+
+  @override
+  Future<void> addStickyNote(String houseId, StickyNote note) async {
+    final col = _houseCollection(houseId, 'sticky_notes');
+    final doc = note.id.isEmpty ? col.doc() : col.doc(note.id);
+    await doc.set({'content': note.content, 'authorUid': note.authorUid, 'createdAt': note.createdAt.toIso8601String()});
+  }
+
+  @override
+  Future<void> deleteStickyNote(String houseId, String noteId) async {
+    await _houseCollection(houseId, 'sticky_notes').doc(noteId).delete();
+  }
+
+  // Rules
+  @override
+  Stream<List<HouseRule>> getHouseRulesStream(String houseId) {
+    return _houseCollection(houseId, 'rules')
+        .snapshots()
+        .map((snap) => snap.docs.map((d) {
+              final data = Map<String, dynamic>.from(d.data());
+              data['id'] = d.id;
+              return HouseRule.fromMap(data);
+            }).toList());
+  }
+
+  @override
+  Future<void> updateHouseRules(String houseId, List<HouseRule> rules) async {
+    final col = _houseCollection(houseId, 'rules');
+    final batch = _firestore.batch();
+    for (var r in rules) {
+      final doc = r.id.isEmpty ? col.doc() : col.doc(r.id);
+      batch.set(doc, {'title': r.title, 'description': r.description});
+    }
+    await batch.commit();
+  }
+}

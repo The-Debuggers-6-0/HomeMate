@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_model/finanze_view_model.dart';
@@ -81,12 +82,32 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                       ),
                       child: Row(
                         children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.grey[300],
-                            backgroundImage: rb.user.photoUrl != null ? NetworkImage(rb.user.photoUrl!) : null,
-                            child: rb.user.photoUrl == null ? const Icon(Icons.person, color: Colors.grey) : null,
-                          ),
+                          Builder(builder: (context) {
+                            ImageProvider<Object>? avatarImage;
+                            final photo = rb.user.photoUrl;
+                            if (photo != null && photo.isNotEmpty) {
+                              try {
+                                if (photo.startsWith('data:')) {
+                                  final base64Str = photo.split(',').last;
+                                  avatarImage = MemoryImage(base64Decode(base64Str));
+                                } else if (photo.startsWith('http') || photo.startsWith('https')) {
+                                  avatarImage = NetworkImage(photo);
+                                } else {
+                                  // try raw base64
+                                  avatarImage = MemoryImage(base64Decode(photo));
+                                }
+                              } catch (_) {
+                                avatarImage = null;
+                              }
+                            }
+
+                            return CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Colors.grey[300],
+                              backgroundImage: avatarImage,
+                              child: avatarImage == null ? const Icon(Icons.person, color: Colors.grey) : null,
+                            );
+                          }),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
@@ -94,6 +115,28 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
+                          if (!isCredit && !isZero) ...[
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SettleDebtScreen(
+                                      roommateUid: rb.user.uid,
+                                      roommateName: rb.user.name.isNotEmpty ? rb.user.name : rb.user.email,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryGreen,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                              ),
+                              child: const Text('Paga', style: TextStyle(color: Colors.white, fontSize: 12)),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
@@ -114,23 +157,6 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                               ),
                             ],
                           ),
-                          if (!isCredit && !isZero) ...[
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const SettleDebtScreen()),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryGreen,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                              ),
-                              child: const Text('Paga', style: TextStyle(color: Colors.white, fontSize: 12)),
-                            ),
-                          ],
                         ],
                       ),
                     );

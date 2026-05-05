@@ -4,6 +4,7 @@ import '../../core/ui/custom_bottom_nav_bar.dart';
 import '../../home/widgets/home_screen.dart';
 import '../../finanze/widgets/finanze_screen.dart';
 import '../../coinquilini/widgets/coinquilini_screen.dart';
+import '../../organizza/widgets/organizza_screen.dart';
 
 /// Layout principale con bottom navigation bar animata.
 class MainLayout extends StatefulWidget {
@@ -26,11 +27,7 @@ class _MainLayoutState extends State<MainLayout> {
     _pages = [
       const HomeScreen(),
       const FinanzeScreen(),
-      // Segnaposto per la pagina organizzazione
-      const Scaffold(
-          body: Center(
-              child:
-                  Text("Organizzazione", style: TextStyle(fontSize: 24)))),
+        const OrganizzaScreen(),
       const CoinquiliniScreen(),
     ];
   }

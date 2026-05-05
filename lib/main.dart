@@ -14,6 +14,8 @@ import 'data/repositories/auth_repository.dart';
 import 'data/repositories/user_repository.dart';
 import 'data/repositories/house_repository.dart';
 import 'data/repositories/finance_repository.dart';
+import 'data/repositories/organize_repository.dart';
+import 'data/repositories/organize_firestore_repository.dart';
 
 // --- UI Layer: ViewModels ---
 import 'ui/auth/view_model/auth_view_model.dart';
@@ -27,6 +29,7 @@ import 'ui/finanze/view_model/finanze_view_model.dart';
 import 'ui/profile/view_model/profile_view_model.dart';
 import 'ui/profile/view_model/edit_profile_view_model.dart';
 import 'ui/coinquilini/view_model/coinquilini_view_model.dart';
+import 'ui/organizza/view_model/organizza_view_model.dart';
 
 // --- UI Layer: Root Widget ---
 import 'ui/auth/widgets/login_screen.dart';
@@ -56,12 +59,15 @@ Future<void> main() async {
     userService: userService,
   );
   final financeRepository = FinanceRepository(financeService: financeService);
+    // Organize repository (Firestore)
+    final organizeRepository = OrganizeFirestoreRepository();
 
   runApp(MyApp(
     authRepository: authRepository,
     userRepository: userRepository,
     houseRepository: houseRepository,
     financeRepository: financeRepository,
+    organizeRepository: organizeRepository,
   ));
 }
 
@@ -70,6 +76,7 @@ class MyApp extends StatelessWidget {
   final UserRepository userRepository;
   final HouseRepository houseRepository;
   final FinanceRepository financeRepository;
+  final OrganizeRepository organizeRepository;
 
   const MyApp({
     super.key,
@@ -77,6 +84,7 @@ class MyApp extends StatelessWidget {
     required this.userRepository,
     required this.houseRepository,
     required this.financeRepository,
+    required this.organizeRepository,
   });
 
   @override
@@ -88,6 +96,7 @@ class MyApp extends StatelessWidget {
         Provider<UserRepository>.value(value: userRepository),
         Provider<HouseRepository>.value(value: houseRepository),
         Provider<FinanceRepository>.value(value: financeRepository),
+        Provider<OrganizeRepository>.value(value: organizeRepository),
 
         // --- ViewModel Providers ---
         ChangeNotifierProvider<AuthViewModel>(
@@ -141,6 +150,14 @@ class MyApp extends StatelessWidget {
             userRepository: userRepository,
             authRepository: authRepository,
             houseRepository: houseRepository,
+          ),
+        ),
+        ChangeNotifierProvider<OrganizzaViewModel>(
+          create: (_) => OrganizzaViewModel(
+            organizeRepository: organizeRepository,
+            authRepository: authRepository,
+            houseRepository: houseRepository,
+            userRepository: userRepository,
           ),
         ),
         ChangeNotifierProvider<EditProfileViewModel>(

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../../../data/repositories/auth_repository.dart';
 
@@ -49,7 +50,11 @@ class LoginViewModel extends ChangeNotifier {
       _errorMessage = null;
       return true;
     } catch (e) {
-      _errorMessage = 'Errore Google Sign-In.';
+      if (e is FirebaseAuthException) {
+        _errorMessage = e.message ?? 'Errore durante l\'accesso con Google.';
+      } else {
+        _errorMessage = 'Errore durante l\'accesso con Google.';
+      }
       return false;
     } finally {
       _setLoading(false);
