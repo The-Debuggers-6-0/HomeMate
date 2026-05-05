@@ -22,6 +22,13 @@ class CoinquiliniViewModel extends ChangeNotifier {
   StreamSubscription<House?>? _houseSubscription;
   StreamSubscription<List<AppUser>>? _roommatesSubscription;
   StreamSubscription<User?>? _authSubscription;
+  bool _disposed = false;
+
+  void _safeNotify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
 
   CoinquiliniViewModel({
     required UserRepository userRepository,
@@ -41,6 +48,7 @@ class CoinquiliniViewModel extends ChangeNotifier {
     // Invece di controllare una volta sola, usiamo il listener del repository
     // per sapere SEMPRE quando l'utente entra o esce (Login/Logout)
     _authSubscription = _authRepository.authStateChanges().listen((user) {
+      if (_disposed) return;
 
       // Ogni volta che lo stato Auth cambia, puliamo tutto!
       _cancelAllSubscriptions();
@@ -51,7 +59,7 @@ class CoinquiliniViewModel extends ChangeNotifier {
         _isLoading = false;
         _currentHouse = null;
         _roommates = [];
-        notifyListeners();
+        _safeNotify();
       }
     });
   }
@@ -62,10 +70,12 @@ class CoinquiliniViewModel extends ChangeNotifier {
 
     // Prima di tutto, mettiamoci in modalità "caricamento" finché non abbiamo i dati
     _isLoading = true;
-    notifyListeners();
+    _safeNotify();
 
     // 2. Ascolta il profilo dell'utente per ottenere l'ID della casa
     _profileSubscription = _userRepository.getUserProfileStream(uid).listen((profile) {
+      if (_disposed) return;
+
       final previousHomeId = _currentHouse?.id;
 
     // 3. Se l'ID della casa è cambiato, aggiorna l'ascolto della casa
@@ -86,7 +96,7 @@ class CoinquiliniViewModel extends ChangeNotifier {
 
       // In ogni caso, abbiamo finito di caricare i dati del profilo
       _isLoading = false;
-      notifyListeners();
+      _safeNotify();
     });
   }
 
@@ -96,19 +106,23 @@ class CoinquiliniViewModel extends ChangeNotifier {
     _roommatesSubscription?.cancel();
 
     _houseSubscription = _houseRepository.getHouseStream(homeId).listen((house) {
+      if (_disposed) return;
+
       _currentHouse = house;
       _isLoading = false;
-      notifyListeners();
+      _safeNotify();
 
       _roommatesSubscription?.cancel();
       if (house != null && house.membri.isNotEmpty) {
         _roommatesSubscription = _userRepository.getRoommatesStream(house.membri).listen((users) {
-          _roommates = _roommates = users;
-          notifyListeners();
+          if (_disposed) return;
+
+          _roommates = users;
+          _safeNotify();
         });
       } else {
         _roommates = [];
-        notifyListeners();
+        _safeNotify();
       }
     });
   }
@@ -142,7 +156,7 @@ class CoinquiliniViewModel extends ChangeNotifier {
     if (user == null || code == null) return false;
 
     _isLoading = true;
-    notifyListeners();
+    _safeNotify();
 
     try {
       await _houseRepository.leaveHouse(uid: user.uid, code: code);
@@ -154,12 +168,13 @@ class CoinquiliniViewModel extends ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _profileSubscription?.cancel();
     _houseSubscription?.cancel();
     _roommatesSubscription?.cancel();

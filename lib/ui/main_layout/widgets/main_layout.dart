@@ -38,17 +38,13 @@ class _MainLayoutState extends State<MainLayout> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // TRANSIZIONE MORBIDA TRA LE SCHERMATE MAIN
+          // Manteniamo vive le pagine per evitare dispose/rebuild aggressivi con i Provider.
           Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child: ColoredBox(
-                key: ValueKey<int>(_currentIndex),
-                color: AppColors.background,
-                child: _pages[_currentIndex],
+            child: ColoredBox(
+              color: AppColors.background,
+              child: IndexedStack(
+                index: _currentIndex,
+                children: _pages,
               ),
             ),
           ),

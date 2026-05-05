@@ -24,6 +24,13 @@ class ProfileViewModel extends ChangeNotifier {
   StreamSubscription<List<AppUser>>? _roommatesSubscription;
 
   StreamSubscription<User?>? _authSubscription;
+  bool _disposed = false;
+
+  void _safeNotify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
 
   /*
   ProfileViewModel({
@@ -44,6 +51,8 @@ class ProfileViewModel extends ChangeNotifier {
     
     // Il "cane da guardia" che ascolta gli accessi e le uscite
     _authSubscription = _authRepository.authStateChanges().listen((user) {
+      if (_disposed) return;
+
       if (user != null) {
         // L'utente è entrato: RIATTACCHIAMO LA SPINA!
         _startListeningToProfile(user.uid);
@@ -53,7 +62,7 @@ class ProfileViewModel extends ChangeNotifier {
         _userProfile = null;
         _currentHouse = null;
         _roommates = [];
-        notifyListeners();
+        _safeNotify();
       }
     });
   }
@@ -102,11 +111,13 @@ class ProfileViewModel extends ChangeNotifier {
     if (_profileSubscription != null) return;
 
     _isLoading = true;
-    notifyListeners();
+    _safeNotify();
 
     _profileSubscription = _userRepository
         .getUserProfileStream(uid)
         .listen((profile) {
+          if (_disposed) return;
+
           final previousHomeId = _userProfile?.homeId;
           _userProfile = profile;
           
@@ -121,7 +132,7 @@ class ProfileViewModel extends ChangeNotifier {
           }
 
           _isLoading = false;
-          notifyListeners();
+          _safeNotify();
         });
   }
 
@@ -130,19 +141,23 @@ class ProfileViewModel extends ChangeNotifier {
     _roommatesSubscription?.cancel();
 
     _houseSubscription = _houseRepository.getHouseStream(homeId).listen((house) {
+      if (_disposed) return;
+
       _currentHouse = house;
-      notifyListeners();
+      _safeNotify();
 
       // Quando riceviamo la casa (o si aggiorna), ascoltiamo tutti i suoi membri
       _roommatesSubscription?.cancel();
       if (house != null && house.membri.isNotEmpty) {
         _roommatesSubscription = _userRepository.getRoommatesStream(house.membri).listen((users) {
+          if (_disposed) return;
+
           _roommates = users;
-          notifyListeners();
+          _safeNotify();
         });
       } else {
         _roommates = [];
-        notifyListeners();
+        _safeNotify();
       }
     });
   }
@@ -153,7 +168,7 @@ class ProfileViewModel extends ChangeNotifier {
     final user = _authRepository.currentFirebaseUser;
     if (user != null) {
       _isLoading = true;
-      notifyListeners();
+      _safeNotify();
 
       // Mettiamo un try/catch per sicurezza
       try {
@@ -165,7 +180,7 @@ class ProfileViewModel extends ChangeNotifier {
         debugPrint("Errore nel ricaricare il profilo: $e");
       } finally {
         _isLoading = false;
-        notifyListeners(); // Questo farà riapparire la schermata con i nuovi dati!
+        _safeNotify(); // Questo farà riapparire la schermata con i nuovi dati!
       }
     }
   }
@@ -177,7 +192,7 @@ class ProfileViewModel extends ChangeNotifier {
     if (uid == null || code == null) return false;
 
     _isLoading = true;
-    notifyListeners();
+    _safeNotify();
 
     try {
       await _houseRepository.leaveHouse(uid: uid, code: code);
@@ -191,7 +206,7 @@ class ProfileViewModel extends ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 
@@ -219,7 +234,7 @@ class ProfileViewModel extends ChangeNotifier {
     
     if (user != null) {
       _isLoading = true;
-      notifyListeners();
+      _safeNotify();
 
       try {
         // 1. STACCHIAMO LA CORRENTE: cancella ogni ascolto al database
@@ -247,7 +262,7 @@ class ProfileViewModel extends ChangeNotifier {
         
       } finally {
         _isLoading = false;
-        notifyListeners();
+        _safeNotify();
       }
     }
     return false;
@@ -255,6 +270,7 @@ class ProfileViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _authSubscription?.cancel();
     _cancelAllSubscriptions();
     super.dispose();

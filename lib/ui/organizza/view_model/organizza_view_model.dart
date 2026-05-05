@@ -27,6 +27,7 @@ class OrganizzaViewModel extends ChangeNotifier {
   StreamSubscription<List<StickyNote>>? _notesSub;
   StreamSubscription<List<HouseRule>>? _rulesSub;
   StreamSubscription<House?>? _houseSub;
+  StreamSubscription<List<AppUser>>? _houseMembersSub;
 
   List<CleaningTask> _cleaning = [];
   List<ShoppingItem> _shopping = [];
@@ -34,9 +35,11 @@ class OrganizzaViewModel extends ChangeNotifier {
   List<StickyNote> _notes = [];
   List<HouseRule> _rules = [];
   List<String> _houseMembers = [];
+  List<AppUser> _houseMemberUsers = [];
 
   StreamSubscription<User?>? _authSub;
   StreamSubscription<AppUser?>? _profileSub;
+  bool _disposed = false;
 
   OrganizzaViewModel({
     required this.organizeRepository,
@@ -46,6 +49,12 @@ class OrganizzaViewModel extends ChangeNotifier {
   }) {
     _userRepository = userRepository;
     _init();
+  }
+
+  void _safeNotify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   bool get isLoading => _isLoading;
@@ -58,16 +67,30 @@ class OrganizzaViewModel extends ChangeNotifier {
   List<StickyNote> get notes => List.unmodifiable(_notes);
   List<HouseRule> get rules => List.unmodifiable(_rules);
 
+  String displayNameFor(String uid) {
+    try {
+      final user = _houseMemberUsers.firstWhere((element) => element.uid == uid);
+      if (user.name.isNotEmpty) return user.name;
+      return user.email;
+    } catch (_) {
+      return 'Coinquilino';
+    }
+  }
+
   late final UserRepository _userRepository;
 
   void _init() {
     _authSub = authRepository.authStateChanges().listen((user) {
+      if (_disposed) return;
+
       if (user != null) {
         _isLoading = true;
-        notifyListeners();
+        _safeNotify();
 
         _profileSub?.cancel();
         _profileSub = _userRepository.getUserProfileStream(user.uid).listen((profile) {
+          if (_disposed) return;
+
           if (profile != null && profile.homeId.isNotEmpty) {
             if (_houseId != profile.homeId) {
               _houseId = profile.homeId;
@@ -82,10 +105,10 @@ class OrganizzaViewModel extends ChangeNotifier {
             _events = [];
             _notes = [];
             _rules = [];
-            notifyListeners();
+            _safeNotify();
           }
           _isLoading = false;
-          notifyListeners();
+          _safeNotify();
         });
       } else {
         // user logged out
@@ -101,7 +124,7 @@ class OrganizzaViewModel extends ChangeNotifier {
         _notes = [];
         _rules = [];
         _isLoading = false;
-        notifyListeners();
+        _safeNotify();
       }
     });
   }
@@ -115,35 +138,52 @@ class OrganizzaViewModel extends ChangeNotifier {
     _rulesSub?.cancel();
 
     _cleaningSub = organizeRepository.getCleaningTasksStream(houseId).listen((list) {
+      if (_disposed) return;
       _cleaning = list;
-      notifyListeners();
+      _safeNotify();
     });
 
     _shoppingSub = organizeRepository.getShoppingListStream(houseId).listen((list) {
+      if (_disposed) return;
       _shopping = list;
-      notifyListeners();
+      _safeNotify();
     });
 
     _eventsSub = organizeRepository.getEventsStream(houseId).listen((list) {
+      if (_disposed) return;
       _events = list;
-      notifyListeners();
+      _safeNotify();
     });
 
     _notesSub = organizeRepository.getStickyNotesStream(houseId).listen((list) {
+      if (_disposed) return;
       _notes = list;
-      notifyListeners();
+      _safeNotify();
     });
 
     _rulesSub = organizeRepository.getHouseRulesStream(houseId).listen((list) {
+      if (_disposed) return;
       _rules = list;
-      notifyListeners();
+      _safeNotify();
     });
   }
 
   void _watchHouseMembers(String houseId) {
     _houseSub?.cancel();
+    _houseMembersSub?.cancel();
     _houseSub = houseRepository.getHouseStream(houseId).listen((house) {
+      if (_disposed) return;
       _houseMembers = house?.membri ?? [];
+      _houseMembersSub?.cancel();
+      if (_houseMembers.isNotEmpty) {
+        _houseMembersSub = _userRepository.getRoommatesStream(_houseMembers).listen((users) {
+          if (_disposed) return;
+          _houseMemberUsers = users;
+          _safeNotify();
+        });
+      } else {
+        _houseMemberUsers = [];
+      }
       _seedWeeklyCleaningTasksIfNeeded();
     });
   }
@@ -192,6 +232,7 @@ class OrganizzaViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _cleaningSub?.cancel();
     _shoppingSub?.cancel();
     _eventsSub?.cancel();
@@ -200,6 +241,7 @@ class OrganizzaViewModel extends ChangeNotifier {
     _authSub?.cancel();
     _profileSub?.cancel();
     _houseSub?.cancel();
+    _houseMembersSub?.cancel();
     super.dispose();
   }
 

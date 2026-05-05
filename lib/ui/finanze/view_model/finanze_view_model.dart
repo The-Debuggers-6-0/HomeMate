@@ -52,9 +52,16 @@ class FinanzeViewModel extends ChangeNotifier {
   
   StreamSubscription? _authSub;
   StreamSubscription? _profileSub;
+  bool _disposed = false;
 
   List<AppUser> _roommates = [];
   List<dm.AppTransaction> _appTransactions = [];
+
+  void _safeNotify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
 
   FinanzeViewModel({
     required this.financeRepository,
@@ -63,13 +70,17 @@ class FinanzeViewModel extends ChangeNotifier {
     required this.houseRepository,
   }) {
     _authSub = authRepository.authStateChanges().listen((user) {
+      if (_disposed) return;
+
       if (user != null) {
         _isLoading = true;
-        notifyListeners();
+        _safeNotify();
         
         // Ascolta il profilo utente per ottenere l'homeId sempre aggiornato
         _profileSub?.cancel();
         _profileSub = userRepository.getUserProfileStream(user.uid).listen((profile) {
+          if (_disposed) return;
+
           if (profile != null && profile.homeId.isNotEmpty) {
             if (_houseId != profile.homeId) {
               _houseId = profile.homeId;
@@ -77,7 +88,7 @@ class FinanzeViewModel extends ChangeNotifier {
             }
           }
           _isLoading = false;
-          notifyListeners();
+          _safeNotify();
         });
       } else {
         // Utente uscito: spegni tutto
@@ -88,7 +99,7 @@ class FinanzeViewModel extends ChangeNotifier {
         _houseSub?.cancel();
         _roommatesSub?.cancel();
         _transactionsSub?.cancel();
-        notifyListeners();
+        _safeNotify();
       }
     });
   }
@@ -98,17 +109,23 @@ class FinanzeViewModel extends ChangeNotifier {
     
     _transactionsSub?.cancel();
     _transactionsSub = financeRepository.getTransactionsStream(_houseId!).listen((transactions) {
+      if (_disposed) return;
+
       _appTransactions = transactions;
-      notifyListeners();
+      _safeNotify();
     });
 
     // Ascolta i coinquilini
     _houseSub = houseRepository.getHouseStream(_houseId!).listen((house) {
+      if (_disposed) return;
+
       if (house != null && house.membri.isNotEmpty) {
         _roommatesSub?.cancel();
         _roommatesSub = userRepository.getRoommatesStream(house.membri).listen((users) {
+          if (_disposed) return;
+
           _roommates = users;
-          notifyListeners();
+          _safeNotify();
         });
       }
     });
@@ -116,6 +133,7 @@ class FinanzeViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _authSub?.cancel();
     _profileSub?.cancel();
     _houseSub?.cancel();

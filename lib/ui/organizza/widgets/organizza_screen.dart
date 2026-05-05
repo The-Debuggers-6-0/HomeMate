@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/ui/custom_user_header.dart';
 import '../view_model/organizza_view_model.dart';
-import '../../../data/repositories/user_repository.dart';
 import '../../../domain/models/shopping_item.dart';
 
 class OrganizzaScreen extends StatefulWidget {
@@ -13,25 +12,122 @@ class OrganizzaScreen extends StatefulWidget {
   State<OrganizzaScreen> createState() => _OrganizzaScreenState();
 }
 
-class _OrganizzaScreenState extends State<OrganizzaScreen> {
-  final Set<String> _movingItems = {};
+class _ShoppingManagerSheet extends StatefulWidget {
+  final OrganizzaViewModel vm;
+  const _ShoppingManagerSheet({required this.vm});
 
+  @override
+  State<_ShoppingManagerSheet> createState() => _ShoppingManagerSheetState();
+}
+
+class _ShoppingManagerSheetState extends State<_ShoppingManagerSheet> {
+  final _controller = TextEditingController();
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _saveItem() async {
+    final name = _controller.text.trim();
+    if (name.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Campo vuoto: inserisci un alimento o un oggetto.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    // Prima nascondiamo la tastiera per evitare sbalzi strani
+    FocusScope.of(context).unfocus();
+
+    final success = await widget.vm.addShoppingItemByName(name);
+    
+    if (!mounted) return;
+
+    if (success) {
+      // Chiudiamo il bottom sheet!
+      Navigator.pop(context);
+    } else {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Non riesco a salvare l'elemento su Firestore."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Usiamo il Padding che reagisce a viewInsets
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Gestisci carrello',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                labelText: 'Nome alimento / oggetto',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _saveItem(),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Se il campo è vuoto, non puoi aggiungere nulla.',
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _saveItem,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Aggiungi al carrello'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OrganizzaScreenState extends State<OrganizzaScreen> {
   Future<void> _toggleBought(OrganizzaViewModel vm, String itemId, bool bought) async {
     final current = vm.shopping.where((item) => item.id == itemId).toList();
     if (current.isNotEmpty && current.first.bought == bought) return;
-
-    setState(() {
-      _movingItems.add(itemId);
-    });
-
     await vm.markItemBought(itemId, bought);
-
-    await Future.delayed(const Duration(milliseconds: 240));
-    if (!mounted) return;
-
-    setState(() {
-      _movingItems.remove(itemId);
-    });
   }
 
   String _weekdayLabel(DateTime d) {
@@ -210,10 +306,10 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                           ..._buildShoppingSection(
                             context,
                             vm,
-                            vm.shopping.where((item) => !item.bought || _movingItems.contains(item.id)).toList(),
+                            vm.shopping.where((item) => !item.bought).toList(),
                             bought: false,
                           ),
-                          if (vm.shopping.any((item) => item.bought && !_movingItems.contains(item.id))) ...[
+                          if (vm.shopping.any((item) => item.bought)) ...[
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
@@ -231,7 +327,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                             ..._buildShoppingSection(
                               context,
                               vm,
-                              vm.shopping.where((item) => item.bought && !_movingItems.contains(item.id)).toList(),
+                              vm.shopping.where((item) => item.bought).toList(),
                               bought: true,
                             ),
                           ],
@@ -305,27 +401,19 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          FutureBuilder(
-            future: context.read<UserRepository>().getUserProfile(task.assigneeUid),
-            builder: (context, snapshot) {
-              final name = snapshot.hasData && snapshot.data != null && snapshot.data!.name.isNotEmpty
-                  ? snapshot.data!.name
-                  : 'Coinquilino';
-              return Row(
-                children: [
-                  const Icon(Icons.person, size: 14, color: Colors.grey),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Assegnato a $name',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                ],
-              );
-            },
+          Row(
+            children: [
+              const Icon(Icons.person, size: 14, color: Colors.grey),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Assegnato a ${vm.displayNameFor(task.assigneeUid)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -342,73 +430,25 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
 
     final widgets = <Widget>[];
     for (final item in items) {
-      final moving = _movingItems.contains(item.id);
-      final offsetTween = bought
-          ? Tween<Offset>(
-              begin: moving ? const Offset(0, 0.16) : Offset.zero,
-              end: Offset.zero,
-            )
-          : Tween<Offset>(
-              begin: Offset.zero,
-              end: moving ? const Offset(0, -0.16) : Offset.zero,
-            );
-
-      final opacityTween = bought
-          ? Tween<double>(
-              begin: moving ? 0.0 : 1.0,
-              end: 1.0,
-            )
-          : Tween<double>(
-              begin: 1.0,
-              end: moving ? 0.0 : 1.0,
-            );
-
       widgets.add(
-        TweenAnimationBuilder<Offset>(
-          tween: offsetTween,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeInOut,
-          builder: (context, offset, child) {
-            return Transform.translate(offset: Offset(offset.dx * 24, offset.dy * 24), child: child);
-          },
-          child: TweenAnimationBuilder<double>(
-            tween: opacityTween,
-            duration: const Duration(milliseconds: 240),
-            curve: Curves.easeInOut,
-            builder: (context, opacity, child) {
-              return Opacity(
-                opacity: opacity,
-                child: CheckboxListTile(
-                  value: bought,
-                  onChanged: (v) => _toggleBought(vm, item.id, v ?? false),
-                  title: Text(
-                    item.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      decoration: bought ? TextDecoration.lineThrough : TextDecoration.none,
-                      color: bought ? AppColors.primaryGreen : Colors.black,
-                    ),
-                  ),
-                  subtitle: FutureBuilder(
-                    future: context.read<UserRepository>().getUserProfile(item.addedByUid),
-                    builder: (context, snap) {
-                      final addedBy = snap.hasData && snap.data != null && snap.data!.name.isNotEmpty
-                          ? snap.data!.name
-                          : 'Te';
-                      final prefix = bought ? 'Comprato da ' : 'Aggiunto da ';
-                      return Text(
-                        '$prefix$addedBy',
-                        style: TextStyle(
-                          color: bought ? AppColors.primaryGreen.withValues(alpha: 0.85) : Colors.black54,
-                        ),
-                      );
-                    },
-                  ),
-                  controlAffinity: ListTileControlAffinity.leading,
-                ),
-              );
-            },
+        CheckboxListTile(
+          value: bought,
+          onChanged: (v) => _toggleBought(vm, item.id, v ?? false),
+          title: Text(
+            item.name,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              decoration: bought ? TextDecoration.lineThrough : TextDecoration.none,
+              color: bought ? AppColors.primaryGreen : Colors.black,
+            ),
           ),
+          subtitle: Text(
+            '${bought ? 'Comprato da ' : 'Aggiunto da '}${vm.displayNameFor(item.addedByUid)}',
+            style: TextStyle(
+              color: bought ? AppColors.primaryGreen.withValues(alpha: 0.85) : Colors.black54,
+            ),
+          ),
+          controlAffinity: ListTileControlAffinity.leading,
         ),
       );
 
@@ -422,86 +462,15 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
 
   void _showShoppingManager(BuildContext context) {
     final vm = context.read<OrganizzaViewModel>();
-    final controller = TextEditingController();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Gestisci carrello',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome alimento / oggetto',
-                    border: OutlineInputBorder(),
-                  ),
-                  textInputAction: TextInputAction.done,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Se il campo è vuoto, non puoi aggiungere nulla.',
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final name = controller.text.trim();
-                      if (name.isEmpty) {
-                        ScaffoldMessenger.of(sheetContext).showSnackBar(
-                          const SnackBar(
-                            content: Text('Campo vuoto: inserisci un alimento o un oggetto.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      // Chiudiamo prima il foglio, poi salviamo: evita conflitti di rebuild durante la chiusura.
-                      Navigator.pop(sheetContext);
-
-                      final success = await vm.addShoppingItemByName(name);
-                      if (!mounted) return;
-
-                      if (!success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Non riesco a salvare l\'elemento su Firestore.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    },
-                    child: const Text('Aggiungi al carrello'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        return _ShoppingManagerSheet(vm: vm);
       },
-    ).whenComplete(controller.dispose);
+    );
   }
 
   void _showCompletedTasks(BuildContext context, OrganizzaViewModel vm) {
@@ -552,6 +521,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                             separatorBuilder: (_, __) => const Divider(height: 20),
                             itemBuilder: (context, index) {
                               final task = completedTasks[index];
+                              final assigneeName = vm.displayNameFor(task.assigneeUid);
                               return ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 leading: CircleAvatar(
@@ -565,15 +535,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                                     color: AppColors.primaryGreen,
                                   ),
                                 ),
-                                subtitle: FutureBuilder(
-                                  future: context.read<UserRepository>().getUserProfile(task.assigneeUid),
-                                  builder: (context, snapshot) {
-                                    final name = snapshot.hasData && snapshot.data != null && snapshot.data!.name.isNotEmpty
-                                        ? snapshot.data!.name
-                                        : 'Utente';
-                                    return Text('Assegnato a $name');
-                                  },
-                                ),
+                                subtitle: Text('Assegnato a $assigneeName'),
                               );
                             },
                           ),
