@@ -48,7 +48,7 @@ Future<void> main() async {
   final houseService = HouseService();
   final financeService = FinanceService();
 
-  // --- Inizializzazione Repositories (ricevono i service come dipendenza) ---
+  // --- Inizializzazione Repositories ---
   final authRepository = AuthRepository(
     authService: authService,
     userService: userService,
@@ -59,8 +59,7 @@ Future<void> main() async {
     userService: userService,
   );
   final financeRepository = FinanceRepository(financeService: financeService);
-    // Organize repository (Firestore)
-    final organizeRepository = OrganizeFirestoreRepository();
+  final organizeRepository = OrganizeFirestoreRepository();
 
   runApp(MyApp(
     authRepository: authRepository,
@@ -91,7 +90,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // --- Repository Providers (accessibili ovunque) ---
+        // --- Repository Providers ---
         Provider<AuthRepository>.value(value: authRepository),
         Provider<UserRepository>.value(value: userRepository),
         Provider<HouseRepository>.value(value: houseRepository),
@@ -128,7 +127,13 @@ class MyApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<HomeViewModel>(
-          create: (_) => HomeViewModel(),
+          create: (_) => HomeViewModel(
+            authRepository: authRepository,
+            houseRepository: houseRepository,
+            financeRepository: financeRepository,
+            organizeRepository: organizeRepository,
+            userRepository: userRepository,
+          ),
         ),
         ChangeNotifierProvider<FinanzeViewModel>(
           create: (_) => FinanzeViewModel(
