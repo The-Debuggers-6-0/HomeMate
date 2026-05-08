@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'user_badge.dart'; // <--- Ricordati di importare il file del badge!
 
 part 'app_user.freezed.dart';
 part 'app_user.g.dart';
@@ -16,6 +17,11 @@ abstract class AppUser with _$AppUser {
     @Default(false) bool profileCompleted,
     @Default('') String homeId,
     String? photoUrl,
+    
+    // --- NUOVI CAMPI PER I BADGE ---
+    // Usiamo @Default per dire a Freezed che se mancano da Firebase, partono vuoti
+    @Default({}) Map<String, UserBadge> unlockedBadges,
+    @Default([]) List<String> featuredBadges,
   }) = _AppUser;
 
   factory AppUser.fromJson(Map<String, dynamic> json) =>
@@ -24,6 +30,22 @@ abstract class AppUser with _$AppUser {
   /// Factory per creare un AppUser da un documento Firestore.
   /// Gestisce i campi mancanti con valori di default.
   factory AppUser.fromFirestore(String uid, Map<String, dynamic> data) {
+    
+    // 1. Decodifica la mappa dei badge sbloccati
+    Map<String, UserBadge> parsedBadges = {};
+    if (data['unlockedBadges'] != null) {
+      final badgesMap = data['unlockedBadges'] as Map<String, dynamic>;
+      badgesMap.forEach((key, value) {
+        parsedBadges[key] = UserBadge.fromJson(value as Map<String, dynamic>);
+      });
+    }
+
+    // 2. Decodifica i badge in vetrina (evita errori se non esiste il campo)
+    List<String> parsedFeatured = [];
+    if (data['featuredBadges'] != null) {
+      parsedFeatured = List<String>.from(data['featuredBadges']);
+    }
+
     return AppUser(
       uid: uid,
       email: data['email'] as String? ?? '',
@@ -32,7 +54,9 @@ abstract class AppUser with _$AppUser {
       bio: data['bio'] as String? ?? '',
       profileCompleted: data['profileCompleted'] as bool? ?? false,
       homeId: data['homeId'] as String? ?? '',
-      photoUrl: data['photoUrl'] as String?, // <--- 2. AGGIUNTO QUI PER LEGGERLO DA FIREBASE
+      photoUrl: data['photoUrl'] as String?,
+      unlockedBadges: parsedBadges,
+      featuredBadges: parsedFeatured,
     );
   }
 }
