@@ -113,13 +113,16 @@ class CoinquiliniViewModel extends ChangeNotifier {
       _safeNotify();
 
       _roommatesSubscription?.cancel();
-      if (house != null && house.membri.isNotEmpty) {
-        _roommatesSubscription = _userRepository.getRoommatesStream(house.membri).listen((users) {
-          if (_disposed) return;
 
-          _roommates = users;
-          _safeNotify();
-        });
+      if (house != null) {
+        // Ascolta i coinquilini
+        if (house.membri.isNotEmpty) {
+          _roommatesSubscription = _userRepository.getRoommatesStream(house.membri).listen((users) {
+            if (_disposed) return;
+            _roommates = users;
+            _safeNotify();
+          });
+        }
       } else {
         _roommates = [];
         _safeNotify();
@@ -129,7 +132,7 @@ class CoinquiliniViewModel extends ChangeNotifier {
 
   void _cancelAllSubscriptions() {
     _profileSubscription?.cancel();
-    _profileSubscription = null; // Fondamentale per sbloccare l'if successivo
+    _profileSubscription = null;
     _houseSubscription?.cancel();
     _houseSubscription = null;
     _roommatesSubscription?.cancel();

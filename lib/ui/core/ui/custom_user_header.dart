@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../profile/view_model/profile_view_model.dart';
 import '../themes/app_colors.dart';
 import '../../profile/widgets/profile_screen.dart'; 
+import 'user_avatar.dart';
 
 class CustomUserHeader extends StatelessWidget {
   final String greetingText; // Es: "BENTORNATO" o "BENVENUTO A CASA"
@@ -22,7 +22,6 @@ class CustomUserHeader extends StatelessWidget {
     final userProfile = profileViewModel.userProfile;
 
     final String nome = userProfile?.name ?? 'Utente';
-    final String photoBase64 = userProfile?.photoUrl ?? '';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -39,15 +38,9 @@ class CustomUserHeader extends StatelessWidget {
                 );
               },
               borderRadius: BorderRadius.circular(22),
-              child: CircleAvatar(
+              child: UserAvatar(
+                user: userProfile,
                 radius: 22,
-                backgroundColor: Colors.grey.shade300,
-                backgroundImage: photoBase64.isNotEmpty
-                    ? MemoryImage(base64Decode(photoBase64))
-                    : null,
-                child: photoBase64.isEmpty
-                    ? const Icon(Icons.person, color: Colors.white, size: 24)
-                    : null,
               ),
             ),
 

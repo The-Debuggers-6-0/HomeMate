@@ -15,6 +15,7 @@ class Transaction {
   final bool isCredit;
   final String? imageUrl;
   final String? category;
+  final AppUser? payer;
 
   const Transaction({
     required this.title,
@@ -24,6 +25,7 @@ class Transaction {
     required this.isCredit,
     this.imageUrl,
     this.category,
+    this.payer,
   });
 }
 
@@ -218,6 +220,72 @@ class FinanzeViewModel extends ChangeNotifier {
     return '€${total.toStringAsFixed(2)}';
   }
 
+  Map<String, double> get categoryDistribution {
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (currentUid == null) return {};
+
+    final now = DateTime.now();
+    Map<String, double> distribution = {};
+
+    for (var t in _appTransactions) {
+      if (t.type == 'expense' && t.date.year == now.year && t.date.month == now.month) {
+        double myShare = 0.0;
+        if (t.customShares != null && t.customShares!.isNotEmpty) {
+          if (t.customShares!.containsKey(currentUid)) {
+            myShare = t.customShares![currentUid]!;
+          }
+        } else {
+          final involved = t.involvedUsers ?? _roommates.map((e) => e.uid).toList();
+          if (involved.contains(currentUid)) {
+            myShare = t.amount / involved.length;
+          }
+        }
+
+        if (myShare > 0) {
+          distribution[t.category] = (distribution[t.category] ?? 0.0) + myShare;
+        }
+      }
+    }
+    return distribution;
+  }
+
+  Map<int, double> get monthlyTrend {
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (currentUid == null) return {};
+
+    final now = DateTime.now();
+    Map<int, double> trend = {};
+    
+    // Inizializza gli ultimi 6 mesi
+    for (int i = 5; i >= 0; i--) {
+      final date = DateTime(now.year, now.month - i, 1);
+      trend[date.month] = 0.0;
+    }
+
+    for (var t in _appTransactions) {
+      if (t.type == 'expense') {
+        final tDate = t.date;
+        final monthKey = tDate.month;
+        
+        if (trend.containsKey(monthKey)) {
+          double myShare = 0.0;
+          if (t.customShares != null && t.customShares!.isNotEmpty) {
+            if (t.customShares!.containsKey(currentUid)) {
+              myShare = t.customShares![currentUid]!;
+            }
+          } else {
+            final involved = t.involvedUsers ?? _roommates.map((e) => e.uid).toList();
+            if (involved.contains(currentUid)) {
+              myShare = t.amount / involved.length;
+            }
+          }
+          trend[monthKey] = (trend[monthKey] ?? 0.0) + myShare;
+        }
+      }
+    }
+    return trend;
+  }
+
   // Ritorna gli altri coinquilini
   List<AppUser> get roommates => _roommates.where((r) => r.uid != authRepository.currentFirebaseUser?.uid).toList();
   
@@ -323,6 +391,16 @@ class FinanzeViewModel extends ChangeNotifier {
         label = isMine ? 'HAI PAGATO TU' : 'LA TUA QUOTA';
       }
 
+      AppUser? payer;
+      try {
+        payer = _roommates.firstWhere((r) => r.uid == t.payerId);
+      } catch (_) {
+        // Se non lo troviamo nei coinquilini, potrebbe essere l'utente stesso
+        if (t.payerId == currentUid) {
+          // In teoria potremmo recuperare l'AppUser dell'utente corrente se necessario
+        }
+      }
+
       return Transaction(
         title: t.title,
         subtitle: '${t.date.day}/${t.date.month}/${t.date.year}',
@@ -330,6 +408,7 @@ class FinanzeViewModel extends ChangeNotifier {
         amountLabel: label,
         isCredit: isMine,
         category: t.category,
+        payer: payer,
       );
     }).toList();
   }

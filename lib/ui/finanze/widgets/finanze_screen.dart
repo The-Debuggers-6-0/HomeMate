@@ -1,11 +1,12 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../domain/models/app_user.dart' as dm_user;
 import '../view_model/finanze_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import 'add_expense_screen.dart';
 import 'settle_debt_screen.dart';
 import '../../core/ui/custom_user_header.dart';
+import '../../core/ui/user_avatar.dart';
 
 /// Schermata Finanze. View pura che legge i dati da [FinanzeViewModel].
 class FinanzeScreen extends StatefulWidget {
@@ -82,32 +83,10 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                       ),
                       child: Row(
                         children: [
-                          Builder(builder: (context) {
-                            ImageProvider<Object>? avatarImage;
-                            final photo = rb.user.photoUrl;
-                            if (photo != null && photo.isNotEmpty) {
-                              try {
-                                if (photo.startsWith('data:')) {
-                                  final base64Str = photo.split(',').last;
-                                  avatarImage = MemoryImage(base64Decode(base64Str));
-                                } else if (photo.startsWith('http') || photo.startsWith('https')) {
-                                  avatarImage = NetworkImage(photo);
-                                } else {
-                                  // try raw base64
-                                  avatarImage = MemoryImage(base64Decode(photo));
-                                }
-                              } catch (_) {
-                                avatarImage = null;
-                              }
-                            }
-
-                            return CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Colors.grey[300],
-                              backgroundImage: avatarImage,
-                              child: avatarImage == null ? const Icon(Icons.person, color: Colors.grey) : null,
-                            );
-                          }),
+                          UserAvatar(
+                            user: rb.user,
+                            radius: 20,
+                          ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
@@ -260,7 +239,7 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                               t.amount,
                               t.amountLabel,
                               isCredit: t.isCredit,
-                              imageUrl: t.imageUrl,
+                              user: t.payer,
                               icon: t.isCredit ? Icons.person : Icons.shopping_bag,
                             ),
                           )),
@@ -323,18 +302,15 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
     String amount,
     String amountLabel, {
     required bool isCredit,
-    String? imageUrl,
+    dm_user.AppUser? user,
     IconData? icon,
   }) {
     return Row(
       children: [
-        CircleAvatar(
+        UserAvatar(
+          user: user,
           radius: 24,
-          backgroundColor: Colors.grey[200],
-          backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-          child: imageUrl == null
-              ? Icon(icon, color: AppColors.textSecondary)
-              : null,
+          iconColor: AppColors.textSecondary,
         ),
         const SizedBox(width: 16),
         Expanded(

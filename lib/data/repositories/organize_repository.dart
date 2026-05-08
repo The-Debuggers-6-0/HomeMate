@@ -9,11 +9,12 @@ abstract class OrganizeRepository {
   Stream<List<CleaningTask>> getCleaningTasksStream(String houseId);
   Future<void> addOrUpdateCleaningTask(String houseId, CleaningTask task);
   Future<void> toggleCleaningTaskCompleted(String houseId, String taskId, bool completed);
+  Future<void> deleteCleaningTask(String houseId, String taskId);
 
   // Shopping list
   Stream<List<ShoppingItem>> getShoppingListStream(String houseId);
   Future<bool> addShoppingItem(String houseId, ShoppingItem item);
-  Future<void> markItemBought(String houseId, String itemId, bool bought);
+  Future<void> markItemBought(String houseId, String itemId, bool bought, String userUid);
   Future<void> deleteShoppingItem(String houseId, String itemId);
 
   // Events
@@ -29,4 +30,8 @@ abstract class OrganizeRepository {
   // Rules
   Stream<List<HouseRule>> getHouseRulesStream(String houseId);
   Future<void> updateHouseRules(String houseId, List<HouseRule> rules);
+
+  // Recycling
+  Stream<Map<String, String>> getRecyclingScheduleStream(String houseId);
+  Future<void> updateRecyclingSchedule(String houseId, Map<String, String> schedule);
 }

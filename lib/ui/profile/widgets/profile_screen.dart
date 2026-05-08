@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:convert';
 import 'package:provider/provider.dart';
 import '../view_model/profile_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import 'edit_profile_screen.dart';
 import '../../../ui/auth/widgets/login_screen.dart';
 import '../../house/widgets/add_house_screen.dart';
+import '../../core/ui/user_avatar.dart';
 
 /// Schermata Profilo. View pura che legge i dati da [ProfileViewModel].
 class ProfileScreen extends StatelessWidget {
@@ -59,30 +59,9 @@ class ProfileScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.primaryGreen, width: 3),
                   ),
-                  child: CircleAvatar(
+                  child: UserAvatar(
+                    user: viewModel.userProfile,
                     radius: 50,
-                    backgroundColor: Colors.grey.shade300,
-
-                    // 1. ORA CONTROLLIAMO SE C'È UNA FOTO SALVATA!
-                    // Sostituisci 'photoUrl' col nome esatto che hai nel tuo modello AppUser
-                    backgroundImage:
-                        (viewModel.userProfile?.photoUrl != null &&
-                            viewModel.userProfile!.photoUrl!.isNotEmpty)
-                        ? MemoryImage(
-                            base64Decode(viewModel.userProfile!.photoUrl!),
-                          )
-                        : null,
-
-                    // 2. MOSTRA L'ICONA SOLO SE LA FOTO NON C'È
-                    child:
-                        (viewModel.userProfile?.photoUrl == null ||
-                            viewModel.userProfile!.photoUrl!.isEmpty)
-                        ? const Icon(
-                            Icons.person,
-                            size: 50,
-                            color: Colors.white,
-                          )
-                        : null,
                   ),
                 ),
 
@@ -597,7 +576,7 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.finanzeBackground,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -684,18 +663,10 @@ class ProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 16.0),
                   child: Column(
                     children: [
-                      CircleAvatar(
+                      UserAvatar(
+                        user: roommate,
                         radius: 26,
                         backgroundColor: AppColors.lightGreen,
-                        backgroundImage: (roommate.photoUrl != null && roommate.photoUrl!.isNotEmpty)
-                            ? MemoryImage(base64Decode(roommate.photoUrl!))
-                            : null,
-                        child: (roommate.photoUrl == null || roommate.photoUrl!.isEmpty)
-                            ? Text(
-                                roommate.name.isNotEmpty ? roommate.name[0].toUpperCase() : '?',
-                                style: const TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.bold),
-                              )
-                            : null,
                       ),
                       const SizedBox(height: 4),
                       Text(

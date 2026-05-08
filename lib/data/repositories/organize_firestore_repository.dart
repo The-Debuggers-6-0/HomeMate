@@ -67,6 +67,11 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
     });
   }
 
+  @override
+  Future<void> deleteCleaningTask(String houseId, String taskId) async {
+    await _houseCollection(houseId, 'cleaning_tasks').doc(taskId).delete();
+  }
+
   // Shopping
   @override
   Stream<List<ShoppingItem>> getShoppingListStream(String houseId) {
@@ -102,6 +107,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
     final doc = item.id.isEmpty ? col.doc() : col.doc(item.id);
     await doc.set({
       'name': item.name,
+      'quantity': item.quantity,
       'addedByUid': item.addedByUid,
       'bought': item.bought,
       'addedAt': item.addedAt.toIso8601String(),
@@ -111,11 +117,12 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
   }
 
   @override
-  Future<void> markItemBought(String houseId, String itemId, bool bought) async {
+  Future<void> markItemBought(String houseId, String itemId, bool bought, String userUid) async {
     final doc = _houseCollection(houseId, 'shopping_list').doc(itemId);
     await doc.update({
       'bought': bought,
       'boughtAt': bought ? FieldValue.serverTimestamp() : null,
+      'boughtByUid': bought ? userUid : null,
     });
   }
 
@@ -202,5 +209,23 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
       batch.set(doc, {'title': r.title, 'description': r.description});
     }
     await batch.commit();
+  }
+
+  // Recycling
+  @override
+  Stream<Map<String, String>> getRecyclingScheduleStream(String houseId) {
+    return _firestore.collection('houses').doc(houseId).snapshots().map((snapshot) {
+      if (!snapshot.exists || snapshot.data() == null) return {};
+      final data = snapshot.data()!;
+      if (data['recyclingSchedule'] == null) return {};
+      return Map<String, String>.from(data['recyclingSchedule'] as Map);
+    });
+  }
+
+  @override
+  Future<void> updateRecyclingSchedule(String houseId, Map<String, String> schedule) async {
+    await _firestore.collection('houses').doc(houseId).update({
+      'recyclingSchedule': schedule,
+    });
   }
 }
