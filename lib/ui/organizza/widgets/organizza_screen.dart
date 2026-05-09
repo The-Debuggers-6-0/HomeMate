@@ -815,7 +815,16 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
                 ),
-                onPressed: () => vm.toggleTaskCompleted(displayTask.id, true),
+                onPressed: () async {
+                  // 1. Aspettiamo che il ViewModel completi la task e ci dica se c'è un badge
+                  Map<String, dynamic>? newBadge = await vm.toggleTaskCompleted(displayTask.id, true);
+                  
+                  // 2. Se ci ha restituito i dati del badge, mostriamo il popup!
+                  if (newBadge != null && context.mounted) {
+                    _showGenericBadgePopup(context, newBadge);
+                  }
+                },
+                // ---> FINE MODIFICA GRILLETTO <---
                 child: Text(
                   'Fatto', 
                   style: TextStyle(
@@ -1166,6 +1175,79 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
           ),
         );
       },
+    );
+  }
+
+  // ==========================================================
+  // FUNZIONE PER IL POPUP DEI BADGE
+  // ==========================================================
+  void _showGenericBadgePopup(BuildContext context, Map<String, dynamic> badgeMeta) {
+    final String title = badgeMeta['title'] ?? "Traguardo!";
+    final String desc = badgeMeta['description'] ?? "";
+    final String hexColor = badgeMeta['color'] ?? "#4CAF50"; // Verde di default
+    final Color color = Color(int.parse(hexColor.replaceFirst('#', '0xff')));
+
+    // Funzione helper per recuperare l'icona dal nome stringa salvato su Firebase
+    IconData getIcon(String? name) {
+      switch (name) {
+        case 'local_fire_department': return Icons.local_fire_department;
+        case 'cleaning_services': return Icons.cleaning_services;
+        case 'bolt': return Icons.bolt;
+        case 'celebration': return Icons.celebration;
+        case 'recycling': return Icons.recycling;
+        case 'wb_sunny': return Icons.wb_sunny;
+        case 'water_drop': return Icons.water_drop;
+        case 'eco': return Icons.eco;
+        case 'attach_money': return Icons.attach_money;
+        default: return Icons.emoji_events;
+      }
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // L'utente deve cliccare il bottone per chiuderlo
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Cerchio luminoso con icona
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(color: color.withOpacity(0.2), shape: BoxShape.circle),
+                  child: Icon(getIcon(badgeMeta['iconName']), size: 60, color: color),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  "NUOVO TRAGUARDO!",
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.5),
+                ),
+                const SizedBox(height: 8),
+                Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Text(desc, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text("Fantastico!", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                )
+              ],
+            ),
+          ),
+        );
+      }
     );
   }
 }

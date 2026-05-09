@@ -64,34 +64,28 @@ class OrganizzaViewModel extends ChangeNotifier {
   bool get tomorrowWasteTakenOut => _tomorrowWasteTakenOut;
   List<CleaningTask> get cleaning => List.unmodifiable(_cleaning);
   
-  /// Task di pulizia della settimana corrente
   List<CleaningTask> get currentWeekCleaningTasks => List.unmodifiable(
         _cleaning.where((task) => _isCurrentWeek(task.weekStart)).toList(),
       );
 
-  /// Task della settimana non ancora completati
   List<CleaningTask> get pendingCleaningTasks => List.unmodifiable(
         currentWeekCleaningTasks.where((task) => !task.completed).toList(),
       );
 
-  /// Tutti i task completati (storico)
   List<CleaningTask> get completedCleaningTasks => List.unmodifiable(
         _cleaning.where((task) => task.completed).toList(),
       );
 
-  /// Numero totale di task completati (per il badge UI)
   int get completedCleaningTasksCount => completedCleaningTasks.length;
 
   List<String> get houseMembers => List.unmodifiable(_houseMembers);
 
   List<ShoppingItem> get shopping => List.unmodifiable(_shopping);
 
-  /// Elementi da acquistare
   List<ShoppingItem> get pendingShoppingItems => List.unmodifiable(
         _shopping.where((item) => !item.bought).toList(),
       );
 
-  /// Elementi già acquistati
   List<ShoppingItem> get boughtShoppingItems => List.unmodifiable(
         _shopping.where((item) => item.bought).toList(),
       );
@@ -159,7 +153,6 @@ class OrganizzaViewModel extends ChangeNotifier {
               _watchHouseMembers(_houseId!);
             }
           } else {
-            // user has no house
             _houseId = null;
             _cleaning = [];
             _shopping = [];
@@ -172,7 +165,6 @@ class OrganizzaViewModel extends ChangeNotifier {
           _safeNotify();
         });
       } else {
-        // user logged out
         _houseId = null;
         _profileSub?.cancel();
         _profileSub = null;
@@ -347,10 +339,24 @@ class OrganizzaViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  // Azioni di esempio
-  Future<void> toggleTaskCompleted(String taskId, bool completed) async {
-    if (_houseId == null) return;
+  // ==========================================================
+  // OTTENIMENTO BADGE (Restituisce Map con i dati del Badge)
+  // ==========================================================
+  Future<Map<String, dynamic>?> toggleTaskCompleted(String taskId, bool completed) async {
+    if (_houseId == null) return null;
+    
+    // 1. Salva la pulizia nel database
     await organizeRepository.toggleCleaningTaskCompleted(_houseId!, taskId, completed);
+
+    // 2. Se ha completato il task, avvia il motore dei badge
+    if (completed) {
+      final currentUid = authRepository.currentFirebaseUser?.uid;
+      if (currentUid != null) {
+        // Restituisce i metadati se ha appena sbloccato il badge, altrimenti null
+        return await _userRepository.updateCleaningStreakAndCheckFire(currentUid);
+      }
+    }
+    return null;
   }
 
   Future<void> addCleaningTask(String title, String assigneeUid) async {
@@ -413,7 +419,6 @@ class OrganizzaViewModel extends ChangeNotifier {
     await organizeRepository.deleteShoppingItem(_houseId!, itemId);
   }
 
-  // Eventi
   Future<void> addEvent(String title, DateTime start, {DateTime? end, String? notes}) async {
     if (_houseId == null || title.isEmpty) return;
     final currentUid = authRepository.currentFirebaseUser?.uid;
@@ -439,4 +444,6 @@ class OrganizzaViewModel extends ChangeNotifier {
     if (_houseId == null) return;
     await organizeRepository.updateRecyclingSchedule(_houseId!, schedule);
   }
+
+  
 }

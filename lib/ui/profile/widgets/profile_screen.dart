@@ -1,14 +1,15 @@
 // import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
 // import 'package:provider/provider.dart';
 // import '../view_model/profile_view_model.dart';
 // import '../../core/themes/app_colors.dart';
 // import 'edit_profile_screen.dart';
 // import '../../../ui/auth/widgets/login_screen.dart';
-// import '../../house/widgets/add_house_screen.dart';
 // import '../../core/ui/user_avatar.dart';
+// import '../../../domain/models/app_user.dart';
+// import '../../../domain/models/user_badge.dart';
+// import 'achievements_screen.dart'; 
+// import 'package:cloud_firestore/cloud_firestore.dart';
 
-// /// Schermata Profilo. View pura che legge i dati da [ProfileViewModel].
 // class ProfileScreen extends StatelessWidget {
 //   const ProfileScreen({super.key});
 
@@ -17,7 +18,7 @@
 //     final viewModel = context.watch<ProfileViewModel>();
 
 //     if (viewModel.isLoading) {
-//       return Scaffold(
+//       return const Scaffold(
 //         backgroundColor: AppColors.background,
 //         body: Center(
 //           child: CircularProgressIndicator(color: AppColors.primaryGreen),
@@ -27,20 +28,16 @@
 
 //     return Scaffold(
 //       backgroundColor: AppColors.background,
-//       // --- 1. AGGIUNGI QUESTO (Fa comparire la freccia indietro!) ---
 //       appBar: AppBar(
 //         backgroundColor: Colors.transparent,
 //         elevation: 0,
 //         iconTheme: const IconThemeData(
 //           color: Colors.black,
-//         ), // O AppColors.textDark
+//         ),
 //       ),
-
 //       body: SafeArea(
 //         child: SizedBox(
-//           // <--- 1. AGGIUNTO SIZEDBOX
-//           width: double
-//               .infinity, // <--- 2. PRENDE TUTTA LA LARGHEZZA DELLO SCHERMO
+//           width: double.infinity,
 //           child: SingleChildScrollView(
 //             child: Padding(
 //               padding: const EdgeInsets.symmetric(
@@ -48,657 +45,504 @@
 //                 vertical: 16.0,
 //               ),
 //               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.center, // <--- 3. CENTRA GLI ELEMENTI
-//               children: [
-//                 const SizedBox(height: 48),
+//                 crossAxisAlignment: CrossAxisAlignment.center,
+//                 children: [
+//                   const SizedBox(height: 16),
 
-//                 // --- FOTO PROFILO CENTRALE ---
-//                 Container(
-//                   padding: const EdgeInsets.all(4),
-//                   decoration: BoxDecoration(
-//                     shape: BoxShape.circle,
-//                     border: Border.all(color: AppColors.primaryGreen, width: 3),
+//                   // --- FOTO PROFILO CENTRALE ---
+//                   Container(
+//                     padding: const EdgeInsets.all(4),
+//                     decoration: BoxDecoration(
+//                       shape: BoxShape.circle,
+//                       border: Border.all(color: AppColors.primaryGreen, width: 3),
+//                     ),
+//                     child: UserAvatar(
+//                       user: viewModel.userProfile,
+//                       radius: 50,
+//                     ),
 //                   ),
-//                   child: UserAvatar(
-//                     user: viewModel.userProfile,
-//                     radius: 50,
-//                   ),
-//                 ),
 
-//                 const SizedBox(height: 16),
+//                   const SizedBox(height: 16),
 
-//                 // --- NOME E COGNOME ---
-//                 Text(
-//                   viewModel.fullName,
-//                   style: TextStyle(
-//                     fontSize: 24,
-//                     fontWeight: FontWeight.bold,
-//                     color: AppColors.textPrimary,
-//                   ),
-//                 ),
-//                 const SizedBox(height: 8),
-
-//                 // --- BIO / EMAIL ---
-//                 Text(
-//                   viewModel.bio,
-//                   textAlign: TextAlign.center,
-//                   style: TextStyle(
-//                     fontSize: 14,
-//                     color: AppColors.textSecondary,
-//                   ),
-//                 ),
-
-//                 const SizedBox(
-//                   height: 24,
-//                 ), // Spazio tra la bio e il nuovo bottone
-//                 // --- PULSANTE MODIFICA PROFILO ---
-//                 OutlinedButton.icon(
-//                   onPressed: () async {
-//                     // 1. Apri la pagina e aspetta che l'utente finisca e la chiuda
-//                     await Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => EditProfileScreen(
-//                           currentName: viewModel.userProfile?.name ?? '',
-//                           currentSurname: viewModel.userProfile?.surname ?? '',
-//                           currentBio: viewModel.userProfile?.bio ?? '',
-//                           currentPhotoUrl: viewModel.userProfile?.photoUrl,
-//                         ),
-//                       ),
-//                     );
-//                     // 2. Quando l'utente torna indietro (ha salvato o annullato),
-//                     // diciamo al ViewModel di riscaricare i dati freschi!
-//                     viewModel.reloadProfile();
-//                   },
-//                   icon: const Icon(
-//                     Icons.edit_outlined,
-//                     size: 20,
-//                     color: AppColors.primaryGreen,
-//                   ),
-//                   label: const Text(
-//                     "Modifica profilo",
-//                     style: TextStyle(
-//                       color: AppColors.primaryGreen,
+//                   // --- NOME E COGNOME ---
+//                   Text(
+//                     viewModel.fullName,
+//                     style: const TextStyle(
+//                       fontSize: 24,
 //                       fontWeight: FontWeight.bold,
+//                       color: AppColors.textPrimary,
 //                     ),
 //                   ),
-//                   style: OutlinedButton.styleFrom(
-//                     side: const BorderSide(color: AppColors.primaryGreen),
-//                     shape: RoundedRectangleBorder(
-//                       borderRadius: BorderRadius.circular(20),
-//                     ),
-//                     padding: const EdgeInsets.symmetric(
-//                       horizontal: 24,
-//                       vertical: 12,
+//                   const SizedBox(height: 8),
+
+//                   // --- BIO / EMAIL ---
+//                   Text(
+//                     viewModel.bio,
+//                     textAlign: TextAlign.center,
+//                     style: const TextStyle(
+//                       fontSize: 14,
+//                       color: AppColors.textSecondary,
 //                     ),
 //                   ),
-//                 ),
 
-//                 const SizedBox(height: 32),
-
-//                 // --- ZONA LA MIA CASA ---
-//                 if (viewModel.currentHouse != null)
-//                   _buildHouseSection(context, viewModel),
-//                 if (viewModel.currentHouse == null)
-//                   const Text("Non fai ancora parte di una casa.", style: TextStyle(color: Colors.grey)),
+//                   const SizedBox(height: 24), 
                   
-//                 const SizedBox(height: 48),
-
-//                 /*
-//               // --- PULSANTE LOGOUT ---
-//               TextButton.icon(
-//                 onPressed: () async {
-//                   // 1. Mostra il pop-up
-//                   final bool? confirmLogout = await showDialog<bool>(
-//                     context: context,
-//                     builder: (BuildContext context) {
-//                       return AlertDialog(
-//                         title: const Text('Disconnessione'),
-//                         content: const Text(
-//                           'Vuoi davvero effettuare il logout?',
-//                         ),
-//                         shape: RoundedRectangleBorder(
-//                           borderRadius: BorderRadius.circular(16),
-//                         ),
-//                         actions: [
-//                           // Bottone NO
-//                           TextButton(
-//                             onPressed: () => Navigator.of(context).pop(false),
-//                             child: const Text(
-//                               'No',
-//                               style: TextStyle(
-//                                 color: Colors.grey,
-//                                 fontSize: 16,
-//                               ),
-//                             ),
-//                           ),
-//                           // Bottone SI
-//                           TextButton(
-//                             onPressed: () => Navigator.of(context).pop(true),
-//                             child: Text(
-//                               'Sì',
-//                               style: TextStyle(
-//                                 color: AppColors.accentRed,
-//                                 fontSize: 16,
-//                                 fontWeight: FontWeight.bold,
-//                               ),
-//                             ),
-//                           ),
-//                         ],
-//                       );
-//                     },
-//                   );
-
-//                   // 2. Se l'utente clicca Sì (true), eseguiamo il logout vero e proprio
-//                   if (confirmLogout == true) {
-//                     viewModel.logout();
-//                   }
-//                 },
-//                 // --- PARTE GRAFICA DEL BOTTONE ---
-//                 icon: const Icon(Icons.logout, color: AppColors.accentRed),
-//                 label: const Text(
-//                   "Logout",
-//                   style: TextStyle(
-//                     color: AppColors.accentRed,
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.bold,
-//                   ),
-//                 ),
-//               ),
-
-//               const SizedBox(height: 24),
-
-//               // --- PULSANTE ELIMINA ACCOUNT ---
-//               TextButton.icon(
-//                 onPressed: () async {
-//                   // 1. Mostriamo il pop-up di ALLARME ROSSO
-//                   final bool? confirmDelete = await showDialog<bool>(
-//                     context: context,
-//                     builder: (BuildContext context) {
-//                       return AlertDialog(
-//                         title: Row(
-//                           children: const [
-//                             Icon(
-//                               Icons.warning_amber_rounded,
-//                               color: Colors.red,
-//                             ),
-//                             SizedBox(width: 8),
-//                             Text('Attenzione'),
-//                           ],
-//                         ),
-//                         content: const Text(
-//                           'Sei sicuro di voler eliminare definitivamente il tuo account?\n\nQuesta azione è irreversibile e tutti i tuoi dati, la tua bio e le tue foto verranno cancellati per sempre.',
-//                         ),
-//                         shape: RoundedRectangleBorder(
-//                           borderRadius: BorderRadius.circular(16),
-//                         ),
-//                         actions: [
-//                           // Bottone ANNULLA (in evidenza per salvarli)
-//                           TextButton(
-//                             onPressed: () => Navigator.of(context).pop(false),
-//                             child: const Text(
-//                               'Annulla',
-//                               style: TextStyle(
-//                                 color: Colors.grey,
-//                                 fontSize: 16,
-//                               ),
-//                             ),
-//                           ),
-//                           // Bottone ELIMINA (rosso e spaventoso)
-//                           TextButton(
-//                             onPressed: () => Navigator.of(context).pop(true),
-//                             child: const Text(
-//                               'Elimina per sempre',
-//                               style: TextStyle(
-//                                 color: Colors.red,
-//                                 fontWeight: FontWeight.bold,
-//                               ),
-//                             ),
-//                           ),
-//                         ],
-//                       );
-//                     },
-//                   );
-
-//                   // 2. Se l'utente clicca "Elimina per sempre" (true)...
-//                   if (confirmDelete == true) {
-//                     // 1. Il ViewModel fa esplodere i dati su Firebase
-//                     await viewModel.deleteAccount();
-
-//                     // 2. Controllo di sicurezza di Flutter (obbligatorio dopo un 'await')
-//                     if (context.mounted) {
-//                       // 3. Ti butto fuori alla schermata di Login e cancello la cronologia!
-//                       Navigator.of(context).pushAndRemoveUntil(
+//                   // --- PULSANTE MODIFICA PROFILO ---
+//                   OutlinedButton.icon(
+//                     onPressed: () async {
+//                       await Navigator.push(
+//                         context,
 //                         MaterialPageRoute(
-//                           builder: (context) => const LoginScreen(),
+//                           builder: (context) => EditProfileScreen(
+//                             currentName: viewModel.userProfile?.name ?? '',
+//                             currentSurname: viewModel.userProfile?.surname ?? '',
+//                             currentBio: viewModel.userProfile?.bio ?? '',
+//                             currentPhotoUrl: viewModel.userProfile?.photoUrl,
+//                           ),
 //                         ),
-//                         (Route<dynamic> route) => false,
 //                       );
-//                     }
-//                   }
-//                 },
-//                 icon: const Icon(Icons.delete_forever, color: Colors.red),
-//                 label: const Text(
-//                   "Elimina Account",
-//                   style: TextStyle(color: Colors.red),
-//                 ),
-//               ),
-//               */
-
-//                 // --- ZONA OPZIONI ACCOUNT ---
-
-//                 // 1. Tasto Logout (Più sobrio e con Popup di conferma!)
-//                 TextButton.icon(
-//                   onPressed: () {
-//                     showDialog(
-//                       context: context,
-//                       builder: (BuildContext dialogContext) {
-//                         return AlertDialog(
-//                           title: const Text(
-//                             'Logout',
-//                             style: TextStyle(fontWeight: FontWeight.bold),
-//                           ),
-//                           content: const Text(
-//                             'Sei sicuro di voler uscire dal tuo account?',
-//                           ),
-//                           shape: RoundedRectangleBorder(
-//                             borderRadius: BorderRadius.circular(
-//                               16,
-//                             ), // Angoli arrotondati in stile app
-//                           ),
-//                           actions: [
-//                             TextButton(
-//                               onPressed: () {
-//                                 Navigator.of(
-//                                   dialogContext,
-//                                 ).pop(); // Chiude il popup senza fare nulla
-//                               },
-//                               child: const Text(
-//                                 'Annulla',
-//                                 style: TextStyle(
-//                                   color: Colors.grey,
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                             ),
-//                             TextButton(
-//                               onPressed: () async {
-//                                 // 1. Chiude il popup
-//                                 Navigator.of(dialogContext).pop();
-
-//                                 // 2. Esegue il logout tramite il ViewModel
-//                                 await context.read<ProfileViewModel>().logout();
-
-//                                 // 3. Teletrasporta l'utente alla schermata iniziale e cancella la cronologia!
-//                                 if (context.mounted) {
-//                                   Navigator.of(context).pushAndRemoveUntil(
-//                                     // Teletrasporta l'utente alla schermata di Login
-//                                     MaterialPageRoute(
-//                                       builder: (context) => const LoginScreen(),
-//                                     ),
-//                                     (Route<dynamic> route) =>
-//                                         false, // Distrugge le schermate precedenti (non puoi fare "indietro")
-//                                   );
-//                                 }
-//                               },
-//                               child: Text(
-//                                 'Esci',
-//                                 style: TextStyle(
-//                                   color: Colors.red.shade400,
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                             ),
-//                           ],
-//                         );
-//                       },
-//                     );
-//                   },
-//                   icon: const Icon(Icons.logout, color: Colors.grey),
-//                   label: const Text(
-//                     'Logout',
-//                     style: TextStyle(
-//                       color: Colors.grey,
-//                       fontSize: 16,
-//                       fontWeight: FontWeight.bold,
+//                       viewModel.reloadProfile();
+//                     },
+//                     icon: const Icon(
+//                       Icons.edit_outlined,
+//                       size: 20,
+//                       color: AppColors.primaryGreen,
+//                     ),
+//                     label: const Text(
+//                       "Modifica profilo",
+//                       style: TextStyle(
+//                         color: AppColors.primaryGreen,
+//                         fontWeight: FontWeight.bold,
+//                       ),
+//                     ),
+//                     style: OutlinedButton.styleFrom(
+//                       side: const BorderSide(color: AppColors.primaryGreen),
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(20),
+//                       ),
+//                       padding: const EdgeInsets.symmetric(
+//                         horizontal: 24,
+//                         vertical: 12,
+//                       ),
 //                     ),
 //                   ),
-//                 ),
 
-//                 const SizedBox(height: 16), // Spazio prima della linea
-//                 // 2. Il tuo separatore elegante!
-//                 Padding(
-//                   padding: const EdgeInsets.symmetric(horizontal: 40.0),
-//                   child: Divider(color: Colors.grey.shade300, thickness: 1),
-//                 ),
+//                   const SizedBox(height: 40),
 
-//                 const SizedBox(height: 16), // Spazio dopo la linea
-//                 // 3. Bottone Elimina Account (Danger Zone CON POPUP DI SICUREZZA)
-//                 OutlinedButton.icon(
-//                   onPressed: () {
-//                     // --- APRIAMO IL POPUP DI CONFERMA ---
-//                     showDialog(
-//                       context: context,
-//                       builder: (BuildContext dialogContext) {
-//                         return AlertDialog(
-//                           title: Text(
-//                             'Attenzione!',
-//                             style: TextStyle(
-//                               fontWeight: FontWeight.bold,
-//                               color: Colors.red.shade600,
+//                   // --- ZONA: I MIEI BADGE ---
+//                   // Qui richiamiamo la funzione che ora è definita in basso
+//                   _buildBadgesSection(context, viewModel.userProfile),
+
+//                   const SizedBox(height: 48),
+
+//                   // --- ZONA OPZIONI ACCOUNT ---
+
+//                   // 1. Tasto Logout
+//                   TextButton.icon(
+//                     onPressed: () {
+//                       showDialog(
+//                         context: context,
+//                         builder: (BuildContext dialogContext) {
+//                           return AlertDialog(
+//                             title: const Text(
+//                               'Logout',
+//                               style: TextStyle(fontWeight: FontWeight.bold),
 //                             ),
-//                           ),
-//                           content: const Text(
-//                             'Sei sicuro di voler eliminare definitivamente il tuo account? Questa azione è irreversibile e perderai tutti i tuoi dati associati alla casa.',
-//                           ),
-//                           shape: RoundedRectangleBorder(
-//                             borderRadius: BorderRadius.circular(16),
-//                           ),
-//                           actions: [
-//                             TextButton(
-//                               onPressed: () {
-//                                 Navigator.of(
-//                                   dialogContext,
-//                                 ).pop(); // Chiude il popup senza fare danni
-//                               },
-//                               child: const Text(
-//                                 'Annulla',
-//                                 style: TextStyle(
-//                                   color: Colors.grey,
-//                                   fontWeight: FontWeight.bold,
+//                             content: const Text(
+//                               'Sei sicuro di voler uscire dal tuo account?',
+//                             ),
+//                             shape: RoundedRectangleBorder(
+//                               borderRadius: BorderRadius.circular(16),
+//                             ),
+//                             actions: [
+//                               TextButton(
+//                                 onPressed: () {
+//                                   Navigator.of(dialogContext).pop();
+//                                 },
+//                                 child: const Text(
+//                                   'Annulla',
+//                                   style: TextStyle(
+//                                     color: Colors.grey,
+//                                     fontWeight: FontWeight.bold,
+//                                   ),
 //                                 ),
 //                               ),
-//                             ),
-//                             TextButton(
-//                               onPressed: () async {
-//                                 // 1. Chiude il popup
-//                                 Navigator.of(dialogContext).pop();
-
-//                                 // 2. --- IL MOTORE DELL'ELIMINAZIONE CHE ABBIAMO SCRITTO PRIMA ---
-//                                 try {
-//                                   final success = await context
-//                                       .read<ProfileViewModel>()
-//                                       .deleteAccount();
-
+//                               TextButton(
+//                                 onPressed: () async {
+//                                   Navigator.of(dialogContext).pop();
+//                                   await context.read<ProfileViewModel>().logout();
 //                                   if (context.mounted) {
-//                                     if (success) {
-//                                       // Eliminazione totale riuscita! Andiamo alla schermata iniziale
+//                                     Navigator.of(context).pushAndRemoveUntil(
+//                                       MaterialPageRoute(
+//                                         builder: (context) => const LoginScreen(),
+//                                       ),
+//                                       (Route<dynamic> route) => false, 
+//                                     );
+//                                   }
+//                                 },
+//                                 child: Text(
+//                                   'Esci',
+//                                   style: TextStyle(
+//                                     color: Colors.red.shade400,
+//                                     fontWeight: FontWeight.bold,
+//                                   ),
+//                                 ),
+//                               ),
+//                             ],
+//                           );
+//                         },
+//                       );
+//                     },
+//                     icon: const Icon(Icons.logout, color: Colors.grey),
+//                     label: const Text(
+//                       'Logout',
+//                       style: TextStyle(
+//                         color: Colors.grey,
+//                         fontSize: 16,
+//                         fontWeight: FontWeight.bold,
+//                       ),
+//                     ),
+//                   ),
+
+//                   const SizedBox(height: 16), 
+                  
+//                   // 2. Separatore elegante
+//                   Padding(
+//                     padding: const EdgeInsets.symmetric(horizontal: 40.0),
+//                     child: Divider(color: Colors.grey.shade300, thickness: 1),
+//                   ),
+
+//                   const SizedBox(height: 16), 
+                  
+//                   // 3. Bottone Elimina Account
+//                   OutlinedButton.icon(
+//                     onPressed: () {
+//                       showDialog(
+//                         context: context,
+//                         builder: (BuildContext dialogContext) {
+//                           return AlertDialog(
+//                             title: Text(
+//                               'Attenzione!',
+//                               style: TextStyle(
+//                                 fontWeight: FontWeight.bold,
+//                                 color: Colors.red.shade600,
+//                               ),
+//                             ),
+//                             content: const Text(
+//                               'Sei sicuro di voler eliminare definitivamente il tuo account? Questa azione è irreversibile e perderai tutti i tuoi dati.',
+//                             ),
+//                             shape: RoundedRectangleBorder(
+//                               borderRadius: BorderRadius.circular(16),
+//                             ),
+//                             actions: [
+//                               TextButton(
+//                                 onPressed: () {
+//                                   Navigator.of(dialogContext).pop(); 
+//                                 },
+//                                 child: const Text(
+//                                   'Annulla',
+//                                   style: TextStyle(
+//                                     color: Colors.grey,
+//                                     fontWeight: FontWeight.bold,
+//                                   ),
+//                                 ),
+//                               ),
+//                               TextButton(
+//                                 onPressed: () async {
+//                                   Navigator.of(dialogContext).pop();
+//                                   try {
+//                                     final success = await context.read<ProfileViewModel>().deleteAccount();
+//                                     if (context.mounted) {
+//                                       if (success) {
+//                                         Navigator.of(context).pushAndRemoveUntil(
+//                                           MaterialPageRoute(
+//                                             builder: (context) => const LoginScreen(),
+//                                           ),
+//                                           (Route<dynamic> route) => false,
+//                                         );
+//                                       } else {
+//                                         ScaffoldMessenger.of(context).showSnackBar(
+//                                           const SnackBar(
+//                                             content: Text('Errore durante l\'eliminazione. Riprova.'),
+//                                           ),
+//                                         );
+//                                       }
+//                                     }
+//                                   } catch (e) {
+//                                     if (context.mounted && e.toString().contains('requires-recent-login')) {
+//                                       ScaffoldMessenger.of(context).showSnackBar(
+//                                         const SnackBar(
+//                                           content: Text('Devi effettuare nuovamente l\'accesso per eliminare l\'account.'),
+//                                         ),
+//                                       );
 //                                       Navigator.of(context).pushAndRemoveUntil(
 //                                         MaterialPageRoute(
-//                                           builder: (context) =>
-//                                               const LoginScreen(),
+//                                           builder: (context) => const LoginScreen(),
 //                                         ),
 //                                         (Route<dynamic> route) => false,
 //                                       );
-//                                     } else {
-//                                       ScaffoldMessenger.of(
-//                                         context,
-//                                       ).showSnackBar(
-//                                         const SnackBar(
-//                                           content: Text(
-//                                             'Errore durante l\'eliminazione. Riprova.',
-//                                           ),
-//                                         ),
-//                                       );
 //                                     }
 //                                   }
-//                                 } catch (e) {
-//                                   // GESTIONE ERRORE FIREBASE: Il login è troppo vecchio
-//                                   if (context.mounted &&
-//                                       e.toString().contains(
-//                                         'requires-recent-login',
-//                                       )) {
-//                                     ScaffoldMessenger.of(context).showSnackBar(
-//                                       const SnackBar(
-//                                         content: Text(
-//                                           'Per motivi di sicurezza, devi effettuare nuovamente l\'accesso per eliminare l\'account.',
-//                                         ),
-//                                         duration: Duration(seconds: 4),
-//                                       ),
-//                                     );
-//                                     // Mandiamo l'utente al Login per fare l'accesso fresco
-//                                     Navigator.of(context).pushAndRemoveUntil(
-//                                       MaterialPageRoute(
-//                                         builder: (context) =>
-//                                             const LoginScreen(),
-//                                       ),
-//                                       (Route<dynamic> route) => false,
-//                                     );
-//                                   }
-//                                 }
-//                               },
-//                               child: const Text(
-//                                 'Elimina',
-//                                 style: TextStyle(
-//                                   color: Colors.red,
-//                                   fontWeight: FontWeight.bold,
+//                                 },
+//                                 child: const Text(
+//                                   'Elimina',
+//                                   style: TextStyle(
+//                                     color: Colors.red,
+//                                     fontWeight: FontWeight.bold,
+//                                   ),
 //                                 ),
 //                               ),
-//                             ),
-//                           ],
-//                         );
-//                       },
-//                     );
-//                   },
-//                   // --- LA CARROZZERIA DEL BOTTONE ---
-//                   style: OutlinedButton.styleFrom(
-//                     foregroundColor: Colors.red.shade400,
-//                     side: BorderSide(color: Colors.red.shade400, width: 1.5),
-//                     padding: const EdgeInsets.symmetric(
-//                       horizontal: 24,
-//                       vertical: 12,
+//                             ],
+//                           );
+//                         },
+//                       );
+//                     },
+//                     style: OutlinedButton.styleFrom(
+//                       foregroundColor: Colors.red.shade400,
+//                       side: BorderSide(color: Colors.red.shade400, width: 1.5),
+//                       padding: const EdgeInsets.symmetric(
+//                         horizontal: 24,
+//                         vertical: 12,
+//                       ),
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(12),
+//                       ),
 //                     ),
-//                     shape: RoundedRectangleBorder(
-//                       borderRadius: BorderRadius.circular(12),
+//                     icon: const Icon(Icons.delete_outline),
+//                     label: const Text(
+//                       'Elimina Account',
+//                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
 //                     ),
 //                   ),
-//                   icon: const Icon(Icons.delete_outline),
-//                   label: const Text(
-//                     'Elimina Account',
-//                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-//                   ),
-//                 ),
 
-//                 const SizedBox(height: 32),
-//               ],
+//                   const SizedBox(height: 32),
+//                 ],
+//               ),
 //             ),
 //           ),
 //         ),
 //       ),
-//     ),
 //     );
-//   }
+//   } // <--- FINE DEL METODO BUILD. Tutto quello che c'è sotto sono i nostri "aiutanti"
 
-//   void _mostraDialogModificaNome(BuildContext context, ProfileViewModel viewModel) {
-//     final TextEditingController nameController = TextEditingController(text: viewModel.currentHouse!.nome);
-//     showDialog(
-//       context: context,
-//       builder: (dialogContext) => AlertDialog(
-//         title: const Text('Modifica Nome Casa'),
-//         content: TextField(
-//           controller: nameController,
-//           decoration: const InputDecoration(hintText: 'Nuovo nome...'),
-//         ),
-//         actions: [
-//           TextButton(
-//             onPressed: () => Navigator.pop(dialogContext),
-//             child: const Text('Annulla'),
-//           ),
-//           ElevatedButton(
-//             onPressed: () async {
-//               if (nameController.text.trim().isNotEmpty) {
-//                 await viewModel.updateHouseName(nameController.text);
-//                 if (dialogContext.mounted) Navigator.pop(dialogContext);
-//               }
-//             },
-//             child: const Text('Salva'),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
+//   // =======================================================================
+//   // METODI DI SUPPORTO PER I BADGE (Definiti fuori dal blocco principale)
+//   // =======================================================================
 
-//   void _confermaAbbandono(BuildContext context, ProfileViewModel viewModel) {
-//     showDialog(
-//       context: context,
-//       builder: (dialogContext) => AlertDialog(
-//         title: const Text('Abbandona Casa'),
-//         content: const Text('Sei sicuro di voler abbandonare questa casa? Non potrai più accedere ai dati finché non sarai invitato di nuovo.'),
-//         actions: [
-//           TextButton(
-//             onPressed: () => Navigator.pop(dialogContext),
-//             child: const Text('Annulla'),
-//           ),
-//           ElevatedButton(
-//             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-//             onPressed: () async {
-//               Navigator.pop(dialogContext); // Chiude il dialog
-//               final success = await viewModel.leaveHouse();
-//               if (success && context.mounted) {
-//                 Navigator.pushAndRemoveUntil(
-//                   context,
-//                   MaterialPageRoute(builder: (_) => const AddHouseScreen()),
-//                   (route) => false,
-//                 );
-//               }
-//             },
-//             child: const Text('Abbandona', style: TextStyle(color: Colors.white)),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
+//   // --- WIDGET PER LA SEZIONE BADGE INTELLIGENTE ---
+//   Widget _buildBadgesSection(BuildContext context, AppUser? user) {
+//     if (user == null) return const SizedBox.shrink();
 
-//   Widget _buildHouseSection(BuildContext context, ProfileViewModel viewModel) {
-//     return Container(
-//       width: double.infinity,
-//       padding: const EdgeInsets.all(20),
-//       decoration: BoxDecoration(
-//         color: AppColors.finanzeBackground,
-//         borderRadius: BorderRadius.circular(24),
-//         border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.2)),
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Row(
-//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//             children: [
-//               Expanded(
-//                 child: Row(
-//                   children: [
-//                     Flexible(
-//                       child: Text(
-//                         viewModel.currentHouse!.nome,
-//                         style: const TextStyle(
-//                           fontSize: 20,
-//                           fontWeight: FontWeight.bold,
-//                           color: AppColors.primaryDark,
-//                         ),
-//                         overflow: TextOverflow.ellipsis,
-//                       ),
-//                     ),
-//                     IconButton(
-//                       icon: const Icon(Icons.edit, size: 20, color: AppColors.textSecondary),
-//                       onPressed: () => _mostraDialogModificaNome(context, viewModel),
-//                     ),
-//                   ],
+//     // Prendiamo i primi 3 badge sbloccati per la vetrina
+//     final List<UserBadge> displayBadges = user.unlockedBadges.values.take(3).toList();
+
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Row(
+//           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//           children: [
+//             const Padding(
+//               padding: EdgeInsets.symmetric(horizontal: 8.0),
+//               child: Text(
+//                 "I miei Traguardi",
+//                 style: TextStyle(
+//                   fontSize: 18,
+//                   fontWeight: FontWeight.bold,
+//                   color: AppColors.primaryDark,
 //                 ),
 //               ),
-//               InkWell(
-//                 onTap: () {
-//                   Clipboard.setData(ClipboardData(text: viewModel.currentHouse!.id));
-//                   ScaffoldMessenger.of(context).showSnackBar(
-//                     SnackBar(
-//                       content: const Text("Codice casa copiato negli appunti!"),
-//                       backgroundColor: AppColors.primaryGreen,
-//                     ),
-//                   );
-//                 },
-//                 child: Container(
-//                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-//                   decoration: BoxDecoration(
-//                     color: Colors.white,
-//                     borderRadius: BorderRadius.circular(12),
-//                     border: Border.all(color: AppColors.primaryGreen),
+//             ),
+//             TextButton(
+//               onPressed: () {
+//                 Navigator.push(
+//                   context,
+//                   MaterialPageRoute(
+//                     builder: (context) => AchievementsScreen(user: user),
 //                   ),
-//                   child: Row(
-//                     mainAxisSize: MainAxisSize.min,
-//                     children: [
-//                       Text(
-//                         viewModel.currentHouse!.id,
-//                         style: const TextStyle(
-//                           color: AppColors.primaryGreen,
-//                           fontWeight: FontWeight.bold,
-//                           letterSpacing: 1.5,
-//                         ),
-//                       ),
-//                       const SizedBox(width: 4),
-//                       const Icon(Icons.copy, size: 14, color: AppColors.primaryGreen),
-//                     ],
-//                   ),
+//                 );
+//               },
+//               child: const Text(
+//                 "Vedi tutti",
+//                 style: TextStyle(fontSize: 14, color: AppColors.primaryGreen),
+//               ),
+//             ),
+//           ],
+//         ),
+//         const SizedBox(height: 20),
+//         Row(
+//           mainAxisAlignment: MainAxisAlignment.spaceAround,
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: List.generate(3, (index) {
+//             if (index < displayBadges.length) {
+//               return _buildRealBadge(displayBadges[index]);
+//             } else {
+//               return _buildEmptySlot();
+//             }
+//           }),
+//         ),
+//       ],
+//     );
+//   }
+
+//   // --- COSTRUISCE IL BADGE, DINAMICO DA FIREBASE ---
+//   Widget _buildRealBadge(UserBadge badge) {
+//     // Chiediamo a Firebase i dettagli esatti di questo specifico badge
+//     return FutureBuilder<DocumentSnapshot>(
+//       future: FirebaseFirestore.instance.collection('badges_metadata').doc(badge.templateId).get(),
+//       builder: (context, snapshot) {
+        
+//         // 1. Valori di default mentre l'app aspetta la risposta da Firebase
+//         IconData iconData = Icons.hourglass_empty;
+//         Color color = Colors.grey;
+//         String label = "...";
+//         String description = "Caricamento..."; // <--- Nuova variabile per il testo del Tooltip
+
+//         // 2. Se Firebase ci ha risposto e il badge esiste nel catalogo
+//         if (snapshot.hasData && snapshot.data!.exists) {
+//           final data = snapshot.data!.data() as Map<String, dynamic>;
+          
+//           // Leggiamo TITOLO e DESCRIZIONE da Firebase
+//           label = data['title'] ?? "Traguardo";
+//           description = data['description'] ?? "Hai sbloccato questo traguardo!";
+          
+//           // Leggiamo il COLORE da Firebase e lo convertiamo
+//           if (data['color'] != null) {
+//             color = Color(int.parse(data['color'].toString().replaceFirst('#', '0xff')));
+//           }
+          
+//           // Leggiamo L'ICONA da Firebase
+//           final iconName = data['iconName'];
+//           switch (iconName) {
+//             case 'local_fire_department': iconData = Icons.local_fire_department; break;
+//             case 'cleaning_services': iconData = Icons.cleaning_services; break;
+//             case 'bolt': iconData = Icons.bolt; break;
+//             case 'celebration': iconData = Icons.celebration; break;
+//             case 'recycling': iconData = Icons.recycling; break;
+//             case 'wb_sunny': iconData = Icons.wb_sunny; break;
+//             case 'water_drop': iconData = Icons.water_drop; break;
+//             case 'eco': iconData = Icons.eco; break;
+//             case 'attach_money': iconData = Icons.attach_money; break;
+//             default: iconData = Icons.emoji_events;
+//           }
+
+//           if (badge.templateId == 'top_roommate_monthly' && badge.month != null) {
+//             label = "Top\n${_getMonthName(badge.month)}";
+//           }
+//         }
+
+//         // 3. Disegniamo l'interfaccia avvolta dal TOOLTIP COMPATTO
+//         return Tooltip(
+//           message: description,
+//           triggerMode: TooltipTriggerMode.tap, // Appare al tocco
+//           preferBelow: false, // Lo fa apparire sopra
+//           showDuration: const Duration(seconds: 3),
+          
+//           // --- REGOLE PER UN FUMETTO ELEGANTE (Anche per testi lunghi) ---
+//           textAlign: TextAlign.center, 
+//           margin: const EdgeInsets.symmetric(horizontal: 50), 
+//           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//           decoration: BoxDecoration(
+//             color: Colors.black.withOpacity(0.85),
+//             borderRadius: BorderRadius.circular(12),
+//           ),
+//           textStyle: const TextStyle(
+//             color: Colors.white, 
+//             fontSize: 12,
+//             height: 1.4,
+//           ),
+//           // ---------------------------------------------------------------
+
+//           child: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               Container(
+//                 padding: const EdgeInsets.all(16),
+//                 decoration: BoxDecoration(
+//                   color: color.withOpacity(0.15),
+//                   shape: BoxShape.circle,
+//                   border: Border.all(color: color.withOpacity(0.5), width: 2),
+//                   boxShadow: [
+//                     BoxShadow(
+//                       color: color.withOpacity(0.3), // Glow dinamico!
+//                       blurRadius: 10,
+//                       offset: const Offset(0, 4),
+//                     )
+//                   ],
+//                 ),
+//                 child: Icon(iconData, color: color, size: 28),
+//               ),
+//               const SizedBox(height: 8),
+//               Text(
+//                 label,
+//                 textAlign: TextAlign.center,
+//                 style: const TextStyle(
+//                   fontSize: 12,
+//                   fontWeight: FontWeight.bold,
+//                   color: AppColors.textPrimary,
 //                 ),
 //               ),
 //             ],
 //           ),
-//           const SizedBox(height: 16),
-//           const Text(
-//             "Membri della casa",
-//             style: TextStyle(
-//               fontSize: 14,
-//               fontWeight: FontWeight.w600,
-//               color: AppColors.textSecondary,
-//             ),
-//           ),
-//           const SizedBox(height: 12),
-//           // Mostra avatar orizzontali dei coinquilini
-//           SizedBox(
-//             height: 80,
-//             child: ListView.builder(
-//               scrollDirection: Axis.horizontal,
-//               itemCount: viewModel.roommates.length,
-//               itemBuilder: (context, index) {
-//                 final roommate = viewModel.roommates[index];
-//                 return Padding(
-//                   padding: const EdgeInsets.only(right: 16.0),
-//                   child: Column(
-//                     children: [
-//                       UserAvatar(
-//                         user: roommate,
-//                         radius: 26,
-//                         backgroundColor: AppColors.lightGreen,
-//                       ),
-//                       const SizedBox(height: 4),
-//                       Text(
-//                         roommate.name,
-//                         style: const TextStyle(
-//                           fontSize: 12,
-//                           color: AppColors.textPrimary,
-//                           fontWeight: FontWeight.w500,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 );
-//               },
-//             ),
-//           ),
-//           const SizedBox(height: 16),
-//           SizedBox(
-//             width: double.infinity,
-//             child: TextButton.icon(
-//               style: TextButton.styleFrom(foregroundColor: Colors.red.shade400),
-//               icon: const Icon(Icons.exit_to_app),
-//               label: const Text('Abbandona Casa', style: TextStyle(fontWeight: FontWeight.bold)),
-//               onPressed: () => _confermaAbbandono(context, viewModel),
-//             ),
-//           ),
-//         ],
-//       ),
+//         );
+//       },
 //     );
 //   }
-// }
 
+//   // --- SLOT VUOTO (LUCCHETTO) ---
+//   Widget _buildEmptySlot() {
+//     return Column(
+//       mainAxisSize: MainAxisSize.min,
+//       children: [
+//         Container(
+//           padding: const EdgeInsets.all(16),
+//           decoration: BoxDecoration(
+//             color: Colors.grey.shade200,
+//             shape: BoxShape.circle,
+//             border: Border.all(color: Colors.grey.shade400, style: BorderStyle.solid),
+//           ),
+//           child: Icon(Icons.lock_outline, color: Colors.grey.shade400, size: 28),
+//         ),
+//         const SizedBox(height: 8),
+//         const Text(
+//           "Bloccato",
+//           style: TextStyle(fontSize: 12, color: Colors.grey),
+//         ),
+//       ],
+//     );
+//   }
+
+//   // --- LOGICA STAGIONALE (ICONE) ---
+//   IconData _getSeasonalIcon(int? month) {
+//     if (month == null) return Icons.emoji_events; 
+//     switch (month) {
+//       case 12: case 1: case 2: return Icons.ac_unit; 
+//       case 3: case 4: case 5: return Icons.local_florist; 
+//       case 6: case 7: case 8: return Icons.wb_sunny; 
+//       case 9: case 10: case 11: return Icons.eco; 
+//       default: return Icons.emoji_events;
+//     }
+//   }
+
+//   // --- LOGICA STAGIONALE (COLORI) ---
+//   Color _getSeasonalColor(int? month) {
+//     if (month == null) return const Color(0xFFFFD700); 
+//     switch (month) {
+//       case 12: case 1: case 2: return Colors.lightBlue; 
+//       case 3: case 4: case 5: return Colors.pinkAccent; 
+//       case 6: case 7: case 8: return Colors.orange; 
+//       case 9: case 10: case 11: return Colors.brown; 
+//       default: return const Color(0xFFFFD700);
+//     }
+//   }
+
+//   // --- HELPER MESI ---
+//   String _getMonthName(int? month) {
+//     if (month == null) return "";
+//     const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+//     return (month >= 1 && month <= 12) ? mesi[month - 1] : "";
+//   }
+// }
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -707,8 +551,11 @@ import '../../core/themes/app_colors.dart';
 import 'edit_profile_screen.dart';
 import '../../../ui/auth/widgets/login_screen.dart';
 import '../../core/ui/user_avatar.dart';
+import '../../../domain/models/app_user.dart';
+import '../../../domain/models/user_badge.dart';
+import 'achievements_screen.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Schermata Profilo. View pura che legge i dati da [ProfileViewModel].
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -784,7 +631,12 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 24), 
+                  const SizedBox(height: 10), 
+
+                  // --- ZONA: I MIEI BADGE ---
+                  _buildBadgesSection(context, viewModel.userProfile),
+
+                  const SizedBox(height: 50), 
                   
                   // --- PULSANTE MODIFICA PROFILO ---
                   OutlinedButton.icon(
@@ -825,11 +677,6 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 40),
-
-                  // --- NUOVA ZONA: I MIEI BADGE ---
-                  _buildBadgesSection(),
 
                   const SizedBox(height: 48),
 
@@ -904,7 +751,7 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 16), 
                   
-                  // 2. Separatore elegante
+                  // 2. Separatore 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40.0),
                     child: Divider(color: Colors.grey.shade300, thickness: 1),
@@ -1023,106 +870,181 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- WIDGET PER LA SEZIONE BADGE ---
-  Widget _buildBadgesSection() {
+  // =======================================================================
+  // METODI DI SUPPORTO PER I BADGE
+  // =======================================================================
+
+  Widget _buildBadgesSection(BuildContext context, AppUser? user) {
+    if (user == null) return const SizedBox.shrink();
+
+    final List<UserBadge> displayBadges = user.unlockedBadges.values.take(3).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.0),
-          child: Text(
-            "I miei Traguardi",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryDark,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                "I miei Traguardi",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              ),
             ),
-          ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AchievementsScreen(user: user),
+                  ),
+                );
+              },
+              child: const Text(
+                "Vedi tutti",
+                style: TextStyle(fontSize: 14, color: AppColors.primaryGreen),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildBadgeItem(
-              icon: Icons.local_fire_department,
-              color: Colors.orange,
-              label: "On Fire",
-              isUnlocked: true,
-            ),
-            _buildBadgeItem(
-              icon: Icons.cleaning_services_rounded,
-              color: Colors.blue,
-              label: "Splendente",
-              isUnlocked: true,
-            ),
-            _buildBadgeItem(
-              icon: Icons.attach_money,
-              color: Colors.green,
-              label: "Puntuale",
-              isUnlocked: false, // Esempio di badge non sbloccato
-            ),
-            _buildBadgeItem(
-              icon: Icons.star_rounded,
-              color: Colors.amber,
-              label: "Top",
-              isUnlocked: false,
-            ),
-          ],
+          children: List.generate(3, (index) {
+            if (index < displayBadges.length) {
+              return _buildRealBadge(displayBadges[index]);
+            } else {
+              return _buildEmptySlot();
+            }
+          }),
         ),
       ],
     );
   }
 
-  Widget _buildBadgeItem({
-    required IconData icon,
-    required Color color,
-    required String label,
-    required bool isUnlocked,
-  }) {
-    // Se non è sbloccato, usiamo un colore grigio chiaro e opaco
-    final displayColor = isUnlocked ? color : Colors.grey.shade400;
-    final bgColor = isUnlocked ? color.withOpacity(0.15) : Colors.grey.shade200;
+  Widget _buildRealBadge(UserBadge badge) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('badges_metadata').doc(badge.templateId).get(),
+      builder: (context, snapshot) {
+        
+        IconData iconData = Icons.hourglass_empty;
+        Color color = Colors.grey;
+        String label = "...";
+        String description = "Caricamento...";
 
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          
+          label = data['title'] ?? "Traguardo";
+          description = data['description'] ?? "Hai sbloccato questo traguardo!";
+          
+          if (data['color'] != null) {
+            color = Color(int.parse(data['color'].toString().replaceFirst('#', '0xff')));
+          }
+          
+          final iconName = data['iconName'];
+          switch (iconName) {
+            case 'local_fire_department': iconData = Icons.local_fire_department; break;
+            case 'cleaning_services': iconData = Icons.cleaning_services; break;
+            case 'bolt': iconData = Icons.bolt; break;
+            case 'celebration': iconData = Icons.celebration; break;
+            case 'recycling': iconData = Icons.recycling; break;
+            case 'wb_sunny': iconData = Icons.wb_sunny; break;
+            case 'water_drop': iconData = Icons.water_drop; break;
+            case 'eco': iconData = Icons.eco; break;
+            case 'attach_money': iconData = Icons.attach_money; break;
+            default: iconData = Icons.emoji_events;
+          }
+
+          if (badge.templateId == 'top_roommate_monthly' && badge.month != null) {
+            label = "Top\n${_getMonthName(badge.month)}";
+          }
+        }
+
+        return Tooltip(
+          message: description,
+          triggerMode: TooltipTriggerMode.tap, 
+          preferBelow: false,
+          showDuration: const Duration(seconds: 3),
+          textAlign: TextAlign.center, 
+          margin: const EdgeInsets.symmetric(horizontal: 50), 
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            color: Colors.white, 
+            fontSize: 12,
+            height: 1.4,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color.withOpacity(0.5), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Icon(iconData, color: color, size: 28),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptySlot() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: bgColor,
+            color: Colors.grey.shade200,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: isUnlocked ? color.withOpacity(0.5) : Colors.transparent, 
-              width: 2,
-            ),
-            boxShadow: isUnlocked
-                ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ]
-                : [],
+            border: Border.all(color: Colors.grey.shade400, style: BorderStyle.solid),
           ),
-          child: Icon(
-            isUnlocked ? icon : Icons.lock_outline, 
-            color: displayColor, 
-            size: 28,
-          ),
+          child: Icon(Icons.lock_outline, color: Colors.grey.shade400, size: 28),
         ),
         const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isUnlocked ? AppColors.textPrimary : Colors.grey,
-          ),
+        const Text(
+          "Bloccato",
+          style: TextStyle(fontSize: 12, color: Colors.grey),
         ),
       ],
     );
+  }
+
+  String _getMonthName(int? month) {
+    if (month == null) return "";
+    const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+    return (month >= 1 && month <= 12) ? mesi[month - 1] : "";
   }
 }

@@ -13,13 +13,25 @@ class UserBadge {
     this.year,
   });
 
-  // --- RINOMINATO DA fromMap A fromJson ---
   factory UserBadge.fromJson(Map<String, dynamic> json) {
+    // --- IL TRUCCO: Gestione intelligente della data ---
+    DateTime parsedDate = DateTime.now();
+    
+    if (json['unlockedAt'] != null) {
+      final dynamic dateData = json['unlockedAt'];
+      // Se Firebase ci manda una stringa di testo (il nostro caso!)
+      if (dateData is String) {
+        parsedDate = DateTime.tryParse(dateData) ?? DateTime.now();
+      } 
+      // Se Firebase ci manda un Timestamp nativo (per sicurezza)
+      else if (dateData is Timestamp) {
+        parsedDate = dateData.toDate();
+      }
+    }
+
     return UserBadge(
       templateId: json['templateId'] ?? '',
-      unlockedAt: json['unlockedAt'] != null 
-          ? (json['unlockedAt'] as Timestamp).toDate() 
-          : DateTime.now(),
+      unlockedAt: parsedDate,
       month: json['month'],
       year: json['year'],
     );
@@ -28,7 +40,7 @@ class UserBadge {
   Map<String, dynamic> toJson() {
     return {
       'templateId': templateId,
-      'unlockedAt': Timestamp.fromDate(unlockedAt),
+      'unlockedAt': unlockedAt.toIso8601String(), // Ora salviamo sempre come Stringa per coerenza
       if (month != null) 'month': month,
       if (year != null) 'year': year,
     };
