@@ -178,6 +178,18 @@ class FinanzeViewModel extends ChangeNotifier {
   Future<Map<String, dynamic>?> addReimbursement(String receiverId, double amount) async {
     if (_houseId == null) return null;
     final uid = authRepository.currentFirebaseUser?.uid ?? '';
+    
+    // --- 1. FOTOGRAFIA DEL DEBITO PRE-PAGAMENTO ---
+    double debitoAttuale = 0.0;
+    try {
+      // roommateBalances ci dice i saldi. Se balance è negativo, vuol dire che IO devo soldi a LUI.
+      final balanceObj = roommateBalances.firstWhere((b) => b.user.uid == receiverId);
+      if (balanceObj.balance < 0) {
+        debitoAttuale = balanceObj.balance.abs(); // lo facciamo diventare positivo per confrontarlo
+      }
+    } catch (_) {}
+
+    // --- 2. SALVATAGGIO DELLA TRANSAZIONE ---
     final receiver = _roommates.firstWhere((r) => r.uid == receiverId);
     final newTransaction = dm.AppTransaction(
       id: '',
@@ -191,10 +203,14 @@ class FinanzeViewModel extends ChangeNotifier {
     );
     await financeRepository.addTransaction(_houseId!, newTransaction);
 
-    // Dopo aver aggiunto il rimborso, aggiorniamo il contatore dei "fast payer" e controlliamo se l'utente ha guadagnato un badge
-    if (uid.isNotEmpty) {
+    // --- 3. GRILLETTO "SALDATORE SERIALE" (A prova di truffa!) ---
+    // Il contatore scatta SOLO SE:
+    // - C'era un debito vero (maggiore di 0.50€)
+    // - L'importo pagato è maggiore o uguale al debito (usiamo -0.01 per tollerare gli arrotondamenti dei centesimi)
+    if (uid.isNotEmpty && debitoAttuale > 0.5 && amount >= (debitoAttuale - 0.01)) {
       return await userRepository.updateFastPayerCountAndCheckBadge(uid);
     }
+
     return null;
   }
 

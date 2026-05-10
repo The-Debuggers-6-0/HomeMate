@@ -456,6 +456,8 @@ class OrganizzaViewModel extends ChangeNotifier {
     // Se il rifiuto confermato è la Plastica, avvia il contatore!
     if (wasteType == 'Plastica') {
       return await _userRepository.updatePlasticCountAndCheckHero(currentUid);
+    } else if (wasteType == 'Carta') { // <--- ECCO L'EROE DELLA CARTA!
+      return await _userRepository.updatePaperCountAndCheckHero(currentUid);
     }
     return null;
   }

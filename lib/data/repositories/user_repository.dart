@@ -200,8 +200,8 @@ class UserRepository {
     await userRef.update({'cleaningStreak': currentStreak});
     print("🧹 Cleaning streak aggiornata a: $currentStreak");
 
-    // TRAGUARDO RAGGIUNTO! Se arriva a 3, proviamo a sbloccare il badge.
-    if (currentStreak >= 3) {
+    // TRAGUARDO RAGGIUNTO! Se arriva a 8, proviamo a sbloccare il badge.
+    if (currentStreak >= 8) {
       return await checkAndUnlockBadge(uid, 'on_fire');
     }
     
@@ -225,9 +225,33 @@ class UserRepository {
     await userRef.update({'plasticCount': plasticCount});
     print("♻️ Contatore plastica: $plasticCount");
 
-    // 2. Se arriva a 20, proviamo a sbloccare il badge
+    // 2. Se arriva a 20, sblocchiamo il badge
     if (plasticCount >= 20) {
       return await checkAndUnlockBadge(uid, 'plastic_hero');
+    }
+    
+    return null;
+  }
+
+  /// Aggiorna il contatore della carta e controlla il badge "Eroe della Carta"
+  /// Restituisce i dati del badge se sbloccato, altrimenti null.
+  Future<Map<String, dynamic>?> updatePaperCountAndCheckHero(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userRef.get();
+    
+    if (!snapshot.exists) return null;
+    final data = snapshot.data() as Map<String, dynamic>;
+
+    // 1. Incrementiamo il contatore specifico per la carta
+    int paperCount = data['paperCount'] ?? 0;
+    paperCount += 1;
+
+    await userRef.update({'paperCount': paperCount});
+    print("📄 Contatore carta: $paperCount");
+
+    // 2. Se arriva a 3, sblocchiamo il badge
+    if (paperCount >= 20) {
+      return await checkAndUnlockBadge(uid, 'paper_hero');
     }
     
     return null;
@@ -256,4 +280,7 @@ class UserRepository {
     
     return null;
   }
+
+  
+
 }

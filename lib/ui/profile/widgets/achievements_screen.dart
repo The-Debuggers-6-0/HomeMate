@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../domain/models/app_user.dart';
 import '../../../domain/models/user_badge.dart';
 import '../../core/themes/app_colors.dart';
+import '../../core/ui/badge_icon_helper.dart';
 
 class AchievementsScreen extends StatelessWidget {
   final AppUser user;
@@ -97,7 +98,9 @@ class AchievementsScreen extends StatelessWidget {
 
   Widget _buildBadgeItem(Map<String, dynamic> data, bool isUnlocked) {
     final Color baseColor = Color(int.parse((data['color'] ?? '#9E9E9E').toString().replaceFirst('#', '0xff')));
-    final IconData iconData = _getIconData(data['iconName']);
+
+    // Calcoliamo l'icona usando il nome dal catalogo
+    final IconData iconData = BadgeIconHelper.getIconFromName(data['iconName']);
     
     // Leggiamo la descrizione (o mettiamo un default se manca)
     final String description = data['description'] ?? 'Continua a partecipare per sbloccarlo!';
@@ -188,23 +191,4 @@ class AchievementsScreen extends StatelessWidget {
   }
 
   
-  // Helper per convertire i nomi delle icone da Firestore
-  IconData _getIconData(String? name) {
-    switch (name) {
-      case 'local_fire_department': return Icons.local_fire_department;
-      case 'cleaning_services': return Icons.cleaning_services;
-      case 'bolt': return Icons.bolt;
-      case 'celebration': return Icons.celebration;
-      case 'recycling': return Icons.recycling;
-      case 'wb_sunny': return Icons.wb_sunny;
-      case 'water_drop': return Icons.water_drop;
-      case 'emoji_events': return Icons.emoji_events;
-      case "attach_money": return Icons.attach_money;
-      default: return Icons.help_outline;
-    }
-  }
-
-  Color _hexToColor(String hex) {
-    return Color(int.parse(hex.replaceFirst('#', '0xff')));
-  }
 }

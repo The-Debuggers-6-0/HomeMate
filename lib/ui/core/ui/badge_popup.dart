@@ -1,26 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../core/ui/badge_icon_helper.dart';
 
 // Togliamo il "_" iniziale così può essere usata da tutta l'app!
 void showGenericBadgePopup(BuildContext context, Map<String, dynamic> badgeMeta) {
   final String title = badgeMeta['title'] ?? "Traguardo!";
   final String desc = badgeMeta['description'] ?? "";
   final String hexColor = badgeMeta['color'] ?? "#FFC107";
-  final Color color = Color(int.parse(hexColor.replaceFirst('#', '0xff')));
+  final Color color = Color(int.parse(hexColor.replaceFirst('#', '0xff'))); 
 
-  IconData getIcon(String? name) {
-    switch (name) {
-      case 'local_fire_department': return Icons.local_fire_department;
-      case 'cleaning_services': return Icons.cleaning_services;
-      case 'bolt': return Icons.bolt;
-      case 'celebration': return Icons.celebration;
-      case 'recycling': return Icons.recycling;
-      case 'wb_sunny': return Icons.wb_sunny;
-      case 'water_drop': return Icons.water_drop;
-      case 'eco': return Icons.eco;
-      case 'attach_money': return Icons.attach_money;
-      default: return Icons.emoji_events;
-    }
-  }
+  final iconData = BadgeIconHelper.getIconFromName(badgeMeta['iconName']);
 
   showDialog(
     context: context,
@@ -36,7 +24,7 @@ void showGenericBadgePopup(BuildContext context, Map<String, dynamic> badgeMeta)
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(color: color.withOpacity(0.2), shape: BoxShape.circle),
-                child: Icon(getIcon(badgeMeta['iconName']), size: 60, color: color),
+                child: Icon(iconData, size: 60, color: color),
               ),
               const SizedBox(height: 24),
               const Text(
