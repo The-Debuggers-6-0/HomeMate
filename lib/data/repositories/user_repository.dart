@@ -207,4 +207,53 @@ class UserRepository {
     
     return null; // Niente badge per ora
   }
+
+
+  /// Aggiorna il contatore della plastica e controlla il badge "Plastic Hero"
+  /// Restituisce i dati del badge se sbloccato, altrimenti null.
+  Future<Map<String, dynamic>?> updatePlasticCountAndCheckHero(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userRef.get();
+    
+    if (!snapshot.exists) return null;
+    final data = snapshot.data() as Map<String, dynamic>;
+
+    // 1. Incrementiamo il contatore specifico per la plastica
+    int plasticCount = data['plasticCount'] ?? 0;
+    plasticCount += 1;
+
+    await userRef.update({'plasticCount': plasticCount});
+    print("♻️ Contatore plastica: $plasticCount");
+
+    // 2. Se arriva a 20, proviamo a sbloccare il badge
+    if (plasticCount >= 20) {
+      return await checkAndUnlockBadge(uid, 'plastic_hero');
+    }
+    
+    return null;
+  }
+
+  /// Aggiorna il contatore dei pagamenti e controlla il badge "Fast Payer"
+  /// Restituisce i dati del badge se sbloccato, altrimenti null.
+  Future<Map<String, dynamic>?> updateFastPayerCountAndCheckBadge(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userRef.get();
+    
+    if (!snapshot.exists) return null;
+    final data = snapshot.data() as Map<String, dynamic>;
+
+    // 1. Incrementiamo il contatore dei pagamenti
+    int fastPayerCount = data['fastPayerCount'] ?? 0;
+    fastPayerCount += 1;
+
+    await userRef.update({'fastPayerCount': fastPayerCount});
+    print("💸 Contatore pagamenti: $fastPayerCount");
+
+    // 2. Se arriva a 10 ,sblocchiamo il badge
+    if (fastPayerCount >= 10) {
+      return await checkAndUnlockBadge(uid, 'fast_payer');
+    }
+    
+    return null;
+  }
 }

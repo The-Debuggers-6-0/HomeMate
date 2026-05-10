@@ -5,6 +5,7 @@ import '../../core/themes/app_colors.dart';
 import '../../core/ui/custom_user_header.dart';
 import '../view_model/organizza_view_model.dart';
 import '../../../domain/models/shopping_item.dart';
+import '../../core/ui/badge_popup.dart';
 
 class _EventManagerSheet extends StatefulWidget {
   final OrganizzaViewModel vm;
@@ -30,7 +31,11 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
-    await widget.vm.addEvent(title, _selectedDate, notes: _notesController.text.trim());
+    await widget.vm.addEvent(
+      title,
+      _selectedDate,
+      notes: _notesController.text.trim(),
+    );
     if (mounted) Navigator.pop(context);
   }
 
@@ -38,7 +43,9 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        left: 20, right: 20, top: 20,
+        left: 20,
+        right: 20,
+        top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       decoration: const BoxDecoration(
@@ -72,7 +79,9 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
           const SizedBox(height: 12),
           ListTile(
             title: const Text('Data'),
-            subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(_selectedDate)),
+            subtitle: Text(
+              DateFormat('dd/MM/yyyy HH:mm').format(_selectedDate),
+            ),
             trailing: const Icon(Icons.calendar_today),
             onTap: () async {
               final date = await showDatePicker(
@@ -89,8 +98,11 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
                 if (time != null) {
                   setState(() {
                     _selectedDate = DateTime(
-                      date.year, date.month, date.day,
-                      time.hour, time.minute,
+                      date.year,
+                      date.month,
+                      date.day,
+                      time.hour,
+                      time.minute,
                     );
                   });
                 }
@@ -149,7 +161,9 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        left: 20, right: 20, top: 20,
+        left: 20,
+        right: 20,
+        top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       decoration: const BoxDecoration(
@@ -165,7 +179,7 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          
+
           // Form aggiunta
           Row(
             children: [
@@ -191,15 +205,22 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
               ),
               IconButton(
                 onPressed: _addTask,
-                icon: const Icon(Icons.add_circle, color: AppColors.primaryGreen, size: 32),
+                icon: const Icon(
+                  Icons.add_circle,
+                  color: AppColors.primaryGreen,
+                  size: 32,
+                ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          const Text('Compiti di questa settimana:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            'Compiti di questa settimana:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          
+
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
@@ -209,7 +230,9 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(task.title),
-                  subtitle: Text('Assegnato a ${widget.vm.displayNameFor(task.assigneeUid)}'),
+                  subtitle: Text(
+                    'Assegnato a ${widget.vm.displayNameFor(task.assigneeUid)}',
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: () => widget.vm.removeCleaningTask(task.id),
@@ -269,8 +292,11 @@ class _ShoppingManagerSheetState extends State<_ShoppingManagerSheet> {
     setState(() => _isSaving = true);
     FocusScope.of(context).unfocus();
 
-    final success = await widget.vm.addShoppingItemByName(name, quantity: quantity);
-    
+    final success = await widget.vm.addShoppingItemByName(
+      name,
+      quantity: quantity,
+    );
+
     if (!mounted) return;
 
     if (success) {
@@ -337,10 +363,7 @@ class _ShoppingManagerSheetState extends State<_ShoppingManagerSheet> {
             const SizedBox(height: 8),
             const Text(
               'Es: Latte (2L), Mele (5), Carta igienica (8 rotoli)',
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.black54, fontSize: 12),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -351,7 +374,8 @@ class _ShoppingManagerSheetState extends State<_ShoppingManagerSheet> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('Aggiungi al carrello'),
               ),
             ),
@@ -367,7 +391,8 @@ class _RecyclingScheduleSheet extends StatefulWidget {
   const _RecyclingScheduleSheet({required this.vm});
 
   @override
-  State<_RecyclingScheduleSheet> createState() => _RecyclingScheduleSheetState();
+  State<_RecyclingScheduleSheet> createState() =>
+      _RecyclingScheduleSheetState();
 }
 
 class _RecyclingScheduleSheetState extends State<_RecyclingScheduleSheet> {
@@ -425,7 +450,10 @@ class _RecyclingScheduleSheetState extends State<_RecyclingScheduleSheet> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(day, style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        day,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       DropdownButton<String>(
                         value: _tempSchedule[day],
                         underline: const SizedBox(),
@@ -436,12 +464,14 @@ class _RecyclingScheduleSheetState extends State<_RecyclingScheduleSheet> {
                             });
                           }
                         },
-                        items: OrganizzaViewModel.wasteTypes.map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
+                        items: OrganizzaViewModel.wasteTypes
+                            .map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            })
+                            .toList(),
                       ),
                     ],
                   ),
@@ -465,7 +495,6 @@ class _RecyclingScheduleSheetState extends State<_RecyclingScheduleSheet> {
 }
 
 class _OrganizzaScreenState extends State<OrganizzaScreen> {
-
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<OrganizzaViewModel>();
@@ -481,7 +510,8 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CustomUserHeader(
-                      greetingText: 'Ciao, ${vm.displayNameFor(vm.authRepository.currentFirebaseUser?.uid ?? "")}',
+                      greetingText:
+                          'GESTISCI LA CASA',
                     ),
                     const SizedBox(height: 16),
 
@@ -490,7 +520,9 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.1)),
+                        side: BorderSide(
+                          color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -502,10 +534,16 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                               children: [
                                 const Text(
                                   'Prossimi Eventi',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.add, color: AppColors.primaryGreen),
+                                  icon: const Icon(
+                                    Icons.add,
+                                    color: AppColors.primaryGreen,
+                                  ),
                                   onPressed: () => _showEventManager(context),
                                 ),
                               ],
@@ -521,7 +559,10 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.calendar_month, color: AppColors.primaryGreen),
+                                    Icon(
+                                      Icons.calendar_month,
+                                      color: AppColors.primaryGreen,
+                                    ),
                                     SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
@@ -536,15 +577,25 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                               ListView.separated(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                itemCount: vm.events.length > 3 ? 3 : vm.events.length,
-                                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                                itemCount: vm.events.length > 3
+                                    ? 3
+                                    : vm.events.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 8),
                                 itemBuilder: (context, index) {
                                   final event = vm.events[index];
-                                  final isToday = DateUtils.isSameDay(event.start, DateTime.now());
+                                  final isToday = DateUtils.isSameDay(
+                                    event.start,
+                                    DateTime.now(),
+                                  );
                                   return Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: isToday ? AppColors.primaryGreen.withValues(alpha: 0.05) : Colors.grey.shade50,
+                                      color: isToday
+                                          ? AppColors.primaryGreen.withValues(
+                                              alpha: 0.05,
+                                            )
+                                          : Colors.grey.shade50,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
@@ -553,29 +604,44 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                                           width: 4,
                                           height: 30,
                                           decoration: BoxDecoration(
-                                            color: isToday ? AppColors.primaryGreen : Colors.grey.shade300,
-                                            borderRadius: BorderRadius.circular(2),
+                                            color: isToday
+                                                ? AppColors.primaryGreen
+                                                : Colors.grey.shade300,
+                                            borderRadius: BorderRadius.circular(
+                                              2,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 event.title,
-                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                               Text(
                                                 '${DateFormat('dd MMM, HH:mm').format(event.start)}${event.notes != null && event.notes!.isNotEmpty ? " • ${event.notes}" : ""}',
-                                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                                          onPressed: () => vm.removeEvent(event.id),
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            size: 20,
+                                            color: Colors.grey,
+                                          ),
+                                          onPressed: () =>
+                                              vm.removeEvent(event.id),
                                         ),
                                       ],
                                     ),
@@ -593,7 +659,13 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Turni di pulizia', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Turni di pulizia',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         Row(
                           children: [
                             TextButton(
@@ -607,11 +679,13 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                               onPressed: () => _showCompletedTasks(context, vm),
                               child: Text(
                                 'Fatto (${vm.completedCleaningTasksCount})',
-                                style: const TextStyle(color: AppColors.primaryGreen),
+                                style: const TextStyle(
+                                  color: AppColors.primaryGreen,
+                                ),
                               ),
                             ),
                           ],
-                        )
+                        ),
                       ],
                     ),
 
@@ -621,8 +695,13 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     const SizedBox(height: 16),
 
                     // Gestione spazzatura (Raccolta Differenziata)
-                    const Text('Raccolta differenziata',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Raccolta differenziata',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     // Card DOMANI
                     _buildRecyclingCard(
@@ -637,12 +716,21 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () => _showRecyclingManager(context),
-                        icon: const Icon(Icons.calendar_month_outlined, size: 20),
+                        icon: const Icon(
+                          Icons.calendar_month_outlined,
+                          size: 20,
+                        ),
                         label: const Text('Gestisci calendario raccolta'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          side: BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          side: BorderSide(
+                            color: AppColors.primaryGreen.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
                           foregroundColor: AppColors.primaryGreen,
                         ),
                       ),
@@ -654,17 +742,26 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Lista della spesa', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Lista della spesa',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         TextButton(
                           onPressed: () => _showShoppingManager(context),
                           child: const Text('Gestisci carrello'),
-                        )
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
 
                     Container(
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: Column(
                         children: [
                           ..._buildShoppingSection(
@@ -712,12 +809,15 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
     if (currentUser == null) return const SizedBox.shrink();
 
     // Task dell'utente per questa settimana
-    final myTasks = vm.currentWeekCleaningTasks.where((t) => t.assigneeUid == currentUser.uid);
+    final myTasks = vm.currentWeekCleaningTasks.where(
+      (t) => t.assigneeUid == currentUser.uid,
+    );
     final myTask = myTasks.isNotEmpty ? myTasks.first : null;
 
     // Se l'utente non ha task, mostriamo il primo task pendente della settimana
     final pendingTasks = vm.pendingCleaningTasks;
-    final displayTask = myTask ?? (pendingTasks.isNotEmpty ? pendingTasks.first : null);
+    final displayTask =
+        myTask ?? (pendingTasks.isNotEmpty ? pendingTasks.first : null);
 
     if (displayTask == null) {
       return Container(
@@ -726,7 +826,9 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.1)),
+          border: Border.all(
+            color: AppColors.primaryGreen.withValues(alpha: 0.1),
+          ),
         ),
         child: const Row(
           children: [
@@ -734,7 +836,10 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
             SizedBox(width: 12),
             Text(
               'Tutto pulito per questa settimana!',
-              style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ],
         ),
@@ -749,7 +854,9 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
       color: isMine ? AppColors.primaryDark : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: isMine ? BorderSide.none : BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.1)),
+        side: isMine
+            ? BorderSide.none
+            : BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -758,11 +865,13 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isMine ? Colors.white.withValues(alpha: 0.1) : AppColors.primaryGreen.withValues(alpha: 0.1),
+                color: isMine
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : AppColors.primaryGreen.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.cleaning_services_outlined, 
+                Icons.cleaning_services_outlined,
                 color: isMine ? Colors.white : AppColors.primaryGreen,
                 size: 20,
               ),
@@ -773,18 +882,18 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isMine ? 'IL TUO TURNO' : 'QUESTA SETTIMANA', 
+                    isMine ? 'IL TUO TURNO' : 'QUESTA SETTIMANA',
                     style: TextStyle(
-                      color: isMine ? Colors.white70 : Colors.grey.shade500, 
-                      fontSize: 12, 
-                      fontWeight: FontWeight.bold
-                    )
+                      color: isMine ? Colors.white70 : Colors.grey.shade500,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    displayTask.title, 
+                    displayTask.title,
                     style: TextStyle(
-                      fontSize: 18, 
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: isMine ? Colors.white : Colors.black,
                     ),
@@ -792,7 +901,10 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                   if (!isMine)
                     Text(
                       'Assegnato a ${vm.displayNameFor(displayTask.assigneeUid)}',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 13)
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 13,
+                      ),
                     ),
                 ],
               ),
@@ -800,37 +912,51 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
             if (isCompleted)
               Row(
                 children: [
-                  const Icon(Icons.check_circle, color: AppColors.primaryGreen, size: 20),
+                  const Icon(
+                    Icons.check_circle,
+                    color: AppColors.primaryGreen,
+                    size: 20,
+                  ),
                   const SizedBox(width: 4),
                   Text(
-                    isMine ? 'Pulito!' : 'Fatto!', 
-                    style: const TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold)
+                    isMine ? 'Pulito!' : 'Fatto!',
+                    style: const TextStyle(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               )
             else
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isMine ? Colors.white : AppColors.primaryGreen,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  backgroundColor: isMine
+                      ? Colors.white
+                      : AppColors.primaryGreen,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: () async {
                   // 1. Aspettiamo che il ViewModel completi la task e ci dica se c'è un badge
-                  Map<String, dynamic>? newBadge = await vm.toggleTaskCompleted(displayTask.id, true);
-                  
+                  Map<String, dynamic>? newBadge = await vm.toggleTaskCompleted(
+                    displayTask.id,
+                    true,
+                  );
+
                   // 2. Se ci ha restituito i dati del badge, mostriamo il popup!
                   if (newBadge != null && context.mounted) {
-                    _showGenericBadgePopup(context, newBadge);
+                    showGenericBadgePopup(context, newBadge);
                   }
                 },
                 // ---> FINE MODIFICA GRILLETTO <---
                 child: Text(
-                  'Fatto', 
+                  'Fatto',
                   style: TextStyle(
-                    color: isMine ? AppColors.primaryDark : Colors.white, 
-                    fontWeight: FontWeight.bold
-                  )
+                    color: isMine ? AppColors.primaryDark : Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
           ],
@@ -886,8 +1012,10 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     ],
             ),
             child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
               leading: GestureDetector(
                 onTap: () => vm.markItemBought(item.id, !bought),
                 child: Container(
@@ -897,8 +1025,9 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     shape: BoxShape.circle,
                     color: bought ? AppColors.primaryGreen : Colors.transparent,
                     border: Border.all(
-                      color:
-                          bought ? AppColors.primaryGreen : Colors.grey.shade400,
+                      color: bought
+                          ? AppColors.primaryGreen
+                          : Colors.grey.shade400,
                       width: 2,
                     ),
                   ),
@@ -917,7 +1046,8 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                         fontSize: 16,
                         decoration: bought ? TextDecoration.lineThrough : null,
                         color: bought ? Colors.grey : AppColors.textPrimary,
-                        fontFamily: 'Inter', // Assicurati di usare il font del tema
+                        fontFamily:
+                            'Inter', // Assicurati di usare il font del tema
                       ),
                     ),
                     if (item.quantity.isNotEmpty)
@@ -926,7 +1056,9 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
-                          decoration: bought ? TextDecoration.lineThrough : null,
+                          decoration: bought
+                              ? TextDecoration.lineThrough
+                              : null,
                           color: bought ? Colors.grey : Colors.black54,
                           fontFamily: 'Inter',
                         ),
@@ -954,12 +1086,17 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
     }).toList();
   }
 
-  Widget _buildRecyclingCard(BuildContext context, String label, String wasteType, {required bool isToday}) {
+  Widget _buildRecyclingCard(
+    BuildContext context,
+    String label,
+    String wasteType, {
+    required bool isToday,
+  }) {
     final vm = context.watch<OrganizzaViewModel>();
     final bool isNone = wasteType == 'Nulla';
     final String title = vm.getWasteTitle(wasteType);
     final String subtitle = vm.getWasteSubtitle(wasteType, isToday);
-    
+
     // Per "DOMANI", usiamo lo stato del ViewModel
     final bool isTakenOut = !isToday && vm.tomorrowWasteTakenOut;
 
@@ -968,7 +1105,9 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
       color: isToday ? Colors.white : AppColors.primaryDark,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: isToday ? BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.1)) : BorderSide.none,
+        side: isToday
+            ? BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.1))
+            : BorderSide.none,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -981,74 +1120,108 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                   color: AppColors.primaryGreen.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.delete_outline, color: AppColors.primaryGreen),
+                child: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.primaryGreen,
+                ),
               )
             else
-               Container(
+              Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.auto_delete_outlined, color: Colors.white),
+                child: const Icon(
+                  Icons.auto_delete_outlined,
+                  color: Colors.white,
+                ),
               ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: TextStyle(color: isToday ? Colors.grey.shade500 : Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: isToday ? Colors.grey.shade500 : Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                    title, 
+                    title,
                     style: TextStyle(
-                      fontSize: 18, 
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: isToday ? Colors.black : Colors.white,
                     ),
                   ),
                   if (subtitle.isNotEmpty && !isTakenOut)
                     Text(
-                      subtitle, 
+                      subtitle,
                       style: TextStyle(
-                        color: isToday ? Colors.grey.shade500 : Colors.white70, 
-                        fontSize: 13
-                      )
+                        color: isToday ? Colors.grey.shade500 : Colors.white70,
+                        fontSize: 13,
+                      ),
                     ),
                 ],
               ),
             ),
             if (!isNone)
-              isTakenOut 
-                ? const Row(
-                    children: [
-                      Icon(Icons.check_circle, color: AppColors.primaryGreen, size: 20),
-                      SizedBox(width: 4),
-                      Text(
-                        'Portata fuori!', 
-                        style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold)
+              isTakenOut
+                  ? const Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: AppColors.primaryGreen,
+                          size: 20,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Portata fuori!',
+                          style: TextStyle(
+                            color: AppColors.primaryGreen,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    )
+                  : ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isToday
+                            ? AppColors.primaryGreen
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
                       ),
-                    ],
-                  )
-                : ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isToday ? AppColors.primaryGreen : Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
+                      onPressed: () async {
+                        if (!isToday) {
+                          vm.setTomorrowWasteTakenOut(true);
+                        } else {
+                          // BADGE PLASTIC HERO
+                          // Se è oggi, chiamiamo la funzione e controlliamo se sblocca il badge
+                          Map<String, dynamic>? newBadge = await vm
+                              .confirmWasteTakenOut(wasteType);
+
+                          // Se sblocca il badge, mostriamo il popup celebrativo!
+                          if (newBadge != null && context.mounted) {
+                            showGenericBadgePopup(context, newBadge);
+                          }
+                        }
+                      },
+                      child: Text(
+                        'Fatto',
+                        style: TextStyle(
+                          color: isToday ? Colors.white : AppColors.primaryDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    onPressed: () {
-                      if (!isToday) {
-                        vm.setTomorrowWasteTakenOut(true);
-                      }
-                    },
-                    child: Text(
-                      'Fatto', 
-                      style: TextStyle(
-                        color: isToday ? Colors.white : AppColors.primaryDark, 
-                        fontWeight: FontWeight.bold
-                      )
-                    ),
-                  ),
           ],
         ),
       ),
@@ -1111,7 +1284,9 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(sheetContext).size.height * 0.75),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.75,
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -1128,7 +1303,10 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     children: [
                       const Text(
                         'Turni completati',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(sheetContext),
@@ -1147,15 +1325,22 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                           )
                         : ListView.separated(
                             itemCount: vm.completedCleaningTasks.length,
-                            separatorBuilder: (_, _) => const Divider(height: 20),
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 20),
                             itemBuilder: (context, index) {
                               final task = vm.completedCleaningTasks[index];
-                              final assigneeName = vm.displayNameFor(task.assigneeUid);
+                              final assigneeName = vm.displayNameFor(
+                                task.assigneeUid,
+                              );
                               return ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 leading: CircleAvatar(
-                                  backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
-                                  child: const Icon(Icons.check, color: AppColors.primaryGreen),
+                                  backgroundColor: AppColors.primaryGreen
+                                      .withValues(alpha: 0.15),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: AppColors.primaryGreen,
+                                  ),
                                 ),
                                 title: Text(
                                   task.title,
@@ -1175,79 +1360,6 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
           ),
         );
       },
-    );
-  }
-
-  // ==========================================================
-  // FUNZIONE PER IL POPUP DEI BADGE
-  // ==========================================================
-  void _showGenericBadgePopup(BuildContext context, Map<String, dynamic> badgeMeta) {
-    final String title = badgeMeta['title'] ?? "Traguardo!";
-    final String desc = badgeMeta['description'] ?? "";
-    final String hexColor = badgeMeta['color'] ?? "#4CAF50"; // Verde di default
-    final Color color = Color(int.parse(hexColor.replaceFirst('#', '0xff')));
-
-    // Funzione helper per recuperare l'icona dal nome stringa salvato su Firebase
-    IconData getIcon(String? name) {
-      switch (name) {
-        case 'local_fire_department': return Icons.local_fire_department;
-        case 'cleaning_services': return Icons.cleaning_services;
-        case 'bolt': return Icons.bolt;
-        case 'celebration': return Icons.celebration;
-        case 'recycling': return Icons.recycling;
-        case 'wb_sunny': return Icons.wb_sunny;
-        case 'water_drop': return Icons.water_drop;
-        case 'eco': return Icons.eco;
-        case 'attach_money': return Icons.attach_money;
-        default: return Icons.emoji_events;
-      }
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: false, // L'utente deve cliccare il bottone per chiuderlo
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Cerchio luminoso con icona
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: color.withOpacity(0.2), shape: BoxShape.circle),
-                  child: Icon(getIcon(badgeMeta['iconName']), size: 60, color: color),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  "NUOVO TRAGUARDO!",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.5),
-                ),
-                const SizedBox(height: 8),
-                Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Text(desc, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: Colors.black54)),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text("Fantastico!", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                )
-              ],
-            ),
-          ),
-        );
-      }
     );
   }
 }

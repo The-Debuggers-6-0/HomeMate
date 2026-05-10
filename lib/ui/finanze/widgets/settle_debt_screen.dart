@@ -203,7 +203,9 @@ class _SettleDebtScreenState extends State<SettleDebtScreen> {
                         final amount = double.parse(_amountController.text.replaceAll(',', '.'));
                         
                         try {
-                          await context.read<FinanzeViewModel>().addReimbursement(_selectedRoommate!, amount);
+                          // 1. Salviamo il risultato del ViewModel in una variabile
+                          Map<String, dynamic>? newBadge = await context.read<FinanzeViewModel>().addReimbursement(_selectedRoommate!, amount);
+                          
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -211,7 +213,8 @@ class _SettleDebtScreenState extends State<SettleDebtScreen> {
                                 backgroundColor: AppColors.primaryGreen,
                               ),
                             );
-                            Navigator.pop(context);
+                            // 2. Torniamo indietro e portiamo il badge in regalo!
+                            Navigator.pop(context, newBadge);
                           }
                         } catch (e) {
                           if (context.mounted) {

@@ -199,6 +199,7 @@ class AchievementsScreen extends StatelessWidget {
       case 'wb_sunny': return Icons.wb_sunny;
       case 'water_drop': return Icons.water_drop;
       case 'emoji_events': return Icons.emoji_events;
+      case "attach_money": return Icons.attach_money;
       default: return Icons.help_outline;
     }
   }

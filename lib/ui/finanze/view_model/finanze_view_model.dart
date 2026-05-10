@@ -175,8 +175,8 @@ class FinanzeViewModel extends ChangeNotifier {
     await financeRepository.addTransaction(_houseId!, newTransaction);
   }
 
-  Future<void> addReimbursement(String receiverId, double amount) async {
-    if (_houseId == null) return;
+  Future<Map<String, dynamic>?> addReimbursement(String receiverId, double amount) async {
+    if (_houseId == null) return null;
     final uid = authRepository.currentFirebaseUser?.uid ?? '';
     final receiver = _roommates.firstWhere((r) => r.uid == receiverId);
     final newTransaction = dm.AppTransaction(
@@ -190,6 +190,12 @@ class FinanzeViewModel extends ChangeNotifier {
       receiverId: receiverId,
     );
     await financeRepository.addTransaction(_houseId!, newTransaction);
+
+    // Dopo aver aggiunto il rimborso, aggiorniamo il contatore dei "fast payer" e controlliamo se l'utente ha guadagnato un badge
+    if (uid.isNotEmpty) {
+      return await userRepository.updateFastPayerCountAndCheckBadge(uid);
+    }
+    return null;
   }
 
   // --- Getters per la UI ---

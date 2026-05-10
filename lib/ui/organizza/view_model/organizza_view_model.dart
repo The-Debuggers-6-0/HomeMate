@@ -445,5 +445,20 @@ class OrganizzaViewModel extends ChangeNotifier {
     await organizeRepository.updateRecyclingSchedule(_houseId!, schedule);
   }
 
+
+  // ==========================================================
+  // OTTENIMENTO BADGE: RACCOLTA DIFFERENZIATA (Plastic Hero)
+  // ==========================================================
+  Future<Map<String, dynamic>?> confirmWasteTakenOut(String wasteType) async {
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (currentUid == null) return null;
+
+    // Se il rifiuto confermato è la Plastica, avvia il contatore!
+    if (wasteType == 'Plastica') {
+      return await _userRepository.updatePlasticCountAndCheckHero(currentUid);
+    }
+    return null;
+  }
+
   
 }

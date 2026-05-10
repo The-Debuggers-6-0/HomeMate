@@ -7,6 +7,7 @@ import 'add_expense_screen.dart';
 import 'settle_debt_screen.dart';
 import '../../core/ui/custom_user_header.dart';
 import '../../core/ui/user_avatar.dart';
+import '../../core/ui/badge_popup.dart'; // Metti il percorso corretto di dove hai salvato il file
 
 /// Schermata Finanze. View pura che legge i dati da [FinanzeViewModel].
 class FinanzeScreen extends StatefulWidget {
@@ -26,7 +27,9 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
     return Scaffold(
       backgroundColor: AppColors.finanzeBackground,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80.0), // Alza il pulsante sopra la bottom bar
+        padding: const EdgeInsets.only(
+          bottom: 80.0,
+        ), // Alza il pulsante sopra la bottom bar
         child: FloatingActionButton(
           backgroundColor: AppColors.primaryGreen,
           child: const Icon(Icons.add, color: Colors.white),
@@ -41,17 +44,13 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // --- HEADER ---
-                const CustomUserHeader(
-                  greetingText: 'LE TUE SPESE',
-                ),
+                const CustomUserHeader(greetingText: 'LE TUE SPESE'),
                 const SizedBox(height: 24),
-
-
 
                 // --- CARD DEBITI (ORA SALDI COINQUILINI) ---
                 const Text(
@@ -64,16 +63,25 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                 ),
                 const SizedBox(height: 16),
                 if (viewModel.isLoading)
-                  const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                  const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryGreen,
+                    ),
+                  )
                 else if (viewModel.roommateBalances.isEmpty)
-                  const Text('Nessun coinquilino trovato o nessun saldo.', style: TextStyle(color: Colors.grey))
+                  const Text(
+                    'Nessun coinquilino trovato o nessun saldo.',
+                    style: TextStyle(color: Colors.grey),
+                  )
                 else
                   ...viewModel.roommateBalances.map((rb) {
                     final isCredit = rb.balance > 0;
                     final isZero = rb.balance == 0;
-                    final color = isZero ? Colors.grey : (isCredit ? AppColors.primaryGreen : Colors.red);
+                    final color = isZero
+                        ? Colors.grey
+                        : (isCredit ? AppColors.primaryGreen : Colors.red);
                     final prefix = isZero ? '' : (isCredit ? '+' : '');
-                    
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
@@ -83,36 +91,61 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                       ),
                       child: Row(
                         children: [
-                          UserAvatar(
-                            user: rb.user,
-                            radius: 20,
-                          ),
+                          UserAvatar(user: rb.user, radius: 20),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
-                              rb.user.name.isNotEmpty ? rb.user.name : rb.user.email,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              rb.user.name.isNotEmpty
+                                  ? rb.user.name
+                                  : rb.user.email,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           if (!isCredit && !isZero) ...[
                             ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
+                              onPressed: () async {
+                                // <--- Aggiunto async
+                                // 1. Aspetta il risultato (il badge) dalla pagina di pagamento
+                                final newBadge = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => SettleDebtScreen(
                                       roommateUid: rb.user.uid,
-                                      roommateName: rb.user.name.isNotEmpty ? rb.user.name : rb.user.email,
+                                      roommateName: rb.user.name.isNotEmpty
+                                          ? rb.user.name
+                                          : rb.user.email,
                                     ),
                                   ),
                                 );
+
+                                // 2. Se SettleDebtScreen ci ha restituito un badge, mostriamo il popup!
+                                if (newBadge != null && context.mounted) {
+                                  showGenericBadgePopup(
+                                    context,
+                                    newBadge as Map<String, dynamic>,
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryGreen,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 0,
+                                ),
                               ),
-                              child: const Text('Paga', style: TextStyle(color: Colors.white, fontSize: 12)),
+                              child: const Text(
+                                'Paga',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 12),
                           ],
@@ -128,7 +161,9 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                                 ),
                               ),
                               Text(
-                                isZero ? 'In pari' : (isCredit ? 'Ti deve' : 'Gli devi'),
+                                isZero
+                                    ? 'In pari'
+                                    : (isCredit ? 'Ti deve' : 'Gli devi'),
                                 style: TextStyle(
                                   color: color.withValues(alpha: 0.8),
                                   fontSize: 12,
@@ -177,7 +212,11 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                               color: Colors.white.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.bar_chart, color: Colors.white, size: 20),
+                            child: const Icon(
+                              Icons.bar_chart,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ],
                       ),
@@ -215,7 +254,11 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                 if (viewModel.isLoading)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: CircularProgressIndicator(color: AppColors.primaryGreen)),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
                   )
                 else if (viewModel.transactions.isEmpty)
                   const Padding(
@@ -230,21 +273,30 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                   )
                 else ...[
                   ...viewModel.transactions
-                      .take(_showAllTransactions ? viewModel.transactions.length : 5)
-                      .map((t) => Padding(
-                            padding: const EdgeInsets.only(bottom: 20),
-                            child: _buildTransactionItem(
-                              t.title,
-                              t.subtitle,
-                              t.amount,
-                              t.amountLabel,
-                              isCredit: t.isCredit,
-                              user: t.payer,
-                              icon: t.isCredit ? Icons.person : Icons.shopping_bag,
-                            ),
-                          )),
-                  
-                  if (viewModel.transactions.length > 5 && !_showAllTransactions)
+                      .take(
+                        _showAllTransactions
+                            ? viewModel.transactions.length
+                            : 5,
+                      )
+                      .map(
+                        (t) => Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: _buildTransactionItem(
+                            t.title,
+                            t.subtitle,
+                            t.amount,
+                            t.amountLabel,
+                            isCredit: t.isCredit,
+                            user: t.payer,
+                            icon: t.isCredit
+                                ? Icons.person
+                                : Icons.shopping_bag,
+                          ),
+                        ),
+                      ),
+
+                  if (viewModel.transactions.length > 5 &&
+                      !_showAllTransactions)
                     Center(
                       child: TextButton.icon(
                         onPressed: () {
@@ -252,7 +304,10 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                             _showAllTransactions = true;
                           });
                         },
-                        icon: const Icon(Icons.expand_more, color: AppColors.primaryGreen),
+                        icon: const Icon(
+                          Icons.expand_more,
+                          color: AppColors.primaryGreen,
+                        ),
                         label: const Text(
                           'Visualizza tutte',
                           style: TextStyle(
@@ -262,7 +317,7 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                         ),
                       ),
                     ),
-                  
+
                   if (_showAllTransactions && viewModel.transactions.length > 5)
                     Center(
                       child: TextButton.icon(
@@ -271,7 +326,10 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                             _showAllTransactions = false;
                           });
                         },
-                        icon: const Icon(Icons.expand_less, color: AppColors.primaryGreen),
+                        icon: const Icon(
+                          Icons.expand_less,
+                          color: AppColors.primaryGreen,
+                        ),
                         label: const Text(
                           'Mostra meno',
                           style: TextStyle(
@@ -284,8 +342,6 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                 ],
 
                 const SizedBox(height: 12),
-
-
 
                 const SizedBox(height: 100),
               ],
@@ -307,11 +363,7 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
   }) {
     return Row(
       children: [
-        UserAvatar(
-          user: user,
-          radius: 24,
-          iconColor: AppColors.textSecondary,
-        ),
+        UserAvatar(user: user, radius: 24, iconColor: AppColors.textSecondary),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -351,8 +403,7 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
             Text(
               amountLabel,
               style: TextStyle(
-                color:
-                    isCredit ? AppColors.primaryDark : AppColors.textPrimary,
+                color: isCredit ? AppColors.primaryDark : AppColors.textPrimary,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
