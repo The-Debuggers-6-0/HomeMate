@@ -27,16 +27,22 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
     super.dispose();
   }
 
+  // Funzione per aggiungere un evento e gestire il possibile sblocco del badge "Party Planner"
   void _addEvent() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
-    await widget.vm.addEvent(
+    // 1. Il ViewModel calcola se c'è un badge da sbloccare
+    final newBadge = await widget.vm.addEvent(
       title,
       _selectedDate,
       notes: _notesController.text.trim(),
     );
-    if (mounted) Navigator.pop(context);
+    
+    if (!mounted) return;
+    
+    // 2. CHIUDIAMO LA TENDINA E CONSEGNIAMO IL BADGE ALLO SCHERMO!
+    Navigator.pop(context, newBadge); 
   }
 
   @override
@@ -1200,18 +1206,17 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                         elevation: 0,
                       ),
                       onPressed: () async {
+                        // 1. Se è la spazzatura di domani, la segniamo graficamente come portata fuori
                         if (!isToday) {
                           vm.setTomorrowWasteTakenOut(true);
-                        } else {
-                          // BADGE PLASTIC HERO
-                          // Se è oggi, chiamiamo la funzione e controlliamo se sblocca il badge
-                          Map<String, dynamic>? newBadge = await vm
-                              .confirmWasteTakenOut(wasteType);
+                        } 
+                        
+                        // 2. FUORI DALL'ELSE: Controlliamo SEMPRE se sblocca il badge!
+                        Map<String, dynamic>? newBadge = await vm.confirmWasteTakenOut(wasteType);
 
-                          // Se sblocca il badge, mostriamo il popup celebrativo!
-                          if (newBadge != null && context.mounted) {
-                            showGenericBadgePopup(context, newBadge);
-                          }
+                        // 3. Se sblocca il badge, mostriamo il popup celebrativo!
+                        if (newBadge != null && context.mounted) {
+                          showGenericBadgePopup(context, newBadge);
                         }
                       },
                       child: Text(
@@ -1240,9 +1245,12 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
     );
   }
 
-  void _showEventManager(BuildContext context) {
+  // Funzione per mostrare la tendina di gestione eventi e, se sblocca un badge, mostrare il popup celebrativo
+  void _showEventManager(BuildContext context) async {
     final vm = context.read<OrganizzaViewModel>();
-    showModalBottomSheet(
+    
+    // Apriamo la tendina e ASPETTIAMO che ci restituisca qualcosa
+    final newBadge = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1250,6 +1258,17 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
         return _EventManagerSheet(vm: vm);
       },
     );
+
+    // Se la tendina si è chiusa restituendoci un badge sbloccato...
+    if (newBadge != null && context.mounted) {
+      // Aspettiamo mezzo secondo per far finire l'animazione di chiusura
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (context.mounted) {
+          // Mosrtiamo il popup celebrativo per il nuovo badge sbloccato!
+          showGenericBadgePopup(context, newBadge);
+        }
+      });
+    }
   }
 
   void _showCleaningManager(BuildContext context) {

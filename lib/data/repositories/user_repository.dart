@@ -201,12 +201,13 @@ class UserRepository {
     print("🧹 Cleaning streak aggiornata a: $currentStreak");
 
     // TRAGUARDO RAGGIUNTO! Se arriva a 8, proviamo a sbloccare il badge.
-    if (currentStreak >= 8) {
+    if (currentStreak >= 10) {
       return await checkAndUnlockBadge(uid, 'on_fire');
     }
     
     return null; // Niente badge per ora
   }
+
 
 
   /// Aggiorna il contatore della plastica e controlla il badge "Plastic Hero"
@@ -292,7 +293,7 @@ class UserRepository {
     return null;
   }
 
-  /// Contatore Indifferenziata -> Re del Secco
+  /// Contatore Indifferenziato -> Re del Secco
   Future<Map<String, dynamic>?> updateUnsortedCountAndCheckKing(String uid) async {
     final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
     final snapshot = await userRef.get();
@@ -303,9 +304,61 @@ class UserRepository {
     unsortedCount += 1;
 
     await userRef.update({'unsortedCount': unsortedCount});
-    print("🗑️ Contatore indifferenziata: $unsortedCount");
+    print("🗑️ Contatore indifferenziato: $unsortedCount");
 
     if (unsortedCount >= 20) return await checkAndUnlockBadge(uid, 'unsorted_king');
+    return null;
+  }
+
+  /// Contatore Streak -> Eroe Green (Rispetta i turni della spazzatura!)
+  Future<Map<String, dynamic>?> updateGreenHeroStreak(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userRef.get();
+    if (!snapshot.exists) return null;
+    
+    final data = snapshot.data() as Map<String, dynamic>;
+    
+    // Usiamo campi dedicati alla spazzatura!
+    int currentStreak = data['wasteStreak'] ?? 0;
+    String? lastWasteStr = data['lastWasteDate'];
+    
+    DateTime now = DateTime.now();
+    DateTime today = DateTime(now.year, now.month, now.day);
+    
+    if (lastWasteStr != null) {
+      DateTime lastWaste = DateTime.parse(lastWasteStr);
+      DateTime lastWasteDay = DateTime(lastWaste.year, lastWaste.month, lastWaste.day);
+      
+      int differenceInDays = today.difference(lastWasteDay).inDays;
+      
+      if (differenceInDays == 0) {
+        // Ha buttato due bidoni nello stesso giorno. La streak sale di 1 solo al giorno.
+        return null; 
+      } else if (differenceInDays <= 7) { 
+        // Sta buttando la spazzatura con regolarità! (Entro i 7 giorni)
+        currentStreak += 1;
+      } else {
+        // Ha saltato il turno per troppo tempo... Streak azzerata e ricominciamo!
+        currentStreak = 1;
+      }
+    } else {
+      // Primissima volta che butta un bidone
+      currentStreak = 1;
+    }
+
+    // Salviamo i nuovi dati su Firebase
+    await userRef.update({
+      'wasteStreak': currentStreak,
+      'lastWasteDate': today.toIso8601String(),
+    });
+    
+    print("🌿 Eroe Green Streak: $currentStreak bidoni buttati di fila (nei tempi giusti)!");
+
+    // Se arriva a 10 turni rispettati, sblocca il badge (eco_hero)
+    if (currentStreak >= 10) {
+      return await checkAndUnlockBadge(uid, 'eco_hero');
+    }
+    
     return null;
   }
 
@@ -328,6 +381,30 @@ class UserRepository {
     // 2. Se arriva a 10 ,sblocchiamo il badge
     if (fastPayerCount >= 10) {
       return await checkAndUnlockBadge(uid, 'fast_payer');
+    }
+    
+    return null;
+  }
+
+  /// Contatore Eventi -> Anima della Casa (Party Planner)
+  Future<Map<String, dynamic>?> updateEventCountAndCheckPlanner(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userRef.get();
+    if (!snapshot.exists) return null;
+    
+    final data = snapshot.data() as Map<String, dynamic>;
+    
+    // Leggiamo quanti eventi ha già organizzato (se non esiste, parte da 0)
+    int eventsCount = data['eventsOrganizedCount'] ?? 0;
+    eventsCount += 1;
+
+    // Salviamo il nuovo numero su Firebase
+    await userRef.update({'eventsOrganizedCount': eventsCount});
+    print("🎉 Contatore eventi organizzati: $eventsCount");
+
+    // Se arriva a 10, sblocca il badge 'party_planner'!
+    if (eventsCount >= 10) {
+      return await checkAndUnlockBadge(uid, 'party_planner');
     }
     
     return null;

@@ -344,7 +344,7 @@ class OrganizzaViewModel extends ChangeNotifier {
   // ==========================================================
   Future<Map<String, dynamic>?> toggleTaskCompleted(String taskId, bool completed) async {
     if (_houseId == null) return null;
-    
+
     // 1. Salva la pulizia nel database
     await organizeRepository.toggleCleaningTaskCompleted(_houseId!, taskId, completed);
 
@@ -352,7 +352,6 @@ class OrganizzaViewModel extends ChangeNotifier {
     if (completed) {
       final currentUid = authRepository.currentFirebaseUser?.uid;
       if (currentUid != null) {
-        // Restituisce i metadati se ha appena sbloccato il badge, altrimenti null
         return await _userRepository.updateCleaningStreakAndCheckFire(currentUid);
       }
     }
@@ -419,10 +418,11 @@ class OrganizzaViewModel extends ChangeNotifier {
     await organizeRepository.deleteShoppingItem(_houseId!, itemId);
   }
 
-  Future<void> addEvent(String title, DateTime start, {DateTime? end, String? notes}) async {
-    if (_houseId == null || title.isEmpty) return;
+  // Cambiamo da Future<void> a Future<Map<String, dynamic>?> per restituire il badge
+  Future<Map<String, dynamic>?> addEvent(String title, DateTime start, {DateTime? end, String? notes}) async {
+    if (_houseId == null || title.isEmpty) return null;
     final currentUid = authRepository.currentFirebaseUser?.uid;
-    if (currentUid == null) return;
+    if (currentUid == null) return null;
 
     final event = HouseEvent(
       id: '',
@@ -433,6 +433,11 @@ class OrganizzaViewModel extends ChangeNotifier {
       notes: notes,
     );
     await organizeRepository.addOrUpdateEvent(_houseId!, event);
+
+    // ==========================================================
+    // BADGE: PARTY PLANNER
+    // ==========================================================
+    return await _userRepository.updateEventCountAndCheckPlanner(currentUid);
   }
 
   Future<void> removeEvent(String eventId) async {
@@ -447,25 +452,32 @@ class OrganizzaViewModel extends ChangeNotifier {
 
 
   // ==========================================================
-  // OTTENIMENTO BADGE: RACCOLTA DIFFERENZIATA (IL SET È ORA COMPLETO!)
+  // OTTENIMENTO BADGE: RACCOLTA DIFFERENZIATA + EROE GREEN - STREAK
   // ==========================================================
   Future<Map<String, dynamic>?> confirmWasteTakenOut(String wasteType) async {
     final currentUid = authRepository.currentFirebaseUser?.uid;
     if (currentUid == null) return null;
 
+    Map<String, dynamic>? specificBadge;
+
+    // 1. Controlla i badge dei singoli bidoni
     if (wasteType == 'Plastica') {
-      return await _userRepository.updatePlasticCountAndCheckHero(currentUid);
+      specificBadge = await _userRepository.updatePlasticCountAndCheckHero(currentUid);
     } else if (wasteType == 'Carta') {
-      return await _userRepository.updatePaperCountAndCheckHero(currentUid);
+      specificBadge = await _userRepository.updatePaperCountAndCheckHero(currentUid);
     } else if (wasteType == 'Vetro') {
-      return await _userRepository.updateGlassCountAndCheckLord(currentUid);
+      specificBadge = await _userRepository.updateGlassCountAndCheckLord(currentUid);
     } else if (wasteType == 'Umido' || wasteType == 'Organico') { 
-      return await _userRepository.updateCompostCountAndCheckKing(currentUid);
-    } else if (wasteType == 'Indifferenziata' || wasteType == 'Secco') {
-      return await _userRepository.updateUnsortedCountAndCheckKing(currentUid);
+      specificBadge = await _userRepository.updateCompostCountAndCheckKing(currentUid);
+    } else if (wasteType == 'Indifferenziato' || wasteType == 'Indifferenziata' || wasteType == 'Secco') {
+      specificBadge = await _userRepository.updateUnsortedCountAndCheckKing(currentUid);
     }
+
+    // 2. Controlla SEMPRE la Streak "Eroe Green" a prescindere da quale bidone ha buttato!
+    Map<String, dynamic>? streakBadge = await _userRepository.updateGreenHeroStreak(currentUid);
     
-    return null;
+    // Se ha sbloccato il badge del bidone specifico mostra quello, altrimenti mostra l'Eroe Green
+    return specificBadge ?? streakBadge;
   }
 
   
