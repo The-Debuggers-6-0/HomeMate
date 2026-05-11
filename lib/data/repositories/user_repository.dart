@@ -257,6 +257,58 @@ class UserRepository {
     return null;
   }
 
+
+  /// Contatore Vetro -> Signore del Vetro
+  Future<Map<String, dynamic>?> updateGlassCountAndCheckLord(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userRef.get();
+    if (!snapshot.exists) return null;
+    
+    final data = snapshot.data() as Map<String, dynamic>;
+    int glassCount = data['glassCount'] ?? 0;
+    glassCount += 1;
+
+    await userRef.update({'glassCount': glassCount});
+    print("🍷 Contatore vetro: $glassCount");
+
+    if (glassCount >= 20) return await checkAndUnlockBadge(uid, 'glass_lord');
+    return null;
+  }
+
+  /// Contatore Umido -> Re del Compost
+  Future<Map<String, dynamic>?> updateCompostCountAndCheckKing(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userRef.get();
+    if (!snapshot.exists) return null;
+    
+    final data = snapshot.data() as Map<String, dynamic>;
+    int compostCount = data['organicCount'] ?? 0;
+    compostCount += 1;
+
+    await userRef.update({'organicCount': compostCount});
+    print("🌱 Contatore organico: $compostCount");
+
+    if (compostCount >= 20) return await checkAndUnlockBadge(uid, 'organic_king');
+    return null;
+  }
+
+  /// Contatore Indifferenziata -> Re del Secco
+  Future<Map<String, dynamic>?> updateUnsortedCountAndCheckKing(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userRef.get();
+    if (!snapshot.exists) return null;
+    
+    final data = snapshot.data() as Map<String, dynamic>;
+    int unsortedCount = data['unsortedCount'] ?? 0;
+    unsortedCount += 1;
+
+    await userRef.update({'unsortedCount': unsortedCount});
+    print("🗑️ Contatore indifferenziata: $unsortedCount");
+
+    if (unsortedCount >= 20) return await checkAndUnlockBadge(uid, 'unsorted_king');
+    return null;
+  }
+
   /// Aggiorna il contatore dei pagamenti e controlla il badge "Fast Payer"
   /// Restituisce i dati del badge se sbloccato, altrimenti null.
   Future<Map<String, dynamic>?> updateFastPayerCountAndCheckBadge(String uid) async {

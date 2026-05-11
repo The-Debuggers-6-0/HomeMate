@@ -15,7 +15,10 @@ class BadgeIconHelper {
       case 'attach_money': return Icons.attach_money;
       case 'description': return Icons.description; 
       case 'park': return Icons.park;            
-      case 'local_drink': return Icons.local_drink; // Bicchiere per la Plastica
+      case 'local_drink': return Icons.local_drink; 
+      case 'compost': return Icons.compost;
+      case 'wine_bar': return Icons.wine_bar;
+      case 'delete_outline': return Icons.delete_outline;
       default: return Icons.emoji_events; // Icona trofeo di default
     }
   }

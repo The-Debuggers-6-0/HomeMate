@@ -447,18 +447,24 @@ class OrganizzaViewModel extends ChangeNotifier {
 
 
   // ==========================================================
-  // OTTENIMENTO BADGE: RACCOLTA DIFFERENZIATA (Plastic Hero)
+  // OTTENIMENTO BADGE: RACCOLTA DIFFERENZIATA (IL SET È ORA COMPLETO!)
   // ==========================================================
   Future<Map<String, dynamic>?> confirmWasteTakenOut(String wasteType) async {
     final currentUid = authRepository.currentFirebaseUser?.uid;
     if (currentUid == null) return null;
 
-    // Se il rifiuto confermato è la Plastica, avvia il contatore!
     if (wasteType == 'Plastica') {
       return await _userRepository.updatePlasticCountAndCheckHero(currentUid);
-    } else if (wasteType == 'Carta') { // <--- ECCO L'EROE DELLA CARTA!
+    } else if (wasteType == 'Carta') {
       return await _userRepository.updatePaperCountAndCheckHero(currentUid);
+    } else if (wasteType == 'Vetro') {
+      return await _userRepository.updateGlassCountAndCheckLord(currentUid);
+    } else if (wasteType == 'Umido' || wasteType == 'Organico') { 
+      return await _userRepository.updateCompostCountAndCheckKing(currentUid);
+    } else if (wasteType == 'Indifferenziata' || wasteType == 'Secco') {
+      return await _userRepository.updateUnsortedCountAndCheckKing(currentUid);
     }
+    
     return null;
   }
 
