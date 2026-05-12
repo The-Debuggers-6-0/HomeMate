@@ -16,6 +16,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  late ScrollController _scrollController;
   String _selectedCategory = 'Spesa';
   
   final List<String> _categories = ['Spesa', 'Bolletta', 'Abbonamento', 'Altro'];
@@ -25,6 +26,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   bool _initialized = false;
   Set<String> _selectedUids = {};
   final Map<String, TextEditingController> _customControllers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
 
   @override
   void didChangeDependencies() {
@@ -45,6 +52,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   void dispose() {
     _titleController.dispose();
     _amountController.dispose();
+    _scrollController.dispose();
     for (var c in _customControllers.values) {
       c.dispose();
     }
@@ -73,6 +81,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
@@ -181,7 +190,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         value: SplitMode.equalSelected,
                         groupValue: _splitMode,
                         activeColor: AppColors.primaryGreen,
-                        onChanged: (val) => setState(() => _splitMode = val!),
+                        onChanged: (val) {
+                          setState(() {
+                            _splitMode = val!;
+                            // Se viene selezionato "equalSelected" e _selectedUids è vuoto, viene inizializzato con tutti i roommates
+                            if (_splitMode == SplitMode.equalSelected && _selectedUids.isEmpty) {
+                              final vm = context.read<FinanzeViewModel>();
+                              _selectedUids = vm.allRoommates.map((r) => r.uid).toSet();
+                            }
+                          });
+                        },
                       ),
                       RadioListTile<SplitMode>(
                         title: const Text('Importi personalizzati'),
@@ -262,70 +280,78 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                     onPressed: () async {
-                      if (_formKey.currentState!.validate()) {
-                        final title = _titleController.text;
-                        final amount = double.parse(_amountController.text.replaceAll(',', '.'));
+                      if (!_formKey.currentState!.validate()) {
+                        // Scroll in cima per mostrare i campi obbligatori
+                        _scrollController.animateTo(
+                          0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                        return;
+                      }
 
-                        List<String>? involvedUsers;
-                        Map<String, double>? customShares;
+                      final title = _titleController.text;
+                      final amount = double.parse(_amountController.text.replaceAll(',', '.'));
 
-                        if (_splitMode == SplitMode.equalSelected) {
-                          if (_selectedUids.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Seleziona almeno una persona!'), backgroundColor: Colors.red),
-                            );
-                            return;
-                          }
-                          involvedUsers = _selectedUids.toList();
-                        } else if (_splitMode == SplitMode.custom) {
-                          customShares = {};
-                          double sum = 0;
-                          for (var entry in _customControllers.entries) {
-                            final textVal = entry.value.text.replaceAll(',', '.');
-                            if (textVal.isNotEmpty) {
-                              final val = double.tryParse(textVal) ?? 0.0;
-                              if (val > 0) {
-                                customShares[entry.key] = val;
-                                sum += val;
-                              }
+                      List<String>? involvedUsers;
+                      Map<String, double>? customShares;
+
+                      if (_splitMode == SplitMode.equalSelected) {
+                        if (_selectedUids.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Seleziona almeno una persona!'), backgroundColor: Colors.red),
+                          );
+                          return;
+                        }
+                        involvedUsers = _selectedUids.toList();
+                      } else if (_splitMode == SplitMode.custom) {
+                        customShares = {};
+                        double sum = 0;
+                        for (var entry in _customControllers.entries) {
+                          final textVal = entry.value.text.replaceAll(',', '.');
+                          if (textVal.isNotEmpty) {
+                            final val = double.tryParse(textVal) ?? 0.0;
+                            if (val > 0) {
+                              customShares[entry.key] = val;
+                              sum += val;
                             }
-                          }
-
-                          if ((sum - amount).abs() > 0.01) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('La somma delle quote (€${sum.toStringAsFixed(2)}) non coincide col totale (€${amount.toStringAsFixed(2)})!'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
                           }
                         }
 
-                        try {
-                          await context.read<FinanzeViewModel>().addExpense(
-                            title, 
-                            amount, 
-                            _selectedCategory,
-                            involvedUsers: involvedUsers,
-                            customShares: customShares,
+                        if ((sum - amount).abs() > 0.01) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('La somma delle quote (€${sum.toStringAsFixed(2)}) non coincide col totale (€${amount.toStringAsFixed(2)})!'),
+                              backgroundColor: Colors.red,
+                            ),
                           );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Spesa salvata!'), backgroundColor: AppColors.primaryGreen),
-                            );
-                            Navigator.pop(context);
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Errore: ${e.toString()}'), 
-                                backgroundColor: Colors.red,
-                                duration: const Duration(seconds: 4),
-                              ),
-                            );
-                          }
+                          return;
+                        }
+                      }
+
+                      try {
+                        await context.read<FinanzeViewModel>().addExpense(
+                          title, 
+                          amount, 
+                          _selectedCategory,
+                          involvedUsers: involvedUsers,
+                          customShares: customShares,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Spesa salvata!'), backgroundColor: AppColors.primaryGreen),
+                          );
+                          Navigator.pop(context);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Errore: ${e.toString()}'), 
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 4),
+                            ),
+                          );
                         }
                       }
                     },

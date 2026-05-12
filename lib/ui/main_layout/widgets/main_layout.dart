@@ -6,6 +6,18 @@ import '../../finanze/widgets/finanze_screen.dart';
 import '../../coinquilini/widgets/coinquilini_screen.dart';
 import '../../organizza/widgets/organizza_screen.dart';
 
+/// Notifier per comunicare il cambio di tab
+class TabChangeNotifier extends ChangeNotifier {
+  int _currentTab = 0;
+  
+  int get currentTab => _currentTab;
+  
+  void selectTab(int index) {
+    _currentTab = index;
+    notifyListeners();
+  }
+}
+
 /// Layout principale con bottom navigation bar animata.
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -17,6 +29,7 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
+  late final TabChangeNotifier _tabNotifier;
 
   late final List<Widget> _pages;
 
@@ -24,12 +37,31 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _tabNotifier = TabChangeNotifier();
+    // Se il notifier viene chiamato dalle pagine, aggiorniamo anche _currentIndex
+    _tabNotifier.addListener(_onTabSelectedFromNotifier);
     _pages = [
-      const HomeScreen(),
-      const FinanzeScreen(),
-        const OrganizzaScreen(),
-      const CoinquiliniScreen(),
+      HomeScreen(tabNotifier: _tabNotifier, tabIndex: 0),
+      FinanzeScreen(tabNotifier: _tabNotifier, tabIndex: 1),
+      OrganizzaScreen(tabNotifier: _tabNotifier, tabIndex: 2),
+      CoinquiliniScreen(tabNotifier: _tabNotifier, tabIndex: 3),
     ];
+  }
+
+  void _onTabSelectedFromNotifier() {
+    final idx = _tabNotifier.currentTab;
+    if (mounted && idx != _currentIndex) {
+      setState(() {
+        _currentIndex = idx;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabNotifier.removeListener(_onTabSelectedFromNotifier);
+    _tabNotifier.dispose();
+    super.dispose();
   }
 
   @override
@@ -55,6 +87,7 @@ class _MainLayoutState extends State<MainLayout> {
             onTap: (index) {
               setState(() {
                 _currentIndex = index;
+                _tabNotifier.selectTab(index);
               });
             },
           ),

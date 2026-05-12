@@ -3,9 +3,48 @@ import 'package:provider/provider.dart';
 import '../view_model/home_view_model.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/ui/custom_user_header.dart';
+import '../../main_layout/widgets/main_layout.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  final TabChangeNotifier tabNotifier;
+  final int tabIndex;
+
+  const HomeScreen({
+    super.key,
+    required this.tabNotifier,
+    required this.tabIndex,
+  });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    widget.tabNotifier.addListener(_onTabChanged);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    widget.tabNotifier.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (widget.tabNotifier.currentTab == widget.tabIndex) {
+      _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +56,7 @@ class HomeScreen extends StatelessWidget {
         child: viewModel.isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,76 +188,91 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildQuickBalance(HomeViewModel viewModel) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'BILANCIO CASA',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: viewModel.isInCredit
-                      ? AppColors.accentGreen.withOpacity(0.1)
-                      : AppColors.accentRed.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  viewModel.balanceStatus,
-                  style: TextStyle(
-                    color: viewModel.isInCredit ? Colors.green[700] : Colors.red[700],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
+        onTap: () {
+          // Vai alla sezione Finanze
+          widget.tabNotifier.selectTab(1);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            viewModel.balanceFormatted,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -1,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'BILANCIO COINQUILINI',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: viewModel.isInCredit
+                                ? AppColors.accentGreen.withOpacity(0.1)
+                                : AppColors.accentRed.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            viewModel.balanceStatus,
+                            style: TextStyle(
+                              color: viewModel.isInCredit ? Colors.green[700] : Colors.red[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Mostra informazioni compatte su quante persone ti devono o a cui devi soldi
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          viewModel.numPeopleYouOwe > 0
+                              ? 'Sei in debito con ${viewModel.numPeopleYouOwe} ${viewModel.numPeopleYouOwe == 1 ? "persona" : "persone"}'
+                              : 'Non devi soldi a nessuno',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          viewModel.numPeopleWhoOweYou > 0
+                              ? '${viewModel.numPeopleWhoOweYou} ${viewModel.numPeopleWhoOweYou == 1 ? "persona" : "persone"} devono darti dei soldi'
+                              : 'Nessuno ti deve soldi al momento',
+                          style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Icon(Icons.chevron_right, color: AppColors.primaryGreen, size: 28),
+            ],
           ),
-          Text(
-            viewModel.balanceDescription,
-            style: const TextStyle(color: Colors.grey, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: viewModel.balanceProgress,
-              minHeight: 8,
-              backgroundColor: Colors.grey[100],
-              color: AppColors.primaryGreen,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

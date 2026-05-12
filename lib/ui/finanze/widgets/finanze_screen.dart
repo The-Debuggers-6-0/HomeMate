@@ -7,11 +7,20 @@ import 'add_expense_screen.dart';
 import 'settle_debt_screen.dart';
 import '../../core/ui/custom_user_header.dart';
 import '../../core/ui/user_avatar.dart';
-import '../../core/ui/badge_popup.dart'; // Metti il percorso corretto di dove hai salvato il file
+import '../../core/ui/badge_popup.dart';
+import '../../core/ui/clickable_user_avatar.dart';
+import '../../main_layout/widgets/main_layout.dart';
 
 /// Schermata Finanze. View pura che legge i dati da [FinanzeViewModel].
 class FinanzeScreen extends StatefulWidget {
-  const FinanzeScreen({super.key});
+  final TabChangeNotifier tabNotifier;
+  final int tabIndex;
+
+  const FinanzeScreen({
+    super.key,
+    required this.tabNotifier,
+    required this.tabIndex,
+  });
 
   @override
   State<FinanzeScreen> createState() => _FinanzeScreenState();
@@ -19,6 +28,31 @@ class FinanzeScreen extends StatefulWidget {
 
 class _FinanzeScreenState extends State<FinanzeScreen> {
   bool _showAllTransactions = false;
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    widget.tabNotifier.addListener(_onTabChanged);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    widget.tabNotifier.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (widget.tabNotifier.currentTab == widget.tabIndex) {
+      _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +77,7 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -91,7 +126,10 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                       ),
                       child: Row(
                         children: [
-                          UserAvatar(user: rb.user, radius: 20),
+                          ClickableUserAvatar(
+                            user: rb.user,
+                            radius: 24,
+                          ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
@@ -363,7 +401,13 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
   }) {
     return Row(
       children: [
-        UserAvatar(user: user, radius: 24, iconColor: AppColors.textSecondary),
+        user != null
+            ? ClickableUserAvatar(user: user, radius: 24)
+            : UserAvatar(
+                user: user,
+                radius: 24,
+                iconColor: AppColors.textSecondary,
+              ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(

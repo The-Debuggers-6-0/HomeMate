@@ -6,6 +6,7 @@ import '../../core/ui/custom_user_header.dart';
 import '../view_model/organizza_view_model.dart';
 import '../../../domain/models/shopping_item.dart';
 import '../../core/ui/badge_popup.dart';
+import '../../main_layout/widgets/main_layout.dart';
 
 class _EventManagerSheet extends StatefulWidget {
   final OrganizzaViewModel vm;
@@ -254,7 +255,14 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
 }
 
 class OrganizzaScreen extends StatefulWidget {
-  const OrganizzaScreen({super.key});
+  final TabChangeNotifier tabNotifier;
+  final int tabIndex;
+
+  const OrganizzaScreen({
+    super.key,
+    required this.tabNotifier,
+    required this.tabIndex,
+  });
 
   @override
   State<OrganizzaScreen> createState() => _OrganizzaScreenState();
@@ -501,6 +509,32 @@ class _RecyclingScheduleSheetState extends State<_RecyclingScheduleSheet> {
 }
 
 class _OrganizzaScreenState extends State<OrganizzaScreen> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    widget.tabNotifier.addListener(_onTabChanged);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    widget.tabNotifier.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (widget.tabNotifier.currentTab == widget.tabIndex) {
+      _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<OrganizzaViewModel>();
@@ -511,6 +545,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
         child: vm.isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

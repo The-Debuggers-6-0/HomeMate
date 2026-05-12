@@ -6,9 +6,49 @@ import '../view_model/coinquilini_view_model.dart';
 import '../../house/widgets/add_house_screen.dart';
 import '../../core/ui/custom_user_header.dart';
 import '../../core/ui/user_avatar.dart';
+import '../../core/ui/roommate_profile_sheet.dart';
+import '../../main_layout/widgets/main_layout.dart';
 
-class CoinquiliniScreen extends StatelessWidget {
-  const CoinquiliniScreen({super.key});
+class CoinquiliniScreen extends StatefulWidget {
+  final TabChangeNotifier tabNotifier;
+  final int tabIndex;
+
+  const CoinquiliniScreen({
+    super.key,
+    required this.tabNotifier,
+    required this.tabIndex,
+  });
+
+  @override
+  State<CoinquiliniScreen> createState() => _CoinquiliniScreenState();
+}
+
+class _CoinquiliniScreenState extends State<CoinquiliniScreen> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    widget.tabNotifier.addListener(_onTabChanged);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    widget.tabNotifier.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (widget.tabNotifier.currentTab == widget.tabIndex) {
+      _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +67,7 @@ class CoinquiliniScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,23 +199,34 @@ class CoinquiliniScreen extends StatelessWidget {
                             final roommate = viewModel.roommates[index];
                             return Padding(
                               padding: const EdgeInsets.only(right: 16.0),
-                              child: Column(
-                                children: [
-                                  UserAvatar(
-                                    user: roommate,
-                                    radius: 26,
-                                    backgroundColor: AppColors.lightGreen,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    roommate.name,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w500,
+                              child: GestureDetector(
+                                onTap: () {
+                                  // 💥 APRE IL PROFILO DEL COINQUILINO CLICCATO!
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) => RoommateProfileSheet(user: roommate),
+                                  );
+                                },
+                                child: Column(
+                                  children: [
+                                    UserAvatar(
+                                      user: roommate,
+                                      radius: 26,
+                                      backgroundColor: AppColors.lightGreen,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      roommate.name,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           },

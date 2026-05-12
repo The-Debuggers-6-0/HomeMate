@@ -25,6 +25,8 @@ class HomeViewModel extends ChangeNotifier {
   // Dati reali
   double _balance = 0.0;
   bool _isInCredit = true;
+  // Mappa bilancio netto verso ogni altro membro (positivo = loro ti devono, negativo = tu devi a loro)
+  final Map<String, double> _perPersonNet = {};
 
   String _choreToday = 'Nessuna faccenda';
   String _personToday = '-';
@@ -141,19 +143,49 @@ class HomeViewModel extends ChangeNotifier {
     if (currentUserId == null) return;
 
     double total = 0.0;
+    _perPersonNet.clear();
+
     for (var tx in transactions) {
+      final involved = tx.involvedUsers ?? [];
+
+      // calcolo bilancio totale usato in precedenza
       if (tx.payerId == currentUserId) {
-        if (tx.involvedUsers != null && tx.involvedUsers!.isNotEmpty) {
-          double othersShare = tx.amount * (1 - (1 / tx.involvedUsers!.length));
+        if (involved.isNotEmpty) {
+          double othersShare = tx.amount * (1 - (1 / involved.length));
           total += othersShare;
         }
-      } else if (tx.involvedUsers?.contains(currentUserId) ?? false) {
-        double myShare = tx.amount / (tx.involvedUsers!.length);
+      } else if (involved.contains(currentUserId)) {
+        double myShare = tx.amount / involved.length;
         total -= myShare;
       }
+
+      // calcolo bilancio per singolo utente (semplificato per rapporto diretto)
+      if (tx.payerId == currentUserId) {
+        // gli altri devono a me
+        for (var other in involved) {
+          if (other == currentUserId) continue;
+          final share = tx.amount / involved.length;
+          _perPersonNet[other] = (_perPersonNet[other] ?? 0.0) + share;
+        }
+      } else if (involved.contains(currentUserId)) {
+        // io devo al payer
+        final share = tx.amount / involved.length;
+        _perPersonNet[tx.payerId] = (_perPersonNet[tx.payerId] ?? 0.0) - share;
+      }
     }
+
     _balance = total;
     _isInCredit = _balance >= 0;
+  }
+
+  /// Numero di persone a cui devi soldi (sei in debito con loro)
+  int get numPeopleYouOwe {
+    return _perPersonNet.values.where((v) => v < -0.01).length;
+  }
+
+  /// Numero di persone che ti devono soldi
+  int get numPeopleWhoOweYou {
+    return _perPersonNet.values.where((v) => v > 0.01).length;
   }
 
   /// Crea una nuova Sticky Note (Post-it) condivisa tra tutti i membri della casa
