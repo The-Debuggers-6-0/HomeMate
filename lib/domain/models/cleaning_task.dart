@@ -42,4 +42,22 @@ class CleaningTask {
         completed: map['completed'] ?? false,
         completedAt: _readDate(map['completedAt']),
       );
+
+  CleaningTask copyWith({
+    String? id,
+    String? title,
+    String? assigneeUid,
+    DateTime? weekStart,
+    bool? completed,
+    DateTime? completedAt,
+  }) {
+    return CleaningTask(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      assigneeUid: assigneeUid ?? this.assigneeUid,
+      weekStart: weekStart ?? this.weekStart,
+      completed: completed ?? this.completed,
+      completedAt: completedAt ?? this.completedAt,
+    );
+  }
 }

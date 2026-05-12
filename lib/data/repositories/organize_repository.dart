@@ -34,4 +34,14 @@ abstract class OrganizeRepository {
   // Recycling
   Stream<Map<String, String>> getRecyclingScheduleStream(String houseId);
   Future<void> updateRecyclingSchedule(String houseId, Map<String, String> schedule);
+
+  // Chore rooms (stanze personalizzabili)
+  Stream<List<String>> getChoreRoomsStream(String houseId);
+  Future<void> updateChoreRooms(String houseId, List<String> rooms);
+
+  // Waste responsible (turno immondizia persistente)
+  Stream<Map<String, dynamic>> getWasteResponsibleStream(String houseId);
+  Future<void> updateWasteResponsible(String houseId, String uid, DateTime weekStart);
+  Future<void> confirmWasteTakenOutToday(String houseId, String uid, String wasteType);
+  Stream<Map<String, dynamic>> getWasteConfirmationStream(String houseId);
 }

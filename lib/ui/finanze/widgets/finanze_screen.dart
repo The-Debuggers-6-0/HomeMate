@@ -59,7 +59,7 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
     final viewModel = context.watch<FinanzeViewModel>();
 
     return Scaffold(
-      backgroundColor: AppColors.finanzeBackground,
+      backgroundColor: AppColors.background,
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(
           bottom: 80.0,

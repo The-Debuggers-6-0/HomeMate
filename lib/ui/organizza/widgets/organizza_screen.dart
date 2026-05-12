@@ -141,12 +141,15 @@ class _CleaningManagerSheet extends StatefulWidget {
 class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
   final _titleController = TextEditingController();
   String? _selectedUserUid;
+  
+  String? _absenceUserUid;
+  DateTime? _absenceDate;
 
   @override
   void initState() {
     super.initState();
-    // Pre-seleziona l'utente corrente o il primo disponibile
     _selectedUserUid = widget.vm.authRepository.currentFirebaseUser?.uid;
+    _absenceUserUid = _selectedUserUid;
   }
 
   @override
@@ -161,12 +164,42 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
 
     await widget.vm.addCleaningTask(title, _selectedUserUid!);
     _titleController.clear();
-    setState(() {}); // Refresh list
+    setState(() {});
+  }
+
+  void _setAbsence() async {
+    if (_absenceUserUid == null || _absenceDate == null) return;
+    final userName = widget.vm.displayNameFor(_absenceUserUid!);
+    
+    await widget.vm.addEvent(
+      'Assente: $userName',
+      DateTime.now(),
+      end: _absenceDate!.add(const Duration(hours: 23, minutes: 59)),
+      notes: 'Assenza impostata da Gestione Turni',
+    );
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$userName segnato come assente fino al ${_absenceDate!.day}/${_absenceDate!.month}')),
+      );
+      setState(() => _absenceDate = null);
+    }
+  }
+
+  String _formatWeekLabel(DateTime weekStart) {
+    final end = weekStart.add(const Duration(days: 6));
+    return '${weekStart.day}/${weekStart.month} - ${end.day}/${end.month}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentTasks = widget.vm.currentWeekCleaningTasks;
+    final futureTasks = widget.vm.futureCleaningTasks;
+
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.80,
+      ),
       padding: EdgeInsets.only(
         left: 20,
         right: 20,
@@ -181,22 +214,36 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Gestione Turni Settimanali',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Gestione Turni',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // Form aggiunta
+          // Form aggiunta task
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _titleController,
-                  decoration: const InputDecoration(
-                    hintText: 'Cosa pulire? (es. Vetri)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    hintText: 'Nuovo compito (es. Vetri)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
+                  onSubmitted: (_) => _addTask(),
                 ),
               ),
               const SizedBox(width: 8),
@@ -205,7 +252,10 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
                 items: widget.vm.houseMembers.map((uid) {
                   return DropdownMenuItem(
                     value: uid,
-                    child: Text(widget.vm.displayNameFor(uid)),
+                    child: Text(
+                      widget.vm.displayNameFor(uid),
+                      style: const TextStyle(fontSize: 13),
+                    ),
                   );
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedUserUid = val),
@@ -221,31 +271,221 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 12),
+
+          // Form aggiunta assenza
           const Text(
-            'Compiti di questa settimana:',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            'Segnala Assenza',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _absenceUserUid,
+                  items: widget.vm.houseMembers.map((uid) {
+                    return DropdownMenuItem(
+                      value: uid,
+                      child: Text(
+                        widget.vm.displayNameFor(uid),
+                        style: const TextStyle(fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) => setState(() => _absenceUserUid = val),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setState(() => _absenceDate = date);
+                    }
+                  },
+                  icon: const Icon(Icons.calendar_today, size: 16),
+                  label: Text(
+                    _absenceDate == null 
+                      ? 'Fino al...' 
+                      : '${_absenceDate!.day}/${_absenceDate!.month}/${_absenceDate!.year}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _setAbsence,
+                icon: Icon(
+                  Icons.flight_takeoff,
+                  color: _absenceDate == null ? Colors.grey : AppColors.primaryGreen,
+                  size: 28,
+              ),
+              )],
+          ),
+
+          // Lista delle assenze attuali
+          if (widget.vm.events.any((e) => e.title.startsWith('Assente:'))) ...[
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: widget.vm.events
+                    .where((e) => e.title.startsWith('Assente:'))
+                    .map((event) => ListTile(
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          leading: const Icon(Icons.flight_takeoff, color: Colors.orange, size: 20),
+                          title: Text(
+                            event.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          subtitle: Text(
+                            'Fino al ${event.end != null ? "${event.end!.day}/${event.end!.month}" : "?"}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                            onPressed: () => widget.vm.removeEvent(event.id),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
+          // SEZIONE: Questa settimana
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'QUESTA SETTIMANA',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: AppColors.primaryGreen,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
           const SizedBox(height: 8),
 
           Flexible(
-            child: ListView.builder(
+            child: ListView(
               shrinkWrap: true,
-              itemCount: widget.vm.currentWeekCleaningTasks.length,
-              itemBuilder: (context, index) {
-                final task = widget.vm.currentWeekCleaningTasks[index];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(task.title),
-                  subtitle: Text(
-                    'Assegnato a ${widget.vm.displayNameFor(task.assigneeUid)}',
+              children: [
+                // Task della settimana corrente — con possibilità di riassegnare
+                if (currentTasks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'Nessun compito per questa settimana.',
+                      style: TextStyle(color: Colors.black54, fontSize: 13),
+                    ),
+                  )
+                else
+                  ...currentTasks.map((task) {
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        task.completed ? Icons.check_circle : Icons.circle_outlined,
+                        color: task.completed ? AppColors.primaryGreen : Colors.grey.shade400,
+                        size: 22,
+                      ),
+                      title: Text(
+                        task.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          decoration: task.completed ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      subtitle: DropdownButton<String>(
+                        value: widget.vm.houseMembers.contains(task.assigneeUid) ? task.assigneeUid : null,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        style: const TextStyle(fontSize: 13, color: Colors.black87),
+                        items: widget.vm.houseMembers.map((uid) {
+                          return DropdownMenuItem(
+                            value: uid,
+                            child: Text(widget.vm.displayNameFor(uid, showStatus: true)),
+                          );
+                        }).toList(),
+                        onChanged: task.completed ? null : (newUid) {
+                          if (newUid != null) {
+                            widget.vm.reassignCleaningTask(task.id, newUid);
+                          }
+                        },
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                        onPressed: () => widget.vm.removeCleaningTask(task.id),
+                      ),
+                    );
+                  }),
+
+                // SEZIONE: Prossime settimane
+                if (futureTasks.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'PROSSIME SETTIMANE',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Colors.orange.shade800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () => widget.vm.removeCleaningTask(task.id),
-                  ),
-                );
-              },
+                  const SizedBox(height: 8),
+                  ...futureTasks.map((task) {
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.schedule,
+                        color: Colors.orange.shade300,
+                        size: 20,
+                      ),
+                      title: Text(task.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(
+                        '${widget.vm.displayNameFor(task.assigneeUid)} • ${_formatWeekLabel(task.weekStart)}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                        onPressed: () => widget.vm.removeCleaningTask(task.id),
+                      ),
+                    );
+                  }),
+                ],
+              ],
             ),
           ),
         ],
@@ -254,7 +494,169 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
   }
 }
 
+class _RoomManagerSheet extends StatefulWidget {
+  final OrganizzaViewModel vm;
+  const _RoomManagerSheet({required this.vm});
+
+  @override
+  State<_RoomManagerSheet> createState() => _RoomManagerSheetState();
+}
+
+class _RoomManagerSheetState extends State<_RoomManagerSheet> {
+  final _roomController = TextEditingController();
+
+  @override
+  void dispose() {
+    _roomController.dispose();
+    super.dispose();
+  }
+
+  void _addRoom() async {
+    final name = _roomController.text.trim();
+    if (name.isEmpty) return;
+    await widget.vm.addChoreRoom(name);
+    _roomController.clear();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.70,
+      ),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Gestisci Stanze',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Aggiungi o rimuovi le stanze/compiti da assegnare settimanalmente.',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+
+          // Form aggiunta
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _roomController,
+                  decoration: InputDecoration(
+                    hintText: 'Nuova stanza (es. Camera, Corridoio)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                  onSubmitted: (_) => _addRoom(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: _addRoom,
+                icon: const Icon(
+                  Icons.add_circle,
+                  color: AppColors.primaryGreen,
+                  size: 36,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+          const Text(
+            'Stanze attuali:',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+
+          Flexible(
+            child: widget.vm.choreRooms.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Nessuna stanza configurata.',
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: widget.vm.choreRooms.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final room = widget.vm.choreRooms[index];
+                      return Dismissible(
+                        key: Key(room),
+                        direction: widget.vm.choreRooms.length > 1
+                            ? DismissDirection.endToStart
+                            : DismissDirection.none,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade400,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.delete_outline, color: Colors.white),
+                        ),
+                        onDismissed: (_) => widget.vm.removeChoreRoom(room),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.meeting_room_outlined,
+                              color: AppColors.primaryGreen,
+                              size: 22,
+                            ),
+                          ),
+                          title: Text(
+                            room,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          trailing: widget.vm.choreRooms.length > 1
+                              ? Icon(Icons.swipe_left_outlined, size: 18, color: Colors.grey.shade400)
+                              : null,
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class OrganizzaScreen extends StatefulWidget {
+
   final TabChangeNotifier tabNotifier;
   final int tabIndex;
 
@@ -709,20 +1111,19 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                         ),
                         Row(
                           children: [
+                            TextButton.icon(
+                              onPressed: () => _showRoomManager(context),
+                              icon: const Icon(Icons.meeting_room_outlined, size: 16, color: AppColors.primaryGreen),
+                              label: const Text(
+                                'Stanze',
+                                style: TextStyle(color: AppColors.primaryGreen),
+                              ),
+                            ),
                             TextButton(
                               onPressed: () => _showCleaningManager(context),
                               child: const Text(
                                 'Gestisci',
                                 style: TextStyle(color: AppColors.primaryGreen),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => _showCompletedTasks(context, vm),
-                              child: Text(
-                                'Fatto (${vm.completedCleaningTasksCount})',
-                                style: const TextStyle(
-                                  color: AppColors.primaryGreen,
-                                ),
                               ),
                             ),
                           ],
@@ -731,17 +1132,51 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     ),
 
                     const SizedBox(height: 8),
-                    _buildCleaningCard(context, vm),
+
+                    // Mostra TUTTI i task della settimana
+                    _buildAllWeeklyTasks(context, vm),
 
                     const SizedBox(height: 16),
 
                     // Gestione spazzatura (Raccolta Differenziata)
-                    const Text(
-                      'Raccolta differenziata',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Raccolta differenziata',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (vm.currentWasteResponsibleUid != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Turno: ${vm.displayNameFor(vm.currentWasteResponsibleUid!)}',
+                                  style: const TextStyle(
+                                    color: AppColors.primaryGreen,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            TextButton(
+                              onPressed: () => _showRecyclingManager(context),
+                              child: const Text(
+                                'Gestisci',
+                                style: TextStyle(color: AppColors.primaryGreen),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     // Card DOMANI
@@ -750,31 +1185,6 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                       'DOMANI',
                       vm.tomorrowWaste,
                       isToday: false,
-                    ),
-                    const SizedBox(height: 8),
-                    // Bottone Imposta Calendario
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _showRecyclingManager(context),
-                        icon: const Icon(
-                          Icons.calendar_month_outlined,
-                          size: 20,
-                        ),
-                        label: const Text('Gestisci calendario raccolta'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          side: BorderSide(
-                            color: AppColors.primaryGreen.withValues(
-                              alpha: 0.3,
-                            ),
-                          ),
-                          foregroundColor: AppColors.primaryGreen,
-                        ),
-                      ),
                     ),
 
                     const SizedBox(height: 20),
@@ -845,22 +1255,13 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
     );
   }
 
-  Widget _buildCleaningCard(BuildContext context, OrganizzaViewModel vm) {
+  Widget _buildAllWeeklyTasks(BuildContext context, OrganizzaViewModel vm) {
     final currentUser = vm.authRepository.currentFirebaseUser;
     if (currentUser == null) return const SizedBox.shrink();
 
-    // Task dell'utente per questa settimana
-    final myTasks = vm.currentWeekCleaningTasks.where(
-      (t) => t.assigneeUid == currentUser.uid,
-    );
-    final myTask = myTasks.isNotEmpty ? myTasks.first : null;
+    final weekTasks = vm.currentWeekCleaningTasks;
 
-    // Se l'utente non ha task, mostriamo il primo task pendente della settimana
-    final pendingTasks = vm.pendingCleaningTasks;
-    final displayTask =
-        myTask ?? (pendingTasks.isNotEmpty ? pendingTasks.first : null);
-
-    if (displayTask == null) {
+    if (weekTasks.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
@@ -887,124 +1288,122 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
       );
     }
 
-    final bool isMine = displayTask.assigneeUid == currentUser.uid;
-    final bool isCompleted = displayTask.completed;
+    return Column(
+      children: weekTasks.map((task) {
+        final bool isMine = task.assigneeUid == currentUser.uid;
+        final bool isCompleted = task.completed;
 
-    return Card(
-      elevation: 0,
-      color: isMine ? AppColors.primaryDark : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: isMine
-            ? BorderSide.none
-            : BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.1)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isMine
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : AppColors.primaryGreen.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.cleaning_services_outlined,
-                color: isMine ? Colors.white : AppColors.primaryGreen,
-                size: 20,
-              ),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Card(
+            elevation: 0,
+            color: isMine ? AppColors.primaryDark : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: isMine
+                  ? BorderSide.none
+                  : BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.1)),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
                 children: [
-                  Text(
-                    isMine ? 'IL TUO TURNO' : 'QUESTA SETTIMANA',
-                    style: TextStyle(
-                      color: isMine ? Colors.white70 : Colors.grey.shade500,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isMine
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : AppColors.primaryGreen.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.cleaning_services_outlined,
+                      color: isMine ? Colors.white : AppColors.primaryGreen,
+                      size: 18,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    displayTask.title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isMine ? Colors.white : Colors.black,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task.title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: isMine ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        Text(
+                          isMine
+                              ? 'Tocca a te'
+                              : vm.displayNameFor(task.assigneeUid, showStatus: true),
+                          style: TextStyle(
+                            color: isMine ? Colors.white70 : Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  if (!isMine)
-                    Text(
-                      'Assegnato a ${vm.displayNameFor(displayTask.assigneeUid)}',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 13,
+                  if (isCompleted)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          color: AppColors.primaryGreen,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Fatto!',
+                          style: TextStyle(
+                            color: isMine ? AppColors.accentGreen : AppColors.primaryGreen,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    )
+                  else if (isMine)
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      onPressed: () async {
+                        Map<String, dynamic>? newBadge = await vm.toggleTaskCompleted(
+                          task.id,
+                          true,
+                        );
+                        if (newBadge != null && context.mounted) {
+                          showGenericBadgePopup(context, newBadge);
+                        }
+                      },
+                      child: const Text(
+                        'Fatto',
+                        style: TextStyle(
+                          color: AppColors.primaryDark,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                 ],
               ),
             ),
-            if (isCompleted)
-              Row(
-                children: [
-                  const Icon(
-                    Icons.check_circle,
-                    color: AppColors.primaryGreen,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    isMine ? 'Pulito!' : 'Fatto!',
-                    style: const TextStyle(
-                      color: AppColors.primaryGreen,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              )
-            else
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isMine
-                      ? Colors.white
-                      : AppColors.primaryGreen,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () async {
-                  // 1. Aspettiamo che il ViewModel completi la task e ci dica se c'è un badge
-                  Map<String, dynamic>? newBadge = await vm.toggleTaskCompleted(
-                    displayTask.id,
-                    true,
-                  );
-
-                  // 2. Se ci ha restituito i dati del badge, mostriamo il popup!
-                  if (newBadge != null && context.mounted) {
-                    showGenericBadgePopup(context, newBadge);
-                  }
-                },
-                // ---> FINE MODIFICA GRILLETTO <---
-                child: Text(
-                  'Fatto',
-                  style: TextStyle(
-                    color: isMine ? AppColors.primaryDark : Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
+
 
   List<Widget> _buildShoppingSection(
     BuildContext context,
@@ -1138,8 +1537,9 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
     final String title = vm.getWasteTitle(wasteType);
     final String subtitle = vm.getWasteSubtitle(wasteType, isToday);
 
-    // Per "DOMANI", usiamo lo stato del ViewModel
-    final bool isTakenOut = !isToday && vm.tomorrowWasteTakenOut;
+    // Per "OGGI" usiamo la conferma persistente da Firestore
+    // Per "DOMANI" usiamo lo stato locale del ViewModel
+    final bool isTakenOut = isToday ? vm.todayWasteTakenOut : vm.tomorrowWasteTakenOut;
 
     return Card(
       elevation: 0,
@@ -1241,15 +1641,15 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                         elevation: 0,
                       ),
                       onPressed: () async {
-                        // 1. Se è la spazzatura di domani, la segniamo graficamente come portata fuori
+                        // Se è la spazzatura di domani, la segniamo graficamente come portata fuori
                         if (!isToday) {
                           vm.setTomorrowWasteTakenOut(true);
-                        } 
+                        }
                         
-                        // 2. FUORI DALL'ELSE: Controlliamo SEMPRE se sblocca il badge!
+                        // Controlliamo SEMPRE se sblocca il badge (e per oggi persiste su Firestore)
                         Map<String, dynamic>? newBadge = await vm.confirmWasteTakenOut(wasteType);
 
-                        // 3. Se sblocca il badge, mostriamo il popup celebrativo!
+                        // Se sblocca il badge, mostriamo il popup celebrativo!
                         if (newBadge != null && context.mounted) {
                           showGenericBadgePopup(context, newBadge);
                         }
@@ -1267,6 +1667,8 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
       ),
     );
   }
+
+
 
   void _showRecyclingManager(BuildContext context) {
     final vm = context.read<OrganizzaViewModel>();
@@ -1314,6 +1716,18 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return _CleaningManagerSheet(vm: vm);
+      },
+    );
+  }
+
+  void _showRoomManager(BuildContext context) {
+    final vm = context.read<OrganizzaViewModel>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _RoomManagerSheet(vm: vm);
       },
     );
   }
@@ -1383,9 +1797,6 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                                 const Divider(height: 20),
                             itemBuilder: (context, index) {
                               final task = vm.completedCleaningTasks[index];
-                              final assigneeName = vm.displayNameFor(
-                                task.assigneeUid,
-                              );
                               return ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 leading: CircleAvatar(
@@ -1403,7 +1814,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                                     color: AppColors.primaryGreen,
                                   ),
                                 ),
-                                subtitle: Text('Assegnato a $assigneeName'),
+                                subtitle: Text('Assegnato a ${vm.displayNameFor(task.assigneeUid, showStatus: true)}'),
                               );
                             },
                           ),

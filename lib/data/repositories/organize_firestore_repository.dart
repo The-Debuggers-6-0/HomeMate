@@ -228,4 +228,66 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
       'recyclingSchedule': schedule,
     });
   }
+
+  // Chore rooms (stanze personalizzabili)
+  @override
+  Stream<List<String>> getChoreRoomsStream(String houseId) {
+    return _firestore.collection('houses').doc(houseId).snapshots().map((snapshot) {
+      if (!snapshot.exists || snapshot.data() == null) return <String>['Cucina', 'Bagno', 'Salotto'];
+      final data = snapshot.data()!;
+      if (data['choreRooms'] == null) return <String>['Cucina', 'Bagno', 'Salotto'];
+      return List<String>.from(data['choreRooms'] as List);
+    });
+  }
+
+  @override
+  Future<void> updateChoreRooms(String houseId, List<String> rooms) async {
+    await _firestore.collection('houses').doc(houseId).update({
+      'choreRooms': rooms,
+    });
+  }
+
+  // Waste responsible (turno immondizia persistente)
+  @override
+  Stream<Map<String, dynamic>> getWasteResponsibleStream(String houseId) {
+    return _firestore.collection('houses').doc(houseId).snapshots().map((snapshot) {
+      if (!snapshot.exists || snapshot.data() == null) return <String, dynamic>{};
+      final data = snapshot.data()!;
+      if (data['wasteResponsible'] == null) return <String, dynamic>{};
+      return Map<String, dynamic>.from(data['wasteResponsible'] as Map);
+    });
+  }
+
+  @override
+  Future<void> updateWasteResponsible(String houseId, String uid, DateTime weekStart) async {
+    await _firestore.collection('houses').doc(houseId).update({
+      'wasteResponsible': {
+        'uid': uid,
+        'weekStart': weekStart.toIso8601String(),
+      },
+    });
+  }
+
+  @override
+  Future<void> confirmWasteTakenOutToday(String houseId, String uid, String wasteType) async {
+    final today = DateTime.now();
+    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    await _firestore.collection('houses').doc(houseId).update({
+      'wasteConfirmations.$dateKey': {
+        'uid': uid,
+        'wasteType': wasteType,
+        'confirmedAt': FieldValue.serverTimestamp(),
+      },
+    });
+  }
+
+  @override
+  Stream<Map<String, dynamic>> getWasteConfirmationStream(String houseId) {
+    return _firestore.collection('houses').doc(houseId).snapshots().map((snapshot) {
+      if (!snapshot.exists || snapshot.data() == null) return <String, dynamic>{};
+      final data = snapshot.data()!;
+      if (data['wasteConfirmations'] == null) return <String, dynamic>{};
+      return Map<String, dynamic>.from(data['wasteConfirmations'] as Map);
+    });
+  }
 }
