@@ -354,77 +354,197 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPostItGrid(HomeViewModel viewModel) {
     if (viewModel.stickyNotes.isEmpty) {
-      return const Text(
-        "Nessun post-it presente. Aggiungine uno!",
-        style: TextStyle(color: Colors.grey, fontSize: 12),
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        ),
+        child: const Text(
+          "Nessun promemoria presente. Tocca '+' per aggiungerne uno!",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic),
+        ),
       );
     }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.3,
+        crossAxisSpacing: 18,
+        mainAxisSpacing: 18,
+        childAspectRatio: 1.0,
       ),
       itemCount: viewModel.stickyNotes.length,
       itemBuilder: (context, index) {
         final note = viewModel.stickyNotes[index];
+        
         final colors = [
-          const Color(0xFFFFF9C4), // Giallo classico
-          const Color(0xFFFFE1E1), // Rosa pastello
-          const Color(0xFFE1F5FE), // Azzurro pastello
+          const Color(0xFFFFF9C4), // Giallo limone chiaro
+          const Color(0xFFFFECB3), // Ambra chiaro
+          const Color(0xFFF1F8E9), // Verde chiarissimo
+          const Color(0xFFE3F2FD), // Blu chiarissimo
+          const Color(0xFFFCE4EC), // Rosa chiarissimo
         ];
+        
         final postItColor = colors[index % colors.length];
+        final rotations = [-0.04, 0.03, -0.02, 0.05, -0.03];
+        final rotation = rotations[index % rotations.length];
 
-        return Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: postItColor,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(2, 2),
+        return Padding(
+          padding: const EdgeInsets.all(6.0),
+          child: Transform.rotate(
+            angle: rotation,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 1. Ombra dinamica stratificata
+                Positioned(
+                  bottom: 2,
+                  right: 2,
+                  left: 6,
+                  top: 6,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 12,
+                          offset: const Offset(4, 8),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 4,
+                          offset: const Offset(2, 2),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.push_pin, size: 16, color: Colors.black26),
-                  const Spacer(),
-                  Text(
-                    note.content,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 5,
-              right: 5,
-              child: GestureDetector(
-                onTap: () => _confirmDeletePostIt(context, viewModel, note.id),
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.05),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.close, size: 14, color: Colors.black45),
                 ),
-              ),
+
+                // 2. Corpo del Post-it
+                ClipPath(
+                  clipper: PostItClipper(),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(14, 28, 14, 14),
+                    decoration: BoxDecoration(
+                      color: postItColor,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        stops: const [0.0, 0.5, 1.0],
+                        colors: [
+                          Color.lerp(postItColor, Colors.white, 0.4)!,
+                          postItColor,
+                          Color.lerp(postItColor, Colors.black, 0.1)!,
+                        ],
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        note.content,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'Verdana',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: Color(0xFF333333),
+                          height: 1.3,
+                        ),
+                        maxLines: 5,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 3. Angolo piegato (3D Curl)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: ClipPath(
+                    clipper: CornerFoldClipper(),
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color.lerp(postItColor, Colors.black, 0.25)!,
+                            Color.lerp(postItColor, Colors.black, 0.1)!,
+                            Color.lerp(postItColor, Colors.white, 0.3)!,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 4. Puntina (Push-pin) 3D
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Transform.translate(
+                    offset: const Offset(0, -10),
+                    child: _buildPushPin(),
+                  ),
+                ),
+
+                // 5. Tasto elimina
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: InkWell(
+                    onTap: () => _confirmDeletePostIt(context, viewModel, note.id),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.05),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.close, size: 10, color: Colors.black.withOpacity(0.3)),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
+    );
+  }
+
+  // Widget helper per la puntina realistica
+  Widget _buildPushPin() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Ombra della puntina
+        Transform.translate(
+          offset: const Offset(2, 4),
+          child: Icon(Icons.push_pin, size: 20, color: Colors.black.withOpacity(0.15)),
+        ),
+        // Corpo puntina
+        const Icon(Icons.push_pin, size: 20, color: Color(0xFFD32F2F)),
+        // Riflesso puntina
+        Positioned(
+          top: 4,
+          left: 8,
+          child: Container(
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.6),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -551,4 +671,52 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+// Clipper per l'effetto post-it con curvatura naturale
+class PostItClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    double foldSize = 25.0;
+    
+    path.moveTo(4, 0); 
+    path.lineTo(size.width - 4, 0);
+    path.quadraticBezierTo(size.width, 0, size.width, 4);
+    
+    path.lineTo(size.width, size.height - foldSize);
+    
+    // Curva che raccorda l'angolo piegato
+    path.quadraticBezierTo(size.width - 2, size.height - 2, size.width - foldSize, size.height);
+    
+    // Bordo inferiore leggermente curvo per effetto carta sollevata
+    path.quadraticBezierTo(size.width * 0.5, size.height - 5, 4, size.height);
+    
+    path.quadraticBezierTo(0, size.height, 0, size.height - 4);
+    path.lineTo(0, 4);
+    path.quadraticBezierTo(0, 0, 4, 0);
+    
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+// Clipper per l'angolo piegato (effetto curled paper)
+class CornerFoldClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    // Forma triangolare curva per simulare la piega
+    path.moveTo(0, size.height);
+    path.quadraticBezierTo(size.width * 0.2, size.height * 0.2, size.width, 0);
+    path.lineTo(size.width, size.height);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
