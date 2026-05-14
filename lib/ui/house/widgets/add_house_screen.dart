@@ -6,6 +6,7 @@ import '../../core/themes/app_colors.dart';
 import '../../core/ui/loading_overlay.dart';
 import '../../core/ui/custom_user_header.dart';
 import '../../main_layout/widgets/main_layout.dart';
+import '../../auth/widgets/login_screen.dart';
 
 /// Schermata per creare o unirsi a una casa. View pura che delega al [HouseViewModel].
 class AddHouseScreen extends StatefulWidget {
@@ -354,6 +355,76 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // --- TASTO LOGOUT ---
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext dialogContext) {
+                        return AlertDialog(
+                          title: const Text(
+                            'Logout',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          content: const Text(
+                            'Sei sicuro di voler uscire dal tuo account?',
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop();
+                              },
+                              child: const Text(
+                                'Annulla',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.of(dialogContext).pop();
+                                await viewModel.logout();
+                                if (context.mounted) {
+                                  Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginScreen(),
+                                    ),
+                                    (Route<dynamic> route) => false,
+                                  );
+                                }
+                              },
+                              child: Text(
+                                'Esci',
+                                style: TextStyle(
+                                  color: Colors.red.shade400,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.logout, color: Colors.grey),
+                  label: const Text(
+                    'Logout',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 40),

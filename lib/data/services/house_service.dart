@@ -20,28 +20,31 @@ class HouseService {
   }
 
   /// Crea una nuova casa su Firestore e aggiorna l'utente in un'unica operazione atomica.
-  Future<void> createHouseWithAdmin({
+  /// NOTA: L'ordine nella lista 'membri' determina la sequenza iniziale dei turni 
+  /// (pulizie e spazzatura) nel ViewModel.
+  Future<void> createHouse({
     required String code,
-    required String adminUid,
+    required String creatorUid,
     required String nome,
   }) async {
     final batch = _firestore.batch();
     
     final houseDoc = _housesCollection.doc(code);
     batch.set(houseDoc, {
-      'admin': adminUid,
-      'membri': [adminUid],
+      'membri': [creatorUid],
       'nome': nome,
       'createdAt': FieldValue.serverTimestamp(),
     });
     
-    final userDoc = _firestore.collection('users').doc(adminUid);
+    final userDoc = _firestore.collection('users').doc(creatorUid);
     batch.update(userDoc, {'homeId': code});
     
     await batch.commit();
   }
 
   /// Unisce un utente a una casa esistente in modo atomico tramite transazione.
+  /// NOTA: L'aggiunta di un membro espande il pool di persone per il Round Robin.
+  /// Il ViewModel rileverà il cambiamento e aggiornerà i task della settimana.
   Future<bool> joinHouseTransaction({
     required String uid,
     required String code,
@@ -82,6 +85,8 @@ class HouseService {
   }
 
   /// Abbandona una casa in modo atomico.
+  /// NOTA: Quando un membro esce, i task a lui assegnati vengono rilevati come 
+  /// "orfani" dal ViewModel e riassegnati automaticamente a chi resta.
   Future<void> leaveHouseTransaction({
     required String uid,
     required String code,

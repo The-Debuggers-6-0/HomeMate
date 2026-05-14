@@ -100,4 +100,9 @@ class HouseViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  /// Logout dall'account.
+  Future<void> logout() async {
+    await _authRepository.logout();
+  }
 }

@@ -22,9 +22,9 @@ class HouseRepository {
   }) async {
     final code = _houseService.generateHouseCode();
 
-    await _houseService.createHouseWithAdmin(
+    await _houseService.createHouse(
       code: code,
-      adminUid: uid,
+      creatorUid: uid,
       nome: (customName != null && customName.trim().isNotEmpty)
           ? customName.trim()
           : 'Casa di $displayName',
