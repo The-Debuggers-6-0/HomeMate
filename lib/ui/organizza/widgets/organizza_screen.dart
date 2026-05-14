@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/themes/app_colors.dart';
 import '../../core/ui/custom_user_header.dart';
+import '../../core/ui/user_avatar.dart';
 import '../view_model/organizza_view_model.dart';
 import '../../../domain/models/shopping_item.dart';
 import '../../core/ui/badge_popup.dart';
@@ -33,7 +34,7 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
-    // 1. Il ViewModel calcola se c'è un badge da sbloccare
+    // 1. Il ViewModel calcola se c'Ã¨ un badge da sbloccare
     final newBadge = await widget.vm.addEvent(
       title,
       _selectedDate,
@@ -130,6 +131,56 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
   }
 }
 
+class _MemberDropdownItem extends StatelessWidget {
+  final OrganizzaViewModel vm;
+  final String uid;
+  final bool isAway;
+
+  const _MemberDropdownItem({
+    required this.vm,
+    required this.uid,
+    required this.isAway,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final name = vm.displayNameFor(uid);
+    final endDate = isAway ? vm.absenceEndDateFor(uid) : null;
+    final tooltip = isAway && endDate != null
+        ? '$name è assente fino al ${endDate.day}/${endDate.month}/${endDate.year}'
+        : '';
+
+    return Tooltip(
+      message: tooltip,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          UserAvatar(
+            user: vm.appUserFor(uid),
+            radius: 12,
+            backgroundColor: isAway
+                ? Colors.grey.shade300
+                : AppColors.primaryGreen.withValues(alpha: 0.15),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 13,
+              color: isAway ? Colors.grey.shade400 : Colors.black87,
+              fontStyle: isAway ? FontStyle.italic : FontStyle.normal,
+            ),
+          ),
+          if (isAway) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.flight_takeoff, size: 12, color: Colors.orange.shade300),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _CleaningManagerSheet extends StatefulWidget {
   final OrganizzaViewModel vm;
   const _CleaningManagerSheet({required this.vm});
@@ -141,21 +192,38 @@ class _CleaningManagerSheet extends StatefulWidget {
 class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
   final _titleController = TextEditingController();
   String? _selectedUserUid;
-  
-  String? _absenceUserUid;
-  DateTime? _absenceDate;
 
   @override
   void initState() {
     super.initState();
     _selectedUserUid = widget.vm.authRepository.currentFirebaseUser?.uid;
-    _absenceUserUid = _selectedUserUid;
+    widget.vm.addListener(_onVmChanged);
+  }
+
+  void _onVmChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    widget.vm.removeListener(_onVmChanged);
     _titleController.dispose();
     super.dispose();
+  }
+
+  void _showAbsentSnackBar(BuildContext context, String uid) {
+    final name = widget.vm.displayNameFor(uid);
+    final endDate = widget.vm.absenceEndDateFor(uid);
+    final dateStr = endDate != null
+        ? ' fino al ${endDate.day}/${endDate.month}/${endDate.year}'
+        : '';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$name è assente$dateStr'),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _addTask() async {
@@ -165,25 +233,6 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
     await widget.vm.addCleaningTask(title, _selectedUserUid!);
     _titleController.clear();
     setState(() {});
-  }
-
-  void _setAbsence() async {
-    if (_absenceUserUid == null || _absenceDate == null) return;
-    final userName = widget.vm.displayNameFor(_absenceUserUid!);
-    
-    await widget.vm.addEvent(
-      'Assente: $userName',
-      DateTime.now(),
-      end: _absenceDate!.add(const Duration(hours: 23, minutes: 59)),
-      notes: 'Assenza impostata da Gestione Turni',
-    );
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$userName segnato come assente fino al ${_absenceDate!.day}/${_absenceDate!.month}')),
-      );
-      setState(() => _absenceDate = null);
-    }
   }
 
   String _formatWeekLabel(DateTime weekStart) {
@@ -250,15 +299,23 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
               DropdownButton<String>(
                 value: _selectedUserUid,
                 items: widget.vm.houseMembers.map((uid) {
+                  final isAway = widget.vm.isUserAway(uid);
                   return DropdownMenuItem(
                     value: uid,
-                    child: Text(
-                      widget.vm.displayNameFor(uid),
-                      style: const TextStyle(fontSize: 13),
+                    child: _MemberDropdownItem(
+                      vm: widget.vm,
+                      uid: uid,
+                      isAway: isAway,
                     ),
                   );
                 }).toList(),
-                onChanged: (val) => setState(() => _selectedUserUid = val),
+                onChanged: (val) {
+                  if (val != null && !widget.vm.isUserAway(val)) {
+                    setState(() => _selectedUserUid = val);
+                  } else if (val != null) {
+                    _showAbsentSnackBar(context, val);
+                  }
+                },
               ),
               IconButton(
                 onPressed: _addTask,
@@ -270,106 +327,6 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
               ),
             ],
           ),
-
-          const SizedBox(height: 12),
-          const Divider(),
-          const SizedBox(height: 12),
-
-          // Form aggiunta assenza
-          const Text(
-            'Segnala Assenza',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: _absenceUserUid,
-                  items: widget.vm.houseMembers.map((uid) {
-                    return DropdownMenuItem(
-                      value: uid,
-                      child: Text(
-                        widget.vm.displayNameFor(uid),
-                        style: const TextStyle(fontSize: 13),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (val) => setState(() => _absenceUserUid = val),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 3,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (date != null) {
-                      setState(() => _absenceDate = date);
-                    }
-                  },
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(
-                    _absenceDate == null 
-                      ? 'Fino al...' 
-                      : '${_absenceDate!.day}/${_absenceDate!.month}/${_absenceDate!.year}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: _setAbsence,
-                icon: Icon(
-                  Icons.flight_takeoff,
-                  color: _absenceDate == null ? Colors.grey : AppColors.primaryGreen,
-                  size: 28,
-              ),
-              )],
-          ),
-
-          // Lista delle assenze attuali
-          if (widget.vm.events.any((e) => e.title.startsWith('Assente:'))) ...[
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: widget.vm.events
-                    .where((e) => e.title.startsWith('Assente:'))
-                    .map((event) => ListTile(
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          leading: const Icon(Icons.flight_takeoff, color: Colors.orange, size: 20),
-                          title: Text(
-                            event.title,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          subtitle: Text(
-                            'Fino al ${event.end != null ? "${event.end!.day}/${event.end!.month}" : "?"}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                            onPressed: () => widget.vm.removeEvent(event.id),
-                          ),
-                        ))
-                    .toList(),
-              ),
-            ),
-          ],
 
           const SizedBox(height: 20),
 
@@ -396,7 +353,7 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
             child: ListView(
               shrinkWrap: true,
               children: [
-                // Task della settimana corrente — con possibilità di riassegnare
+                // Task della settimana corrente â€” con possibilitÃ  di riassegnare
                 if (currentTasks.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
@@ -425,15 +382,22 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
                         value: widget.vm.houseMembers.contains(task.assigneeUid) ? task.assigneeUid : null,
                         isExpanded: true,
                         underline: const SizedBox(),
-                        style: const TextStyle(fontSize: 13, color: Colors.black87),
                         items: widget.vm.houseMembers.map((uid) {
+                          final isAway = widget.vm.isUserAway(uid);
                           return DropdownMenuItem(
                             value: uid,
-                            child: Text(widget.vm.displayNameFor(uid, showStatus: true)),
+                            child: _MemberDropdownItem(
+                              vm: widget.vm,
+                              uid: uid,
+                              isAway: isAway,
+                            ),
                           );
                         }).toList(),
                         onChanged: task.completed ? null : (newUid) {
-                          if (newUid != null) {
+                          if (newUid == null) return;
+                          if (widget.vm.isUserAway(newUid)) {
+                            _showAbsentSnackBar(context, newUid);
+                          } else {
                             widget.vm.reassignCleaningTask(task.id, newUid);
                           }
                         },
@@ -475,7 +439,7 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
                       ),
                       title: Text(task.title, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text(
-                        '${widget.vm.displayNameFor(task.assigneeUid)} • ${_formatWeekLabel(task.weekStart)}',
+                        '${widget.vm.displayNameFor(task.assigneeUid)} â€¢ ${_formatWeekLabel(task.weekStart)}',
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                       ),
                       trailing: IconButton(
@@ -655,6 +619,194 @@ class _RoomManagerSheetState extends State<_RoomManagerSheet> {
   }
 }
 
+class _AbsenceManagerSheet extends StatefulWidget {
+  final OrganizzaViewModel vm;
+  const _AbsenceManagerSheet({required this.vm});
+
+  @override
+  State<_AbsenceManagerSheet> createState() => _AbsenceManagerSheetState();
+}
+
+class _AbsenceManagerSheetState extends State<_AbsenceManagerSheet> {
+  String? _absenceUserUid;
+  DateTime? _absenceDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _absenceUserUid = widget.vm.authRepository.currentFirebaseUser?.uid;
+    widget.vm.addListener(_onVmChanged);
+  }
+
+  void _onVmChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.vm.removeListener(_onVmChanged);
+    super.dispose();
+  }
+
+  void _setAbsence() async {
+    if (_absenceUserUid == null || _absenceDate == null) return;
+    final userName = widget.vm.displayNameFor(_absenceUserUid!);
+
+    await widget.vm.addAbsenceEvent(_absenceUserUid!, _absenceDate!);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$userName segnato come assente fino al ${_absenceDate!.day}/${_absenceDate!.month}')),
+      );
+      setState(() => _absenceDate = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final absences = widget.vm.activeAbsences;
+
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Gestisci Assenze',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('Segnala un coinquilino come assente fino a una data.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+          const SizedBox(height: 16),
+
+          // Form segnalazione assenza
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _absenceUserUid,
+                  items: widget.vm.houseMembers.map((uid) {
+                    return DropdownMenuItem(
+                      value: uid,
+                      child: Row(
+                        children: [
+                          UserAvatar(user: widget.vm.appUserFor(uid), radius: 14),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              widget.vm.displayNameFor(uid),
+                              style: const TextStyle(fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) => setState(() => _absenceUserUid = val),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) setState(() => _absenceDate = date);
+                  },
+                  icon: const Icon(Icons.calendar_today, size: 16),
+                  label: Text(
+                    _absenceDate == null
+                        ? 'Fino al...'
+                        : '${_absenceDate!.day}/${_absenceDate!.month}/${_absenceDate!.year}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _setAbsence,
+                icon: Icon(
+                  Icons.flight_takeoff,
+                  color: _absenceDate == null ? Colors.grey : Colors.orange,
+                  size: 28,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+
+          // Lista assenze attive
+          if (absences.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text('Nessun coinquilino assente al momento.',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+            )
+          else
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: absences.length,
+                itemBuilder: (context, index) {
+                  final event = absences[index];
+                  final name = event.title.replaceFirst('Assente: ', '');
+                  final user = widget.vm.appUserForAbsenceEvent(event);
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: UserAvatar(user: user, radius: 18),
+                    title: Text(name,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: event.end != null
+                        ? Text('Fino al ${event.end!.day}/${event.end!.month}/${event.end!.year}',
+                            style: const TextStyle(fontSize: 12))
+                        : null,
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete_outline, color: Colors.red.shade300, size: 20),
+                      onPressed: () {
+                        widget.vm.removeEvent(event.id);
+                        setState(() {});
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class OrganizzaScreen extends StatefulWidget {
 
   final TabChangeNotifier tabNotifier;
@@ -767,7 +919,7 @@ class _ShoppingManagerSheetState extends State<_ShoppingManagerSheet> {
                   child: TextField(
                     controller: _quantityController,
                     decoration: const InputDecoration(
-                      labelText: 'Qtà',
+                      labelText: 'QtÃ ',
                       border: OutlineInputBorder(),
                     ),
                     textInputAction: TextInputAction.done,
@@ -975,12 +1127,18 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'Prossimi Eventi',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                const Row(
+                                  children: [
+                                    Icon(Icons.event_outlined, color: AppColors.primaryGreen, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Prossimi Eventi',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 IconButton(
                                   icon: const Icon(
@@ -992,7 +1150,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            if (vm.events.isEmpty)
+                            if (vm.events.where((e) => !e.title.startsWith('Assente:')).isEmpty)
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(16),
@@ -1002,16 +1160,10 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(
-                                      Icons.calendar_month,
-                                      color: AppColors.primaryGreen,
-                                    ),
+                                    Icon(Icons.calendar_month, color: AppColors.primaryGreen),
                                     SizedBox(width: 12),
                                     Expanded(
-                                      child: Text(
-                                        'Nessun evento in programma.',
-                                        style: TextStyle(fontSize: 14),
-                                      ),
+                                      child: Text('Nessun evento in programma.', style: TextStyle(fontSize: 14)),
                                     ),
                                   ],
                                 ),
@@ -1020,71 +1172,58 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                               ListView.separated(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                itemCount: vm.events.length > 3
+                                itemCount: vm.events.where((e) => !e.title.startsWith('Assente:')).length > 3
                                     ? 3
-                                    : vm.events.length,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(height: 8),
+                                    : vm.events.where((e) => !e.title.startsWith('Assente:')).length,
+                                separatorBuilder: (context, index) => const SizedBox(height: 8),
                                 itemBuilder: (context, index) {
-                                  final event = vm.events[index];
-                                  final isToday = DateUtils.isSameDay(
-                                    event.start,
-                                    DateTime.now(),
-                                  );
+                                  final event = vm.events
+                                      .where((e) => !e.title.startsWith('Assente:'))
+                                      .toList()[index];
                                   return Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: isToday
-                                          ? AppColors.primaryGreen.withValues(
-                                              alpha: 0.05,
-                                            )
-                                          : Colors.grey.shade50,
-                                      borderRadius: BorderRadius.circular(12),
+                                      color: AppColors.finanzeBackground,
+                                      borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: Row(
                                       children: [
-                                        Container(
-                                          width: 4,
-                                          height: 30,
-                                          decoration: BoxDecoration(
-                                            color: isToday
-                                                ? AppColors.primaryGreen
-                                                : Colors.grey.shade300,
-                                            borderRadius: BorderRadius.circular(
-                                              2,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 event.title,
                                                 style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Colors.black87,
                                                 ),
                                               ),
                                               Text(
-                                                '${DateFormat('dd MMM, HH:mm').format(event.start)}${event.notes != null && event.notes!.isNotEmpty ? " • ${event.notes}" : ""}',
+                                                DateFormat('dd/MM/yyyy - HH:mm').format(event.start),
                                                 style: TextStyle(
                                                   fontSize: 12,
-                                                  color: Colors.grey.shade600,
+                                                  color: Colors.grey.shade500,
                                                 ),
                                               ),
+                                              if (event.notes != null && event.notes!.isNotEmpty)
+                                                Text(
+                                                  event.notes!,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey.shade400,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
                                             ],
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                            size: 20,
-                                            color: Colors.grey,
-                                          ),
-                                          onPressed: () =>
-                                              vm.removeEvent(event.id),
+                                          icon: Icon(Icons.delete_outline,
+                                              size: 20, color: Colors.red.shade300),
+                                          onPressed: () => vm.removeEvent(event.id),
                                         ),
                                       ],
                                     ),
@@ -1135,6 +1274,11 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
 
                     // Mostra TUTTI i task della settimana
                     _buildAllWeeklyTasks(context, vm),
+
+                    const SizedBox(height: 20),
+
+                    // Coinquilini assenti
+                    _buildAbsentMembersSection(context, vm),
 
                     const SizedBox(height: 16),
 
@@ -1308,19 +1452,13 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isMine
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : AppColors.primaryGreen.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.cleaning_services_outlined,
-                      color: isMine ? Colors.white : AppColors.primaryGreen,
-                      size: 18,
-                    ),
+                  UserAvatar(
+                    user: vm.appUserFor(task.assigneeUid),
+                    radius: 22,
+                    backgroundColor: isMine
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : AppColors.primaryGreen.withValues(alpha: 0.15),
+                    iconColor: isMine ? Colors.white : AppColors.primaryDark,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1404,6 +1542,137 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
     );
   }
 
+
+  Widget _buildAbsentMembersSection(BuildContext context, OrganizzaViewModel vm) {
+    final absences = vm.activeAbsences;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.flight_takeoff, color: Colors.orange, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Coinquilini Assenti',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                if (absences.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${absences.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            TextButton(
+              onPressed: () => _showAbsenceManager(context),
+              child: const Text(
+                'Gestisci',
+                style: TextStyle(color: AppColors.primaryGreen),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (absences.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.home_outlined, color: Colors.grey.shade400),
+                const SizedBox(width: 12),
+                Text(
+                  'Tutti i coinquilini sono a casa!',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                ),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: absences.map((event) {
+              final name = event.title.replaceFirst('Assente: ', '');
+              final until = event.end;
+              final user = vm.appUserForAbsenceEvent(event);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(width: 4, color: Colors.orange),
+                        Expanded(
+                          child: Container(
+                            color: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                UserAvatar(user: user, radius: 22),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '$name assente',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      if (until != null)
+                                        Text(
+                                          'fino al ${until.day}/${until.month}/${until.year}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete_outline, color: Colors.red.shade300, size: 20),
+                                  onPressed: () => vm.removeEvent(event.id),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
 
   List<Widget> _buildShoppingSection(
     BuildContext context,
@@ -1641,7 +1910,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                         elevation: 0,
                       ),
                       onPressed: () async {
-                        // Se è la spazzatura di domani, la segniamo graficamente come portata fuori
+                        // Se Ã¨ la spazzatura di domani, la segniamo graficamente come portata fuori
                         if (!isToday) {
                           vm.setTomorrowWasteTakenOut(true);
                         }
@@ -1696,7 +1965,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
       },
     );
 
-    // Se la tendina si è chiusa restituendoci un badge sbloccato...
+    // Se la tendina si Ã¨ chiusa restituendoci un badge sbloccato...
     if (newBadge != null && context.mounted) {
       // Aspettiamo mezzo secondo per far finire l'animazione di chiusura
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -1706,6 +1975,18 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
         }
       });
     }
+  }
+
+  void _showAbsenceManager(BuildContext context) {
+    final vm = context.read<OrganizzaViewModel>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _AbsenceManagerSheet(vm: vm);
+      },
+    );
   }
 
   void _showCleaningManager(BuildContext context) {

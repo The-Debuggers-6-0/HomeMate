@@ -121,6 +121,58 @@ class OrganizzaViewModel extends ChangeNotifier {
   List<HouseEvent> get events => List.unmodifiable(_events);
   List<StickyNote> get notes => List.unmodifiable(_notes);
   List<HouseRule> get rules => List.unmodifiable(_rules);
+  List<AppUser> get houseMemberUsers => List.unmodifiable(_houseMemberUsers);
+
+  AppUser? appUserFor(String uid) {
+    try {
+      return _houseMemberUsers.firstWhere((u) => u.uid == uid);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  DateTime? absenceEndDateFor(String uid) {
+    for (final event in activeAbsences) {
+      final notes = event.notes ?? '';
+      if (notes.startsWith('absent_uid:')) {
+        if (notes.replaceFirst('absent_uid:', '').trim() == uid) return event.end;
+      } else {
+        final name = event.title.replaceFirst('Assente: ', '').toLowerCase().trim();
+        if (name == 'te' && uid == authRepository.currentFirebaseUser?.uid) return event.end;
+        try {
+          final user = _houseMemberUsers.firstWhere((u) => u.uid == uid);
+          final displayName = (user.name.isNotEmpty ? user.name : user.email).toLowerCase();
+          if (displayName == name) return event.end;
+        } catch (_) {}
+      }
+    }
+    return null;
+  }
+
+  AppUser? appUserForAbsenceEvent(HouseEvent event) {
+    final name = event.title.replaceFirst('Assente: ', '').toLowerCase().trim();
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (name == 'te' && currentUid != null) return appUserFor(currentUid);
+    try {
+      return _houseMemberUsers.firstWhere(
+        (u) => u.name.toLowerCase() == name || u.email.toLowerCase() == name,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<HouseEvent> get activeAbsences => List.unmodifiable(
+    _events.where((e) {
+      if (!e.title.startsWith('Assente:')) return false;
+      final now = DateTime.now();
+      if (e.end != null) {
+        return e.end!.isAfter(now);
+      }
+      final s = e.start;
+      return s.year == now.year && s.month == now.month && s.day == now.day;
+    }).toList(),
+  );
 
   static const List<String> wasteTypes = [
     'Nulla',
@@ -228,40 +280,47 @@ class OrganizzaViewModel extends ChangeNotifier {
 
   bool isUserAway(String uid) {
     final now = DateTime.now();
-    
-    // Cerchiamo il nome dell'utente per matchare il titolo dell'evento
-    String userName = '';
-    try {
-      userName = _houseMemberUsers.firstWhere((u) => u.uid == uid).name.toLowerCase();
-    } catch (_) {}
 
     return _events.any((event) {
+      final notes = event.notes ?? '';
+
+      // Formato nuovo: absent_uid:UID (affidabile, UID diretto)
+      if (notes.startsWith('absent_uid:')) {
+        final absentUid = notes.replaceFirst('absent_uid:', '').trim();
+        if (absentUid != uid) return false;
+        return _isEventActive(event, now);
+      }
+
+      // Formato legacy: keyword matching sul titolo
       final title = event.title.toLowerCase();
-      final notes = event.notes?.toLowerCase() ?? '';
-      
-      // Keywords per l'assenza
+      final notesLower = notes.toLowerCase();
       final keywords = ['vacanza', 'fuori', 'assente', 'ferie', 'viaggio'];
-      final isAbsenceType = keywords.any((k) => title.contains(k) || notes.contains(k));
-      
+      final isAbsenceType = keywords.any((k) => title.contains(k) || notesLower.contains(k));
       if (!isAbsenceType) return false;
 
-      // L'evento riguarda l'utente se è il creatore o se il suo nome è nel titolo
-      final isTargetUser = (event.creatorUid == uid) || 
-                           (userName.isNotEmpty && title.contains(userName));
+      String userName = '';
+      try {
+        userName = _houseMemberUsers.firstWhere((u) => u.uid == uid).name.toLowerCase();
+      } catch (_) {}
+
+      final currentUid = authRepository.currentFirebaseUser?.uid;
+      final isCurrentUser = uid == currentUid;
+      final isTargetUser = isCurrentUser
+          ? (event.creatorUid == uid || title.contains('te'))
+          : (userName.isNotEmpty && title.contains(userName));
 
       if (!isTargetUser) return false;
-
-      // Controllo temporale
-      if (event.end != null) {
-        // Se c'è una fine, deve essere compreso nell'intervallo
-        return now.isAfter(event.start) && now.isBefore(event.end!);
-      } else {
-        // Se non c'è una fine, consideriamo l'intera giornata dell'inizio
-        return now.year == event.start.year && 
-               now.month == event.start.month && 
-               now.day == event.start.day;
-      }
+      return _isEventActive(event, now);
     });
+  }
+
+  bool _isEventActive(HouseEvent event, DateTime now) {
+    if (event.end != null) {
+      return now.isAfter(event.start) && now.isBefore(event.end!);
+    }
+    return now.year == event.start.year &&
+        now.month == event.start.month &&
+        now.day == event.start.day;
   }
 
   String? get currentWasteResponsibleUid {
@@ -452,22 +511,27 @@ class OrganizzaViewModel extends ChangeNotifier {
   }
 
   bool _seeding = false;
-  
+  bool _pendingReSeed = false;
+
   Future<void> _seedWeeklyCleaningTasksIfNeeded() async {
     final houseId = _houseId;
     if (houseId == null || _houseMembers.isEmpty) return;
-    // Evita esecuzioni concorrenti
-    if (_seeding) return;
+    if (_seeding) {
+      _pendingReSeed = true;
+      return;
+    }
     _seeding = true;
     try {
-      await _doSeed(houseId);
+      do {
+        _pendingReSeed = false;
+        await _doSeed(houseId);
+      } while (_pendingReSeed);
     } finally {
       _seeding = false;
     }
   }
 
   Future<void> _doSeed(String houseId) async {
-
     final currentWeekStart = _currentWeekStart();
     var currentWeekTasks = _cleaning.where((task) => _isCurrentWeek(task.weekStart)).toList();
     // Usa le stanze personalizzabili da Firestore
@@ -504,20 +568,30 @@ class OrganizzaViewModel extends ChangeNotifier {
 
     final weekIndex = currentWeekStart.difference(DateTime(2024, 1, 1)).inDays ~/ 7;
 
+    // =========================================================================
+    // --- (Round Robin Continuo) ---
+    // =========================================================================
+    
+    // 1. Creiamo una lista di coinquilini DISPONIBILI per questa settimana
+    List<String> availableMembers = _houseMembers.where((uid) => !isUserAway(uid)).toList();
+    
+    // Fallback di sicurezza: se per qualche motivo risultano tutti in vacanza, usiamo tutti i membri
+    if (availableMembers.isEmpty) {
+      availableMembers = List.from(_houseMembers);
+    }
+
+    // Se la casa è completamente vuota, interrompiamo
+    if (availableMembers.isEmpty) return;
+
     // Ricalcoliamo/Creiamo i task per ogni stanza
     for (var i = 0; i < choreTitles.length; i++) {
       final title = choreTitles[i];
 
-      // Calcolo dell'assegnatario ideale
-      String? idealAssignee;
-      for (int j = 0; j < _houseMembers.length; j++) {
-        final candidate = _houseMembers[(weekIndex + i + j) % _houseMembers.length];
-        if (!isUserAway(candidate)) {
-          idealAssignee = candidate;
-          break;
-        }
-      }
-      idealAssignee ??= _houseMembers[(weekIndex + i) % _houseMembers.length];
+      // 2. La formula magica della rotazione!
+      final globalTaskIndex = (weekIndex * choreTitles.length) + i;
+      final assigneeIndex = globalTaskIndex % availableMembers.length;
+      
+      final idealAssignee = availableMembers[assigneeIndex];
 
       // Trova se c'è già un task per questa stanza
       final existingTask = currentWeekTasks.where((t) => t.title == title).firstOrNull;
@@ -533,12 +607,17 @@ class OrganizzaViewModel extends ChangeNotifier {
             weekStart: currentWeekStart,
           ),
         );
-      } else if (!existingTask.completed && existingTask.assigneeUid != idealAssignee) {
-        // Se esiste ma non è completato e l'assegnatario ideale è cambiato (es. nuovo membro), ricalcoliamo
-        await organizeRepository.addOrUpdateCleaningTask(
-          houseId,
-          existingTask.copyWith(assigneeUid: idealAssignee),
-        );
+      } else if (!existingTask.completed) {
+        // Riassegna solo se l'assegnatario corrente è assente o non è più in casa.
+        // Non sovrascrivere le riassegnazioni manuali fatte dall'utente.
+        final assigneeIsAway = isUserAway(existingTask.assigneeUid);
+        final assigneeLeftHouse = !_houseMembers.contains(existingTask.assigneeUid);
+        if (assigneeIsAway || assigneeLeftHouse) {
+          await organizeRepository.addOrUpdateCleaningTask(
+            houseId,
+            existingTask.copyWith(assigneeUid: idealAssignee),
+          );
+        }
       }
     }
   }
@@ -669,6 +748,17 @@ class OrganizzaViewModel extends ChangeNotifier {
     // BADGE: PARTY PLANNER
     // ==========================================================
     return await _userRepository.updateEventCountAndCheckPlanner(currentUid);
+  }
+
+  Future<void> addAbsenceEvent(String uid, DateTime until) async {
+    if (_houseId == null) return;
+    final userName = displayNameFor(uid);
+    await addEvent(
+      'Assente: $userName',
+      DateTime.now(),
+      end: until.add(const Duration(hours: 23, minutes: 59)),
+      notes: 'absent_uid:$uid',
+    );
   }
 
   Future<void> removeEvent(String eventId) async {
