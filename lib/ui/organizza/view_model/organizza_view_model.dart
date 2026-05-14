@@ -278,12 +278,16 @@ class OrganizzaViewModel extends ChangeNotifier {
 
   Map<String, String> get recyclingSchedule => Map.unmodifiable(_recyclingSchedule);
 
+  /// Verifica se un utente è attualmente "Fuori Casa" o in "Vacanza".
+  /// Controlla gli eventi nel calendario cercando il prefisso 'absent_uid:' 
+  /// o parole chiave nel titolo/note (logica legacy).
   bool isUserAway(String uid) {
     final now = DateTime.now();
 
     return _events.any((event) {
       final notes = event.notes ?? '';
 
+      // LOGICA ASSENZA: Cerca eventi che contengono l'UID dell'utente nelle note
       // Formato nuovo: absent_uid:UID (affidabile, UID diretto)
       if (notes.startsWith('absent_uid:')) {
         final absentUid = notes.replaceFirst('absent_uid:', '').trim();
@@ -291,7 +295,8 @@ class OrganizzaViewModel extends ChangeNotifier {
         return _isEventActive(event, now);
       }
 
-      // Formato legacy: keyword matching sul titolo
+      // LOGICA LEGACY: Se non c'è l'UID, cerca parole chiave come "vacanza" o "assente"
+      // e prova a matchare il nome dell'utente nel titolo dell'evento.
       final title = event.title.toLowerCase();
       final notesLower = notes.toLowerCase();
       final keywords = ['vacanza', 'fuori', 'assente', 'ferie', 'viaggio'];
@@ -323,8 +328,10 @@ class OrganizzaViewModel extends ChangeNotifier {
         now.day == event.start.day;
   }
 
+  /// Calcola chi è il responsabile della spazzatura per la settimana corrente.
+  /// Implementa la logica di rotazione e gestione sostituzioni per vacanze.
   String? get currentWasteResponsibleUid {
-    // Se abbiamo un responsabile persistito per questa settimana, usiamo quello
+    // 1. Se abbiamo un responsabile già salvato su Firestore per questa settimana, usiamo quello
     if (_wasteResponsibleData.isNotEmpty) {
       final storedWeekStart = _wasteResponsibleData['weekStart'] as String?;
       if (storedWeekStart != null) {
@@ -335,11 +342,14 @@ class OrganizzaViewModel extends ChangeNotifier {
       }
     }
 
-    // Altrimenti calcoliamo e persistiamo
+    // 2. Se non c'è o è scaduto, calcoliamo il nuovo responsabile
     if (_houseMembers.isEmpty) return null;
     final weekIndex = _currentWeekStart().difference(DateTime(2024, 1, 1)).inDays ~/ 7;
-    
+
     String? responsibleUid;
+    // ROTAZIONE + GESTIONE VACANZE:
+    // Cicliamo tra i membri partendo dal responsabile teorico di questa settimana.
+    // Se il primo della lista è in vacanza (isUserAway), passiamo al successivo.
     for (int i = 0; i < _houseMembers.length; i++) {
       final candidateUid = _houseMembers[(weekIndex + 2 + i) % _houseMembers.length];
       if (!isUserAway(candidateUid)) {
@@ -347,9 +357,11 @@ class OrganizzaViewModel extends ChangeNotifier {
         break;
       }
     }
+
+    // Fallback: se sono tutti in vacanza, assegniamo comunque al responsabile teorico
     responsibleUid ??= _houseMembers[(weekIndex + 2) % _houseMembers.length];
 
-    // Persisti su Firestore
+    // 3. Salviamo la scelta su Firestore in modo che sia consistente per tutti per tutta la settimana
     if (_houseId != null) {
       organizeRepository.updateWasteResponsible(_houseId!, responsibleUid, _currentWeekStart());
     }
@@ -373,7 +385,7 @@ class OrganizzaViewModel extends ChangeNotifier {
     if (wasteType == 'Nulla') {
       return isToday ? 'Goditi il relax' : '';
     }
-    return isToday ? 'Non dimenticare!' : 'Ricordati di uscire il sacco!';
+    return isToday ? 'Non dimenticare!' : 'Ricordati di portare fuori il sacco!';
   }
 
   String _getWasteForDay(DateTime date) {
@@ -569,35 +581,37 @@ class OrganizzaViewModel extends ChangeNotifier {
     final weekIndex = currentWeekStart.difference(DateTime(2024, 1, 1)).inDays ~/ 7;
 
     // =========================================================================
-    // --- (Round Robin Continuo) ---
+    // --- (Round Robin Continuo con Gestione Vacanze) ---
     // =========================================================================
     
-    // 1. Creiamo una lista di coinquilini DISPONIBILI per questa settimana
+    // 1. ESCLUSIONE VACANZE: Creiamo una lista di coinquilini DISPONIBILI per questa settimana.
+    // Gli utenti che hanno un evento "Assente" nel calendario vengono saltati.
     List<String> availableMembers = _houseMembers.where((uid) => !isUserAway(uid)).toList();
     
-    // Fallback di sicurezza: se per qualche motivo risultano tutti in vacanza, usiamo tutti i membri
+    // Fallback di sicurezza: se per qualche motivo risultano tutti in vacanza, usiamo tutti i membri.
     if (availableMembers.isEmpty) {
       availableMembers = List.from(_houseMembers);
     }
 
-    // Se la casa è completamente vuota, interrompiamo
+    // Se la casa è completamente vuota, interrompiamo.
     if (availableMembers.isEmpty) return;
 
-    // Ricalcoliamo/Creiamo i task per ogni stanza
+    // Ricalcoliamo/Creiamo i task per ogni stanza definita.
     for (var i = 0; i < choreTitles.length; i++) {
       final title = choreTitles[i];
 
-      // 2. La formula magica della rotazione!
+      // 2. FORMULA ROTAZIONE: Determina l'assegnatario in base alla settimana solare.
+      // Assicura che ogni settimana l'assegnamento "scali" di una posizione.
       final globalTaskIndex = (weekIndex * choreTitles.length) + i;
       final assigneeIndex = globalTaskIndex % availableMembers.length;
       
       final idealAssignee = availableMembers[assigneeIndex];
 
-      // Trova se c'è già un task per questa stanza
+      // Trova se c'è già un task per questa stanza nella settimana corrente.
       final existingTask = currentWeekTasks.where((t) => t.title == title).firstOrNull;
 
       if (existingTask == null) {
-        // Se non esiste, lo creiamo
+        // Se non esiste, lo creiamo da zero.
         await organizeRepository.addOrUpdateCleaningTask(
           houseId,
           CleaningTask(
@@ -608,11 +622,14 @@ class OrganizzaViewModel extends ChangeNotifier {
           ),
         );
       } else if (!existingTask.completed) {
-        // Riassegna solo se l'assegnatario corrente è assente o non è più in casa.
-        // Non sovrascrivere le riassegnazioni manuali fatte dall'utente.
+        // 3. RIASSEGNAMENTO DINAMICO: Se il task esiste ma non è finito, 
+        // controlliamo se l'assegnatario è andato in vacanza DOPO la creazione del task,
+        // se ha lasciato la casa, o se la composizione della casa è cambiata (nuovo ingresso).
         final assigneeIsAway = isUserAway(existingTask.assigneeUid);
         final assigneeLeftHouse = !_houseMembers.contains(existingTask.assigneeUid);
-        if (assigneeIsAway || assigneeLeftHouse) {
+        final needsRebalance = existingTask.assigneeUid != idealAssignee;
+
+        if (assigneeIsAway || assigneeLeftHouse || needsRebalance) {
           await organizeRepository.addOrUpdateCleaningTask(
             houseId,
             existingTask.copyWith(assigneeUid: idealAssignee),

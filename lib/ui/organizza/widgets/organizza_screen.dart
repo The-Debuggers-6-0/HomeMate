@@ -1283,34 +1283,19 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     const SizedBox(height: 16),
 
                     // Gestione spazzatura (Raccolta Differenziata)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Raccolta differenziata',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            if (vm.currentWasteResponsibleUid != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryGreen.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Turno: ${vm.displayNameFor(vm.currentWasteResponsibleUid!)}',
-                                  style: const TextStyle(
-                                    color: AppColors.primaryGreen,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
+                            const Text(
+                              'Raccolta differenziata',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
                               ),
+                            ),
                             TextButton(
                               onPressed: () => _showRecyclingManager(context),
                               child: const Text(
@@ -1320,6 +1305,17 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                             ),
                           ],
                         ),
+                        if (vm.currentWasteResponsibleUid != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2, bottom: 8),
+                            child: Text(
+                              'Questa settimana tocca a: ${vm.displayNameFor(vm.currentWasteResponsibleUid!)}',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -1810,6 +1806,8 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
     // Per "DOMANI" usiamo lo stato locale del ViewModel
     final bool isTakenOut = isToday ? vm.todayWasteTakenOut : vm.tomorrowWasteTakenOut;
 
+    final bool isResponsible = vm.isUserResponsibleForTodayWaste;
+
     return Card(
       elevation: 0,
       color: isToday ? Colors.white : AppColors.primaryDark,
@@ -1899,38 +1897,45 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                         ),
                       ],
                     )
-                  : ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isToday
-                            ? AppColors.primaryGreen
-                            : Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      onPressed: () async {
-                        // Se Ã¨ la spazzatura di domani, la segniamo graficamente come portata fuori
-                        if (!isToday) {
-                          vm.setTomorrowWasteTakenOut(true);
-                        }
-                        
-                        // Controlliamo SEMPRE se sblocca il badge (e per oggi persiste su Firestore)
-                        Map<String, dynamic>? newBadge = await vm.confirmWasteTakenOut(wasteType);
+                  : (isToday && !isResponsible)
+                      ? Tooltip(
+                          message: 'Solo il responsabile di oggi può confermare',
+                          child: Icon(
+                            Icons.lock_outline,
+                            color: Colors.grey.shade400,
+                            size: 24,
+                          ),
+                        )
+                      : ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isToday
+                                ? AppColors.primaryGreen
+                                : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: () async {
+                            // Segniamo graficamente come portata fuori
+                            vm.setTomorrowWasteTakenOut(true);
 
-                        // Se sblocca il badge, mostriamo il popup celebrativo!
-                        if (newBadge != null && context.mounted) {
-                          showGenericBadgePopup(context, newBadge);
-                        }
-                      },
-                      child: Text(
-                        'Fatto',
-                        style: TextStyle(
-                          color: isToday ? Colors.white : AppColors.primaryDark,
-                          fontWeight: FontWeight.bold,
+                            // Controlliamo se sblocca il badge
+                            Map<String, dynamic>? newBadge = await vm.confirmWasteTakenOut(wasteType);
+
+                            // Se sblocca il badge, mostriamo il popup celebrativo!
+                            if (newBadge != null && context.mounted) {
+                              showGenericBadgePopup(context, newBadge);
+                            }
+                          },
+                          child: Text(
+                            'Fatto',
+                            style: TextStyle(
+                              color: isToday ? Colors.white : AppColors.primaryDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
           ],
         ),
       ),
