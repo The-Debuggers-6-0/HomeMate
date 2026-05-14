@@ -89,7 +89,7 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
 
                 // --- CARD DEBITI (ORA SALDI COINQUILINI) ---
                 const Text(
-                  'I tuoi Saldi',
+                  'La tua Situazione',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,

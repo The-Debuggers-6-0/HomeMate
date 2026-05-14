@@ -59,44 +59,64 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> _init() async {
     final user = _authRepository.currentFirebaseUser;
     if (user != null) {
-      // Recupero iniziale del profilo per il nome
-      final appUser = await _userRepository.getUserProfile(user.uid);
-      _userName = appUser?.name ?? 'Utente';
-
       // Ascolta il profilo utente per intercettare il cambio o l'assegnazione della casa (homeId)
+      // e per aggiornare il nome in tempo reale
       _userSub = _userRepository.getUserProfileStream(user.uid).listen((updatedUser) {
-        if (updatedUser != null && updatedUser.homeId.isNotEmpty) {
-          if (_houseId != updatedUser.homeId) {
-            _houseId = updatedUser.homeId;
-            _subscribeToHouseData(updatedUser.homeId);
+        if (updatedUser != null) {
+          _userName = updatedUser.name.isNotEmpty ? updatedUser.name : 'Utente';
+          
+          if (updatedUser.homeId.isNotEmpty) {
+            if (_houseId != updatedUser.homeId) {
+              _houseId = updatedUser.homeId;
+              _subscribeToHouseData(updatedUser.homeId);
+            }
+          } else {
+            _isLoading = false;
+            _houseId = null;
           }
         } else {
           _isLoading = false;
           _houseId = null;
-          notifyListeners();
         }
+        notifyListeners();
       });
     }
   }
 
   void _subscribeToHouseData(String houseId) {
-    _isLoading = true;
+    // Non resettiamo isLoading a true se avevamo già dei dati, per evitare flickering
+    if (_houseId == null) _isLoading = true;
     notifyListeners();
 
     // 1. Bilancio
     _financeSub?.cancel();
     _financeSub = _financeRepository.getTransactionsStream(houseId).listen((transactions) {
       _calculateBalance(transactions);
+      _isLoading = false; // Caricato almeno un modulo importante
       notifyListeners();
     });
 
-    // 2. Faccende
+    // 2. Faccende (Sincronizzato con la logica di Organizza)
     _cleaningSub?.cancel();
     _cleaningSub = _organizeRepository.getCleaningTasksStream(houseId).listen((List<CleaningTask> tasks) {
-      if (tasks.isNotEmpty) {
-        final activeTask = tasks.firstWhere((t) => !t.completed, orElse: () => tasks.first);
+      final now = DateTime.now();
+      final currentWeekStart = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+      
+      // Prendiamo solo i task della settimana corrente
+      final currentTasks = tasks.where((t) {
+        return t.weekStart.year == currentWeekStart.year &&
+               t.weekStart.month == currentWeekStart.month &&
+               t.weekStart.day == currentWeekStart.day;
+      }).toList();
+
+      if (currentTasks.isNotEmpty) {
+        // Mostriamo il primo non completato, o l'ultimo se sono tutti fatti
+        final activeTask = currentTasks.firstWhere((t) => !t.completed, orElse: () => currentTasks.first);
         _choreToday = activeTask.title;
         _fetchAssigneeName(activeTask.assigneeUid);
+      } else {
+        _choreToday = 'Nessuna faccenda';
+        _personToday = '-';
       }
       notifyListeners();
     });
@@ -111,20 +131,22 @@ class HomeViewModel extends ChangeNotifier {
     // 4. Shopping
     _shoppingSub?.cancel();
     _shoppingSub = _organizeRepository.getShoppingListStream(houseId).listen((items) {
-      // Filtriamo quelli non comprati
       final filtered = items.where((i) => !i.bought).toList();
-
-      // Ordiniamo per data decrescente: i più recenti (data più grande) per primi
       filtered.sort((a, b) => b.addedAt.compareTo(a.addedAt));
-
       _shoppingList = filtered;
       notifyListeners();
     });
 
-    // 5. Eventi
+    // 5. Eventi (Inclusi quelli di oggi)
     _eventSub?.cancel();
     _eventSub = _organizeRepository.getEventsStream(houseId).listen((events) {
-      _events = events.where((e) => e.start.isAfter(DateTime.now())).toList();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      _events = events.where((e) {
+        final eventDate = DateTime(e.start.year, e.start.month, e.start.day);
+        return eventDate.isAtSameMomentAs(today) || e.start.isAfter(today);
+      }).toList();
       _isLoading = false;
       notifyListeners();
     });
@@ -142,40 +164,58 @@ class HomeViewModel extends ChangeNotifier {
     final currentUserId = _authRepository.currentFirebaseUser?.uid;
     if (currentUserId == null) return;
 
-    double total = 0.0;
     _perPersonNet.clear();
 
     for (var tx in transactions) {
-      final involved = tx.involvedUsers ?? [];
+      if (tx.type == 'expense') {
+        if (tx.customShares != null && tx.customShares!.isNotEmpty) {
+          // --- DIVISIONE PERSONALIZZATA ---
+          if (tx.payerId == currentUserId) {
+            // Ho pagato io. Gli altri mi devono la loro quota specifica.
+            tx.customShares!.forEach((uid, share) {
+              if (uid != currentUserId) {
+                _perPersonNet[uid] = (_perPersonNet[uid] ?? 0.0) + share;
+              }
+            });
+          } else if (tx.customShares!.containsKey(currentUserId)) {
+            // Ha pagato qualcun altro. Io gli devo la MIA quota specifica.
+            final myShare = tx.customShares![currentUserId]!;
+            _perPersonNet[tx.payerId] = (_perPersonNet[tx.payerId] ?? 0.0) - myShare;
+          }
+        } else {
+          // --- DIVISIONE IN PARTI UGUALI ---
+          final involved = tx.involvedUsers ?? [];
+          if (involved.isEmpty) continue;
+          if (!involved.contains(currentUserId) && tx.payerId != currentUserId) continue;
 
-      // calcolo bilancio totale usato in precedenza
-      if (tx.payerId == currentUserId) {
-        if (involved.isNotEmpty) {
-          double othersShare = tx.amount * (1 - (1 / involved.length));
-          total += othersShare;
+          double share = tx.amount / involved.length;
+          if (tx.payerId == currentUserId) {
+            // Ho pagato io. Tutti gli altri coinvolti mi devono 'share'.
+            for (var uid in involved) {
+              if (uid != currentUserId) {
+                _perPersonNet[uid] = (_perPersonNet[uid] ?? 0.0) + share;
+              }
+            }
+          } else if (involved.contains(currentUserId)) {
+            // Ha pagato qualcun altro. Io gli devo la mia parte.
+            _perPersonNet[tx.payerId] = (_perPersonNet[tx.payerId] ?? 0.0) - share;
+          }
         }
-      } else if (involved.contains(currentUserId)) {
-        double myShare = tx.amount / involved.length;
-        total -= myShare;
-      }
-
-      // calcolo bilancio per singolo utente (semplificato per rapporto diretto)
-      if (tx.payerId == currentUserId) {
-        // gli altri devono a me
-        for (var other in involved) {
-          if (other == currentUserId) continue;
-          final share = tx.amount / involved.length;
-          _perPersonNet[other] = (_perPersonNet[other] ?? 0.0) + share;
+      } else if (tx.type == 'reimbursement') {
+        // --- RIMBORSI ---
+        if (tx.payerId == currentUserId && tx.receiverId != null) {
+          // Ho inviato un rimborso (riduco il mio debito)
+          _perPersonNet[tx.receiverId!] = (_perPersonNet[tx.receiverId!] ?? 0.0) + tx.amount;
+        } else if (tx.receiverId == currentUserId) {
+          // Ho ricevuto un rimborso (riduco il mio credito)
+          _perPersonNet[tx.payerId] = (_perPersonNet[tx.payerId] ?? 0.0) - tx.amount;
         }
-      } else if (involved.contains(currentUserId)) {
-        // io devo al payer
-        final share = tx.amount / involved.length;
-        _perPersonNet[tx.payerId] = (_perPersonNet[tx.payerId] ?? 0.0) - share;
       }
     }
 
-    _balance = total;
-    _isInCredit = _balance >= 0;
+    // Il saldo totale è la somma algebrica dei rapporti con ogni coinquilino
+    _balance = _perPersonNet.values.fold(0.0, (sum, val) => sum + val);
+    _isInCredit = _balance >= -0.01; // Tolleranza per arrotondamenti
   }
 
   /// Totale dei soldi che gli altri devono a te
