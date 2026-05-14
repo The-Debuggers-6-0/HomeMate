@@ -192,10 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        onTap: () {
-          // Vai alla sezione Finanze
-          widget.tabNotifier.selectTab(1);
-        },
+        onTap: () => widget.tabNotifier.selectTab(1),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -209,71 +206,109 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'BILANCIO COINQUILINI',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: viewModel.isInCredit
-                                ? AppColors.accentGreen.withOpacity(0.1)
-                                : AppColors.accentRed.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            viewModel.balanceStatus,
-                            style: TextStyle(
-                              color: viewModel.isInCredit ? Colors.green[700] : Colors.red[700],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'SITUAZIONE SPESE',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.1,
                     ),
-                    const SizedBox(height: 12),
-                    // Mostra informazioni compatte su quante persone ti devono o a cui devi soldi
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          viewModel.numPeopleYouOwe > 0
-                              ? 'Sei in debito con ${viewModel.numPeopleYouOwe} ${viewModel.numPeopleYouOwe == 1 ? "persona" : "persone"}'
-                              : 'Non devi soldi a nessuno',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        viewModel.isInCredit ? 'Credito Totale' : 'Debito Totale',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      ),
+                      Text(
+                        viewModel.balanceFormatted,
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: viewModel.isInCredit ? AppColors.primaryGreen : AppColors.accentRed,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          viewModel.numPeopleWhoOweYou > 0
-                              ? '${viewModel.numPeopleWhoOweYou} ${viewModel.numPeopleWhoOweYou == 1 ? "persona" : "persone"} devono darti dei soldi'
-                              : 'Nessuno ti deve soldi al momento',
-                          style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
-                        ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 24),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildBalanceDetail(
+                        label: 'Devi ricevere',
+                        amount: viewModel.totalCredit,
+                        color: AppColors.accentGreen,
+                        icon: Icons.arrow_downward,
+                      ),
+                    ),
+                    Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.2)),
+                    Expanded(
+                      child: _buildBalanceDetail(
+                        label: 'Devi dare',
+                        amount: viewModel.totalDebt,
+                        color: AppColors.accentRed,
+                        icon: Icons.arrow_upward,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              const Icon(Icons.chevron_right, color: AppColors.primaryGreen, size: 28),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBalanceDetail({
+    required String label,
+    required double amount,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '€ ${amount.toStringAsFixed(2).replaceAll('.', ',')}',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+      ],
     );
   }
 

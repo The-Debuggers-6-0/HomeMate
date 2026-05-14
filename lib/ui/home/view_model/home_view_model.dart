@@ -178,15 +178,17 @@ class HomeViewModel extends ChangeNotifier {
     _isInCredit = _balance >= 0;
   }
 
+  /// Totale dei soldi che gli altri devono a te
+  double get totalCredit => _perPersonNet.values.where((v) => v > 0.01).fold(0.0, (sum, v) => sum + v);
+
+  /// Totale dei soldi che tu devi agli altri
+  double get totalDebt => _perPersonNet.values.where((v) => v < -0.01).fold(0.0, (sum, v) => sum + v.abs());
+
   /// Numero di persone a cui devi soldi (sei in debito con loro)
-  int get numPeopleYouOwe {
-    return _perPersonNet.values.where((v) => v < -0.01).length;
-  }
+  int get numPeopleYouOwe => _perPersonNet.values.where((v) => v < -0.01).length;
 
   /// Numero di persone che ti devono soldi
-  int get numPeopleWhoOweYou {
-    return _perPersonNet.values.where((v) => v > 0.01).length;
-  }
+  int get numPeopleWhoOweYou => _perPersonNet.values.where((v) => v > 0.01).length;
 
   /// Crea una nuova Sticky Note (Post-it) condivisa tra tutti i membri della casa
   Future<void> addStickyNote(String content) async {
