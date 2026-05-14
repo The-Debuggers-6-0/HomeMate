@@ -313,41 +313,79 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildChoreToday(HomeViewModel viewModel) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryGreen.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: AppColors.primaryGreen,
-            child: Icon(Icons.cleaning_services, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'CHI TOCCA OGGI?',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryGreen,
-                  ),
-                ),
-                Text(
-                  '${viewModel.choreToday} • ${viewModel.personToday}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => widget.tabNotifier.selectTab(2),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primaryGreen,
+                AppColors.primaryGreen.withOpacity(0.8),
               ],
             ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryGreen.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          const Icon(Icons.chevron_right, color: AppColors.primaryGreen),
-        ],
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.cleaning_services_rounded, color: Colors.white, size: 26),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CHI TOCCA OGGI?',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white.withOpacity(0.8),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      viewModel.choreToday,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Tocca a: ${viewModel.personToday}',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
+            ],
+          ),
+        ),
       ),
     );
   }
