@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$House {
 
- String get id; String get admin; String get nome; List<String> get membri;
+ String get id; String get nome; List<String> get membri;
 /// Create a copy of House
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $HouseCopyWith<House> get copyWith => _$HouseCopyWithImpl<House>(this as House, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is House&&(identical(other.id, id) || other.id == id)&&(identical(other.admin, admin) || other.admin == admin)&&(identical(other.nome, nome) || other.nome == nome)&&const DeepCollectionEquality().equals(other.membri, membri));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is House&&(identical(other.id, id) || other.id == id)&&(identical(other.nome, nome) || other.nome == nome)&&const DeepCollectionEquality().equals(other.membri, membri));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,admin,nome,const DeepCollectionEquality().hash(membri));
+int get hashCode => Object.hash(runtimeType,id,nome,const DeepCollectionEquality().hash(membri));
 
 @override
 String toString() {
-  return 'House(id: $id, admin: $admin, nome: $nome, membri: $membri)';
+  return 'House(id: $id, nome: $nome, membri: $membri)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $HouseCopyWith<$Res>  {
   factory $HouseCopyWith(House value, $Res Function(House) _then) = _$HouseCopyWithImpl;
 @useResult
 $Res call({
- String id, String admin, String nome, List<String> membri
+ String id, String nome, List<String> membri
 });
 
 
@@ -65,10 +65,9 @@ class _$HouseCopyWithImpl<$Res>
 
 /// Create a copy of House
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? admin = null,Object? nome = null,Object? membri = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? nome = null,Object? membri = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,admin: null == admin ? _self.admin : admin // ignore: cast_nullable_to_non_nullable
 as String,nome: null == nome ? _self.nome : nome // ignore: cast_nullable_to_non_nullable
 as String,membri: null == membri ? _self.membri : membri // ignore: cast_nullable_to_non_nullable
 as List<String>,
@@ -156,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String admin,  String nome,  List<String> membri)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String nome,  List<String> membri)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _House() when $default != null:
-return $default(_that.id,_that.admin,_that.nome,_that.membri);case _:
+return $default(_that.id,_that.nome,_that.membri);case _:
   return orElse();
 
 }
@@ -177,10 +176,10 @@ return $default(_that.id,_that.admin,_that.nome,_that.membri);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String admin,  String nome,  List<String> membri)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String nome,  List<String> membri)  $default,) {final _that = this;
 switch (_that) {
 case _House():
-return $default(_that.id,_that.admin,_that.nome,_that.membri);case _:
+return $default(_that.id,_that.nome,_that.membri);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +196,10 @@ return $default(_that.id,_that.admin,_that.nome,_that.membri);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String admin,  String nome,  List<String> membri)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String nome,  List<String> membri)?  $default,) {final _that = this;
 switch (_that) {
 case _House() when $default != null:
-return $default(_that.id,_that.admin,_that.nome,_that.membri);case _:
+return $default(_that.id,_that.nome,_that.membri);case _:
   return null;
 
 }
@@ -212,11 +211,10 @@ return $default(_that.id,_that.admin,_that.nome,_that.membri);case _:
 @JsonSerializable()
 
 class _House implements House {
-  const _House({required this.id, required this.admin, required this.nome, final  List<String> membri = const <String>[]}): _membri = membri;
+  const _House({required this.id, required this.nome, final  List<String> membri = const <String>[]}): _membri = membri;
   factory _House.fromJson(Map<String, dynamic> json) => _$HouseFromJson(json);
 
 @override final  String id;
-@override final  String admin;
 @override final  String nome;
  final  List<String> _membri;
 @override@JsonKey() List<String> get membri {
@@ -239,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _House&&(identical(other.id, id) || other.id == id)&&(identical(other.admin, admin) || other.admin == admin)&&(identical(other.nome, nome) || other.nome == nome)&&const DeepCollectionEquality().equals(other._membri, _membri));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _House&&(identical(other.id, id) || other.id == id)&&(identical(other.nome, nome) || other.nome == nome)&&const DeepCollectionEquality().equals(other._membri, _membri));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,admin,nome,const DeepCollectionEquality().hash(_membri));
+int get hashCode => Object.hash(runtimeType,id,nome,const DeepCollectionEquality().hash(_membri));
 
 @override
 String toString() {
-  return 'House(id: $id, admin: $admin, nome: $nome, membri: $membri)';
+  return 'House(id: $id, nome: $nome, membri: $membri)';
 }
 
 
@@ -259,7 +257,7 @@ abstract mixin class _$HouseCopyWith<$Res> implements $HouseCopyWith<$Res> {
   factory _$HouseCopyWith(_House value, $Res Function(_House) _then) = __$HouseCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String admin, String nome, List<String> membri
+ String id, String nome, List<String> membri
 });
 
 
@@ -276,10 +274,9 @@ class __$HouseCopyWithImpl<$Res>
 
 /// Create a copy of House
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? admin = null,Object? nome = null,Object? membri = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? nome = null,Object? membri = null,}) {
   return _then(_House(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,admin: null == admin ? _self.admin : admin // ignore: cast_nullable_to_non_nullable
 as String,nome: null == nome ? _self.nome : nome // ignore: cast_nullable_to_non_nullable
 as String,membri: null == membri ? _self._membri : membri // ignore: cast_nullable_to_non_nullable
 as List<String>,
