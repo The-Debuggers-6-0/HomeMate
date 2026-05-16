@@ -15,6 +15,7 @@ _AppUser _$AppUserFromJson(Map<String, dynamic> json) => _AppUser(
   profileCompleted: json['profileCompleted'] as bool? ?? false,
   homeId: json['homeId'] as String? ?? '',
   photoUrl: json['photoUrl'] as String?,
+  points: (json['points'] as num?)?.toInt() ?? 0,
   unlockedBadges:
       (json['unlockedBadges'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, UserBadge.fromJson(e as Map<String, dynamic>)),
@@ -36,6 +37,7 @@ Map<String, dynamic> _$AppUserToJson(_AppUser instance) => <String, dynamic>{
   'profileCompleted': instance.profileCompleted,
   'homeId': instance.homeId,
   'photoUrl': instance.photoUrl,
+  'points': instance.points,
   'unlockedBadges': instance.unlockedBadges,
   'featuredBadges': instance.featuredBadges,
 };

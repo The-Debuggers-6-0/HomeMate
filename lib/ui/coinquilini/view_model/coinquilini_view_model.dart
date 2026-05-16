@@ -41,7 +41,12 @@ class CoinquiliniViewModel extends ChangeNotifier {
   }
 
   House? get currentHouse => _currentHouse;
-  List<AppUser> get roommates => _roommates;
+  List<AppUser> get roommates {
+    // Ordiniamo i coinquilini in base al punteggio (classifica decrescente)
+    final sorted = List<AppUser>.from(_roommates);
+    sorted.sort((a, b) => b.points.compareTo(a.points));
+    return sorted;
+  }
   bool get isLoading => _isLoading;
 
   void _init() {

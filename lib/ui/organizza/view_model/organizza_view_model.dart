@@ -666,11 +666,14 @@ class OrganizzaViewModel extends ChangeNotifier {
     // 1. Salva la pulizia nel database
     await organizeRepository.toggleCleaningTaskCompleted(_houseId!, taskId, completed);
 
-    // 2. Se ha completato il task, avvia il motore dei badge
-    if (completed) {
-      final currentUid = authRepository.currentFirebaseUser?.uid;
-      if (currentUid != null) {
+    // 2. Se ha completato il task, avvia il motore dei badge e assegna punti
+    final currentUid = authRepository.currentFirebaseUser?.uid;
+    if (currentUid != null) {
+      if (completed) {
+        await _userRepository.addPoints(currentUid, 10);
         return await _userRepository.updateCleaningStreakAndCheckFire(currentUid);
+      } else {
+        await _userRepository.addPoints(currentUid, -10);
       }
     }
     return null;
@@ -738,6 +741,13 @@ class OrganizzaViewModel extends ChangeNotifier {
     if (currentUid == null) return;
 
     await organizeRepository.markItemBought(_houseId!, itemId, bought, currentUid);
+
+    // Assegna o rimuovi i punti per lo shopping
+    if (bought) {
+      await _userRepository.addPoints(currentUid, 2);
+    } else {
+      await _userRepository.addPoints(currentUid, -2);
+    }
   }
 
   Future<void> removeShoppingItem(String itemId) async {
@@ -817,6 +827,9 @@ class OrganizzaViewModel extends ChangeNotifier {
     if (_houseId != null) {
       await organizeRepository.confirmWasteTakenOutToday(_houseId!, currentUid, wasteType);
     }
+    
+    // Aggiungi punti per aver buttato la spazzatura
+    await _userRepository.addPoints(currentUid, 5);
 
     Map<String, dynamic>? specificBadge;
 

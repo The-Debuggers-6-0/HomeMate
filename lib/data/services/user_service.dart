@@ -50,6 +50,13 @@ class UserService {
     return _usersCollection.doc(uid).update(data);
   }
 
+  /// Aggiunge o rimuove punti all'utente (es. quando completa un task).
+  Future<void> updatePoints(String uid, int pointsDelta) {
+    return _usersCollection.doc(uid).update({
+      'points': FieldValue.increment(pointsDelta),
+    });
+  }
+
   /// Salva il profilo completo (nome, cognome, bio) e marca come completato.
   Future<void> saveProfile({
     required String uid,

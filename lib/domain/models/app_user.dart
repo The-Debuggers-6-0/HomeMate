@@ -17,6 +17,7 @@ abstract class AppUser with _$AppUser {
     @Default(false) bool profileCompleted,
     @Default('') String homeId,
     String? photoUrl,
+    @Default(0) int points,
     
     // --- NUOVI CAMPI PER I BADGE ---
     // Usiamo @Default per dire a Freezed che se mancano da Firebase, partono vuoti
@@ -55,6 +56,7 @@ abstract class AppUser with _$AppUser {
       profileCompleted: data['profileCompleted'] as bool? ?? false,
       homeId: data['homeId'] as String? ?? '',
       photoUrl: data['photoUrl'] as String?,
+      points: data['points'] as int? ?? 0,
       unlockedBadges: parsedBadges,
       featuredBadges: parsedFeatured,
     );

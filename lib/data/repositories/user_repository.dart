@@ -119,6 +119,11 @@ class UserRepository {
     return _userService.updateUser(uid, {'homeId': homeId});
   }
 
+  /// Aggiunge o rimuove punti all'utente (per la classifica).
+  Future<void> addPoints(String uid, int points) {
+    return _userService.updatePoints(uid, points);
+  }
+
   /// Elimina il documento del profilo utente da Firestore.
   Future<void> deleteProfile(String uid) {
     return _userService.deleteUser(uid);
