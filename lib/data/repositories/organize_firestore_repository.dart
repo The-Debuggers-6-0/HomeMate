@@ -180,7 +180,13 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
   Future<void> addStickyNote(String houseId, StickyNote note) async {
     final col = _houseCollection(houseId, 'sticky_notes');
     final doc = note.id.isEmpty ? col.doc() : col.doc(note.id);
-    await doc.set({'content': note.content, 'authorUid': note.authorUid, 'createdAt': note.createdAt.toIso8601String()});
+    await doc.set({
+      'content': note.content,
+      'authorUid': note.authorUid,
+      'authorName': note.authorName,
+      'authorPhotoUrl': note.authorPhotoUrl,
+      'createdAt': note.createdAt.toIso8601String(),
+    });
   }
 
   @override

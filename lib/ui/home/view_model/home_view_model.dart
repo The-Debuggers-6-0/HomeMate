@@ -20,6 +20,7 @@ class HomeViewModel extends ChangeNotifier {
 
   bool _isLoading = true;
   String _userName = '';
+  String _userPhotoUrl = '';
   String? _houseId;
 
   // Dati reali
@@ -64,6 +65,7 @@ class HomeViewModel extends ChangeNotifier {
       _userSub = _userRepository.getUserProfileStream(user.uid).listen((updatedUser) {
         if (updatedUser != null) {
           _userName = updatedUser.name.isNotEmpty ? updatedUser.name : 'Utente';
+          _userPhotoUrl = updatedUser.photoUrl ?? '';
           
           if (updatedUser.homeId.isNotEmpty) {
             if (_houseId != updatedUser.homeId) {
@@ -241,6 +243,8 @@ class HomeViewModel extends ChangeNotifier {
       id: '', // Sarà generato da Firestore
       content: content.trim(),
       authorUid: currentUid,
+      authorName: _userName.isNotEmpty ? _userName : 'Coinquilino',
+      authorPhotoUrl: _userPhotoUrl,
       createdAt: DateTime.now(),
     );
 
