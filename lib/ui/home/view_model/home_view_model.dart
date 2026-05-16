@@ -31,6 +31,7 @@ class HomeViewModel extends ChangeNotifier {
 
   String _choreToday = 'Nessuna faccenda';
   String _personToday = '-';
+  bool _hasChoreForMe = false;
 
   List<StickyNote> _stickyNotes = [];
   List<ShoppingItem> _shoppingList = [];
@@ -103,7 +104,7 @@ class HomeViewModel extends ChangeNotifier {
     _cleaningSub = _organizeRepository.getCleaningTasksStream(houseId).listen((List<CleaningTask> tasks) {
       final now = DateTime.now();
       final currentWeekStart = DateTime(now.year, now.month, now.day - (now.weekday - 1));
-      
+
       // Prendiamo solo i task della settimana corrente
       final currentTasks = tasks.where((t) {
         return t.weekStart.year == currentWeekStart.year &&
@@ -111,14 +112,24 @@ class HomeViewModel extends ChangeNotifier {
                t.weekStart.day == currentWeekStart.day;
       }).toList();
 
-      if (currentTasks.isNotEmpty) {
-        // Mostriamo il primo non completato, o l'ultimo se sono tutti fatti
-        final activeTask = currentTasks.firstWhere((t) => !t.completed, orElse: () => currentTasks.first);
-        _choreToday = activeTask.title;
-        _fetchAssigneeName(activeTask.assigneeUid);
+      final currentUserId = _authRepository.currentFirebaseUser?.uid;
+
+      if (currentTasks.isNotEmpty && currentUserId != null) {
+        // Troviamo tutte le faccende non completate assegnate a questo utente
+        final myTasks = currentTasks.where((t) => !t.completed && t.assigneeUid == currentUserId).toList();
+        if (myTasks.isNotEmpty) {
+          _hasChoreForMe = true;
+          // Uniamo i titoli per mostrare cosa deve fare l'utente
+          _choreToday = myTasks.map((t) => t.title).join(', ');
+        } else {
+          // Non ho faccende questa settimana per l'utente
+          _hasChoreForMe = false;
+          _choreToday = 'Nessuna faccenda';
+        }
       } else {
         _choreToday = 'Nessuna faccenda';
         _personToday = '-';
+        _hasChoreForMe = false;
       }
       notifyListeners();
     });
@@ -275,6 +286,7 @@ class HomeViewModel extends ChangeNotifier {
   bool get isInCredit => _isInCredit;
   String get choreToday => _choreToday;
   String get personToday => _personToday;
+  bool get hasChoreForMe => _hasChoreForMe;
   List<StickyNote> get stickyNotes => _stickyNotes;
   List<ShoppingItem> get shoppingList => _shoppingList;
   List<HouseEvent> get events => _events;
