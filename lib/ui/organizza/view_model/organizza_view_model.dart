@@ -6,6 +6,7 @@ import '../../../domain/models/house.dart';
 import '../../../data/repositories/organize_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/house_repository.dart';
+import '../../../data/services/notification_service.dart';
 import '../../../domain/models/cleaning_task.dart';
 import '../../../domain/models/shopping_item.dart';
 import '../../../domain/models/house_event.dart';
@@ -53,6 +54,16 @@ class OrganizzaViewModel extends ChangeNotifier {
   StreamSubscription<User?>? _authSub;
   StreamSubscription<AppUser?>? _profileSub;
   bool _disposed = false;
+
+  // --- Servizio notifiche ---
+  final NotificationService _notificationService = NotificationService();
+
+  // --- Tracking notifiche: ID già noti ---
+  Set<String> _knownCleaningIds = {};
+  Set<String> _knownShoppingIds = {};
+  bool _cleaningInitialLoadDone = false;
+  bool _shoppingInitialLoadDone = false;
+  String? _lastWasteResponsibleUid;
 
   OrganizzaViewModel({
     required this.organizeRepository,
@@ -422,8 +433,47 @@ class OrganizzaViewModel extends ChangeNotifier {
     _cleaningLoaded = false;
     _choreRoomsLoaded = false;
 
+    // Reset tracking notifiche per la nuova casa
+    _cleaningInitialLoadDone = false;
+    _shoppingInitialLoadDone = false;
+    _knownCleaningIds = {};
+    _knownShoppingIds = {};
+    _lastWasteResponsibleUid = null;
+
     _cleaningSub = organizeRepository.getCleaningTasksStream(houseId).listen((list) {
       if (_disposed) return;
+
+      // --- Notifiche per nuovi task di pulizia assegnati a me ---
+      final currentUid = authRepository.currentFirebaseUser?.uid;
+      final currentIds = list.map((t) => t.id).toSet();
+      if (!_cleaningInitialLoadDone) {
+        _knownCleaningIds = currentIds;
+        _cleaningInitialLoadDone = true;
+      } else if (currentUid != null) {
+        final newIds = currentIds.difference(_knownCleaningIds);
+        for (final id in newIds) {
+          final task = list.firstWhere((t) => t.id == id);
+          if (task.assigneeUid == currentUid && !task.completed) {
+            _notificationService.show(
+              id: NotificationService.generateId(task.id),
+              title: '🧹 Nuovo turno pulizia',
+              body: 'Ti è stato assegnato: ${task.title}',
+            );
+            // Programma reminder per fine settimana (sabato alle 10:00)
+            final reminderDate = task.weekStart.add(const Duration(days: 5, hours: 10));
+            if (reminderDate.isAfter(DateTime.now())) {
+              _notificationService.schedule(
+                id: NotificationService.generateId('reminder_${task.id}'),
+                title: '⏰ Reminder pulizia',
+                body: 'Ricordati di completare: ${task.title}',
+                scheduledDate: reminderDate,
+              );
+            }
+          }
+        }
+        _knownCleaningIds = currentIds;
+      }
+
       _cleaning = list;
       _cleaningLoaded = true;
       _trySeed();
@@ -432,6 +482,28 @@ class OrganizzaViewModel extends ChangeNotifier {
 
     _shoppingSub = organizeRepository.getShoppingListStream(houseId).listen((list) {
       if (_disposed) return;
+
+      // --- Notifiche per nuovi articoli nella lista della spesa ---
+      final currentUid = authRepository.currentFirebaseUser?.uid;
+      final currentIds = list.map((i) => i.id).toSet();
+      if (!_shoppingInitialLoadDone) {
+        _knownShoppingIds = currentIds;
+        _shoppingInitialLoadDone = true;
+      } else if (currentUid != null) {
+        final newIds = currentIds.difference(_knownShoppingIds);
+        for (final id in newIds) {
+          final item = list.firstWhere((i) => i.id == id);
+          if (item.addedByUid != currentUid) {
+            _notificationService.show(
+              id: NotificationService.generateId(item.id),
+              title: '🛒 Lista della spesa',
+              body: 'Aggiunto: ${item.name}${item.quantity.isNotEmpty ? ' (${item.quantity})' : ''}',
+            );
+          }
+        }
+        _knownShoppingIds = currentIds;
+      }
+
       _shopping = list;
       _safeNotify();
     });
@@ -473,6 +545,22 @@ class OrganizzaViewModel extends ChangeNotifier {
     _wasteResponsibleSub = organizeRepository.getWasteResponsibleStream(houseId).listen((data) {
       if (_disposed) return;
       _wasteResponsibleData = data;
+
+      // --- Notifica se la responsabilità spazzatura è passata a me ---
+      final currentUid = authRepository.currentFirebaseUser?.uid;
+      final newResponsibleUid = data['uid'] as String?;
+      if (currentUid != null &&
+          newResponsibleUid == currentUid &&
+          _lastWasteResponsibleUid != null &&
+          _lastWasteResponsibleUid != currentUid) {
+        _notificationService.show(
+          id: NotificationService.generateId('waste_$houseId'),
+          title: '🗑️ Spazzatura',
+          body: 'Questa settimana tocca a te portare fuori la spazzatura!',
+        );
+      }
+      _lastWasteResponsibleUid = newResponsibleUid;
+
       _safeNotify();
     });
 

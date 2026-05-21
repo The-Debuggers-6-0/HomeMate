@@ -5,6 +5,7 @@ import '../../../data/repositories/house_repository.dart';
 import '../../../data/repositories/finance_repository.dart';
 import '../../../data/repositories/organize_repository.dart';
 import '../../../data/repositories/user_repository.dart';
+import '../../../data/services/notification_service.dart';
 import '../../../domain/models/cleaning_task.dart';
 import '../../../domain/models/shopping_item.dart';
 import '../../../domain/models/house_event.dart';
@@ -17,6 +18,9 @@ class HomeViewModel extends ChangeNotifier {
   final FinanceRepository _financeRepository;
   final OrganizeRepository _organizeRepository;
   final UserRepository _userRepository;
+
+  // Servizio notifiche (singleton)
+  final NotificationService _notificationService = NotificationService();
 
   bool _isLoading = true;
   String _userName = '';
@@ -44,6 +48,15 @@ class HomeViewModel extends ChangeNotifier {
   StreamSubscription? _eventSub;
   StreamSubscription? _stickySub;
 
+  // --- Tracking notifiche: ID già noti per ogni tipo di dato ---
+  Set<String> _knownTransactionIds = {};
+  Set<String> _knownShoppingIds = {};
+  Set<String> _knownEventIds = {};
+  Set<String> _knownNoteIds = {};
+  bool _initialLoadComplete = false;
+  int _initialLoadCount = 0; // Conta quanti stream hanno emesso il primo dato
+  static const int _totalStreams = 4; // transactions, shopping, events, notes
+
   HomeViewModel({
     required AuthRepository authRepository,
     required HouseRepository houseRepository,
@@ -56,6 +69,17 @@ class HomeViewModel extends ChangeNotifier {
         _organizeRepository = organizeRepository,
         _userRepository = userRepository {
     _init();
+  }
+
+  /// Segna un caricamento iniziale completato. Quando tutti gli stream hanno
+  /// emesso almeno un dato, abilita le notifiche per i dati successivi.
+  void _markInitialLoad() {
+    if (_initialLoadComplete) return;
+    _initialLoadCount++;
+    if (_initialLoadCount >= _totalStreams) {
+      _initialLoadComplete = true;
+      debugPrint('[HomeViewModel] Caricamento iniziale completato — notifiche attive');
+    }
   }
 
   Future<void> _init() async {
@@ -71,6 +95,13 @@ class HomeViewModel extends ChangeNotifier {
           if (updatedUser.homeId.isNotEmpty) {
             if (_houseId != updatedUser.homeId) {
               _houseId = updatedUser.homeId;
+              // Reset notifiche per la nuova casa
+              _initialLoadComplete = false;
+              _initialLoadCount = 0;
+              _knownTransactionIds = {};
+              _knownShoppingIds = {};
+              _knownEventIds = {};
+              _knownNoteIds = {};
               _subscribeToHouseData(updatedUser.homeId);
             }
           } else {
@@ -91,9 +122,32 @@ class HomeViewModel extends ChangeNotifier {
     if (_houseId == null) _isLoading = true;
     notifyListeners();
 
+    final currentUserId = _authRepository.currentFirebaseUser?.uid;
+
     // 1. Bilancio
     _financeSub?.cancel();
     _financeSub = _financeRepository.getTransactionsStream(houseId).listen((transactions) {
+      // --- Notifiche per nuove transazioni ---
+      final currentIds = transactions.map((t) => t.id).toSet();
+      if (!_initialLoadComplete) {
+        _knownTransactionIds = currentIds;
+        _markInitialLoad();
+      } else {
+        final newIds = currentIds.difference(_knownTransactionIds);
+        for (final id in newIds) {
+          final tx = transactions.firstWhere((t) => t.id == id);
+          // Notifica solo se non è stata creata dall'utente corrente
+          if (tx.payerId != currentUserId) {
+            _notificationService.show(
+              id: NotificationService.generateId(tx.id),
+              title: '💰 Nuova spesa',
+              body: '${tx.title} — €${tx.amount.toStringAsFixed(2)}',
+            );
+          }
+        }
+        _knownTransactionIds = currentIds;
+      }
+
       _calculateBalance(transactions);
       _isLoading = false; // Caricato almeno un modulo importante
       notifyListeners();
@@ -111,8 +165,6 @@ class HomeViewModel extends ChangeNotifier {
                t.weekStart.month == currentWeekStart.month &&
                t.weekStart.day == currentWeekStart.day;
       }).toList();
-
-      final currentUserId = _authRepository.currentFirebaseUser?.uid;
 
       if (currentTasks.isNotEmpty && currentUserId != null) {
         // Troviamo tutte le faccende non completate assegnate a questo utente
@@ -137,6 +189,26 @@ class HomeViewModel extends ChangeNotifier {
     // 3. Post-it
     _stickySub?.cancel();
     _stickySub = _organizeRepository.getStickyNotesStream(houseId).listen((notes) {
+      // --- Notifiche per nuovi post-it ---
+      final currentIds = notes.map((n) => n.id).toSet();
+      if (!_initialLoadComplete) {
+        _knownNoteIds = currentIds;
+        _markInitialLoad();
+      } else {
+        final newIds = currentIds.difference(_knownNoteIds);
+        for (final id in newIds) {
+          final note = notes.firstWhere((n) => n.id == id);
+          if (note.authorUid != currentUserId) {
+            _notificationService.show(
+              id: NotificationService.generateId(note.id),
+              title: '📝 Nuovo post-it',
+              body: '${note.authorName}: ${note.content}',
+            );
+          }
+        }
+        _knownNoteIds = currentIds;
+      }
+
       _stickyNotes = notes;
       notifyListeners();
     });
@@ -144,6 +216,26 @@ class HomeViewModel extends ChangeNotifier {
     // 4. Shopping
     _shoppingSub?.cancel();
     _shoppingSub = _organizeRepository.getShoppingListStream(houseId).listen((items) {
+      // --- Notifiche per nuovi articoli nella lista della spesa ---
+      final currentIds = items.map((i) => i.id).toSet();
+      if (!_initialLoadComplete) {
+        _knownShoppingIds = currentIds;
+        _markInitialLoad();
+      } else {
+        final newIds = currentIds.difference(_knownShoppingIds);
+        for (final id in newIds) {
+          final item = items.firstWhere((i) => i.id == id);
+          if (item.addedByUid != currentUserId) {
+            _notificationService.show(
+              id: NotificationService.generateId(item.id),
+              title: '🛒 Lista della spesa',
+              body: 'Aggiunto: ${item.name}${item.quantity.isNotEmpty ? ' (${item.quantity})' : ''}',
+            );
+          }
+        }
+        _knownShoppingIds = currentIds;
+      }
+
       final filtered = items.where((i) => !i.bought).toList();
       filtered.sort((a, b) => b.addedAt.compareTo(a.addedAt));
       _shoppingList = filtered;
@@ -153,6 +245,26 @@ class HomeViewModel extends ChangeNotifier {
     // 5. Eventi (Inclusi quelli di oggi)
     _eventSub?.cancel();
     _eventSub = _organizeRepository.getEventsStream(houseId).listen((events) {
+      // --- Notifiche per nuovi eventi ---
+      final currentIds = events.map((e) => e.id).toSet();
+      if (!_initialLoadComplete) {
+        _knownEventIds = currentIds;
+        _markInitialLoad();
+      } else {
+        final newIds = currentIds.difference(_knownEventIds);
+        for (final id in newIds) {
+          final event = events.firstWhere((e) => e.id == id);
+          if (event.creatorUid != currentUserId) {
+            _notificationService.show(
+              id: NotificationService.generateId(event.id),
+              title: '📅 Nuovo evento',
+              body: event.title,
+            );
+          }
+        }
+        _knownEventIds = currentIds;
+      }
+
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 

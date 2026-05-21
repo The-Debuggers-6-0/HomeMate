@@ -8,6 +8,7 @@ import 'data/services/auth_service.dart';
 import 'data/services/user_service.dart';
 import 'data/services/house_service.dart';
 import 'data/services/finance_service.dart';
+import 'data/services/notification_service.dart';
 
 // --- Data Layer: Repositories ---
 import 'data/repositories/auth_repository.dart';
@@ -41,6 +42,9 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Inizializza il servizio notifiche locali
+  await NotificationService().initialize();
 
   // --- Inizializzazione Services (singleton) ---
   final authService = AuthService();
