@@ -4,6 +4,8 @@ import '../../profile/view_model/profile_view_model.dart';
 import '../themes/app_colors.dart';
 import '../../profile/widgets/profile_screen.dart'; 
 import 'user_avatar.dart';
+import '../../../data/services/notification_service.dart';
+import '../../home/widgets/notifications_bottom_sheet.dart';
 
 class CustomUserHeader extends StatelessWidget {
   final String greetingText; // Es: "BENTORNATO" o "BENVENUTO A CASA"
@@ -75,10 +77,45 @@ class CustomUserHeader extends StatelessWidget {
         
         // --- PARTE DESTRA: Campanella (Opzionale) ---
         if (showBell)
-          IconButton(
-            icon: const Icon(Icons.notifications_none, size: 28),
-            onPressed: () {
-              // Qui in futuro metteremo la logica delle notifiche
+          ValueListenableBuilder<int>(
+            valueListenable: NotificationService().unreadCountNotifier,
+            builder: (context, unreadCount, _) {
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none, size: 28),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => const NotificationsBottomSheet(),
+                      );
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 10,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
             },
           )
         else

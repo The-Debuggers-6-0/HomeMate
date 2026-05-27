@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
+import '../services/notification_service.dart';
 
 /// Repository che astrae le operazioni di autenticazione per i ViewModel.
 /// Riceve AuthService e UserService come dipendenze.
@@ -78,7 +79,10 @@ class AuthRepository {
   }
 
   /// Logout.
-  Future<void> logout() => _authService.signOut();
+  Future<void> logout() async {
+    await NotificationService().clearHistory();
+    await _authService.signOut();
+  }
 
   /// Elimina l'utente da Firebase Auth.
   Future<void> deleteAccount() {
