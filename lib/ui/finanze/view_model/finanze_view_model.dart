@@ -6,6 +6,7 @@ import '../../../data/repositories/finance_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/house_repository.dart';
+import '../../../data/services/notification_service.dart';
 
 class Transaction {
   final String title;
@@ -59,6 +60,11 @@ class FinanzeViewModel extends ChangeNotifier {
   List<AppUser> _roommates = [];
   List<dm.AppTransaction> _appTransactions = [];
 
+  // --- Servizio notifiche ---
+  final NotificationService _notificationService = NotificationService();
+  Set<String> _knownTransactionIds = {};
+  bool _transactionsInitialLoadDone = false;
+
   void _safeNotify() {
     if (!_disposed) {
       notifyListeners();
@@ -110,8 +116,50 @@ class FinanzeViewModel extends ChangeNotifier {
     if (_houseId == null) return;
     
     _transactionsSub?.cancel();
+    // Reset tracker notifiche
+    _transactionsInitialLoadDone = false;
+    _knownTransactionIds = {};
+
     _transactionsSub = financeRepository.getTransactionsStream(_houseId!).listen((transactions) {
       if (_disposed) return;
+
+      final currentUid = authRepository.currentFirebaseUser?.uid;
+      final currentIds = transactions.map((t) => t.id).toSet();
+
+      if (!_transactionsInitialLoadDone) {
+        _knownTransactionIds = currentIds;
+        _transactionsInitialLoadDone = true;
+      } else if (currentUid != null) {
+        final newIds = currentIds.difference(_knownTransactionIds);
+        for (final id in newIds) {
+          final t = transactions.firstWhere((tx) => tx.id == id);
+          if (t.payerId != currentUid) {
+            bool isReimbursement = t.type == 'rimborso' || t.category.toLowerCase() == 'rimborso';
+            
+            // Per le spese, notifica solo se il currentUid è incluso
+            bool inInvolvedUsers = t.involvedUsers != null && t.involvedUsers!.contains(currentUid);
+            // Per i rimborsi, la logica è che se non è il payer (è un coinquilino a pagare te)
+            bool isGettingReimbursed = isReimbursement && t.receiverId == currentUid;
+
+            // Se receiverId non esiste nel modello, proviamo con involvedUsers
+            if (isReimbursement || inInvolvedUsers) {
+              String payerName = 'Qualcuno';
+              try {
+                payerName = _roommates.firstWhere((r) => r.uid == t.payerId).name;
+              } catch (_) {}
+              
+              _notificationService.showPaymentNotification(
+                id: NotificationService.generateId(t.id),
+                userOrCreatorName: payerName,
+                amount: t.amount,
+                description: t.title,
+                isReimbursement: isReimbursement,
+              );
+            }
+          }
+        }
+        _knownTransactionIds = currentIds;
+      }
 
       _appTransactions = transactions;
       _safeNotify();

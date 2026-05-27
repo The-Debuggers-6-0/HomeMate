@@ -61,8 +61,10 @@ class OrganizzaViewModel extends ChangeNotifier {
   // --- Tracking notifiche: ID già noti ---
   Set<String> _knownCleaningIds = {};
   Set<String> _knownShoppingIds = {};
+  Set<String> _knownEventIds = {};
   bool _cleaningInitialLoadDone = false;
   bool _shoppingInitialLoadDone = false;
+  bool _eventsInitialLoadDone = false;
   String? _lastWasteResponsibleUid;
 
   OrganizzaViewModel({
@@ -436,8 +438,10 @@ class OrganizzaViewModel extends ChangeNotifier {
     // Reset tracking notifiche per la nuova casa
     _cleaningInitialLoadDone = false;
     _shoppingInitialLoadDone = false;
+    _eventsInitialLoadDone = false;
     _knownCleaningIds = {};
     _knownShoppingIds = {};
+    _knownEventIds = {};
     _lastWasteResponsibleUid = null;
 
     _cleaningSub = organizeRepository.getCleaningTasksStream(houseId).listen((list) {
@@ -454,10 +458,10 @@ class OrganizzaViewModel extends ChangeNotifier {
         for (final id in newIds) {
           final task = list.firstWhere((t) => t.id == id);
           if (task.assigneeUid == currentUid && !task.completed) {
-            _notificationService.show(
+            _notificationService.showChoreNotification(
               id: NotificationService.generateId(task.id),
-              title: '🧹 Nuovo turno pulizia',
-              body: 'Ti è stato assegnato: ${task.title}',
+              choreName: task.title,
+              dueDate: task.weekStart.add(const Duration(days: 6)),
             );
             // Programma reminder per fine settimana (sabato alle 10:00)
             final reminderDate = task.weekStart.add(const Duration(days: 5, hours: 10));
@@ -510,6 +514,30 @@ class OrganizzaViewModel extends ChangeNotifier {
 
     _eventsSub = organizeRepository.getEventsStream(houseId).listen((list) {
       if (_disposed) return;
+
+      final currentUid = authRepository.currentFirebaseUser?.uid;
+      final currentIds = list.map((e) => e.id).toSet();
+
+      if (!_eventsInitialLoadDone) {
+        _knownEventIds = currentIds;
+        _eventsInitialLoadDone = true;
+      } else if (currentUid != null) {
+        final newIds = currentIds.difference(_knownEventIds);
+        for (final id in newIds) {
+          final evt = list.firstWhere((e) => e.id == id);
+          if (evt.creatorUid != currentUid) {
+            String creatorName = displayNameFor(evt.creatorUid);
+            _notificationService.showEventNotification(
+              id: NotificationService.generateId(evt.id),
+              creatorName: creatorName,
+              eventName: evt.title,
+              eventDate: evt.start,
+            );
+          }
+        }
+        _knownEventIds = currentIds;
+      }
+
       _events = list;
       // Quando cambiano gli eventi (es. aggiunta vacanza), ricalcoliamo i task se necessario
       _trySeed();
@@ -553,10 +581,11 @@ class OrganizzaViewModel extends ChangeNotifier {
           newResponsibleUid == currentUid &&
           _lastWasteResponsibleUid != null &&
           _lastWasteResponsibleUid != currentUid) {
-        _notificationService.show(
+        final endOfWeek = _currentWeekStart().add(const Duration(days: 6));
+        _notificationService.showChoreNotification(
           id: NotificationService.generateId('waste_$houseId'),
-          title: '🗑️ Spazzatura',
-          body: 'Questa settimana tocca a te portare fuori la spazzatura!',
+          choreName: 'Turno spazzatura settimana',
+          dueDate: endOfWeek,
         );
       }
       _lastWasteResponsibleUid = newResponsibleUid;

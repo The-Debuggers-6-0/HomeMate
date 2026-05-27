@@ -118,6 +118,7 @@ class NotificationService {
       tz.TZDateTime.from(scheduledDate, tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       payload: payload,
     );
 
@@ -132,6 +133,57 @@ class NotificationService {
   /// Cancella tutte le notifiche.
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
+  }
+
+  // --- Metodi di utilità per le feature specifiche ---
+
+  /// Notifica per un pagamento che riguarda l'utente (o un rimborso).
+  Future<void> showPaymentNotification({
+    required int id,
+    required String userOrCreatorName,
+    required double amount,
+    required String description,
+    bool isReimbursement = false,
+  }) async {
+    final title = isReimbursement 
+        ? 'Nuovo rimborso da $userOrCreatorName' 
+        : 'Nuova spesa aggiunta';
+    
+    final body = isReimbursement 
+        ? '$userOrCreatorName ti ha rimborsato ${amount.toStringAsFixed(2)}€ per "$description"'
+        : '$userOrCreatorName ha aggiunto una spesa di ${amount.toStringAsFixed(2)}€ per "$description" che ti riguarda.';
+        
+    await show(id: id, title: title, body: body, payload: 'payment_$id');
+  }
+
+  /// Notifica per un evento aggiunto nel calendario.
+  Future<void> showEventNotification({
+    required int id,
+    required String creatorName,
+    required String eventName,
+    required DateTime eventDate,
+  }) async {
+    final title = 'Nuovo evento a calendario';
+    final dateStr = '${eventDate.day.toString().padLeft(2, '0')}/${eventDate.month.toString().padLeft(2, '0')}';
+    final timeStr = '${eventDate.hour.toString().padLeft(2, '0')}:${eventDate.minute.toString().padLeft(2, '0')}';
+    
+    final body = '$creatorName ha aggiunto "$eventName" per il $dateStr alle $timeStr.';
+    
+    await show(id: id, title: title, body: body, payload: 'event_$id');
+  }
+
+  /// Notifica per quando tocca pulire o buttare l'immondizia.
+  Future<void> showChoreNotification({
+    required int id,
+    required String choreName,
+    required DateTime dueDate,
+  }) async {
+    final title = 'È il tuo turno!';
+    final dateStr = '${dueDate.day.toString().padLeft(2, '0')}/${dueDate.month.toString().padLeft(2, '0')}';
+    
+    final body = 'Tocca a te: "$choreName" entro il $dateStr. Non dimenticare!';
+    
+    await show(id: id, title: title, body: body, payload: 'chore_$id');
   }
 
   /// Genera un ID numerico stabile da una stringa (es. document ID di Firestore).
