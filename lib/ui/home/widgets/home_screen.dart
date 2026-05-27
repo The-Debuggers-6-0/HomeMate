@@ -242,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
-                          color: viewModel.isInCredit ? AppColors.primaryGreen : AppColors.accentRed,
+                          color: viewModel.isInCredit ? AppColors.primaryDark : AppColors.accentRed,
                         ),
                       ),
                     ],
@@ -264,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: _buildBalanceDetail(
                         label: 'Devi ricevere',
                         amount: viewModel.totalCredit,
-                        color: AppColors.accentGreen,
+                        color: AppColors.primaryDark,
                         icon: Icons.arrow_downward,
                       ),
                     ),
@@ -328,14 +328,14 @@ class _HomeScreenState extends State<HomeScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.primaryGreen,
-                AppColors.primaryGreen.withOpacity(0.8),
+                AppColors.primaryDark,
+                AppColors.primaryDark.withOpacity(0.8),
               ],
             ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryGreen.withOpacity(0.3),
+                color: AppColors.primaryDark.withOpacity(0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
