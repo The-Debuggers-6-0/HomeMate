@@ -796,7 +796,23 @@ class OrganizzaViewModel extends ChangeNotifier {
     if (currentUid != null) {
       if (completed) {
         await _userRepository.addPoints(currentUid, 10);
-        return await _userRepository.updateCleaningStreakAndCheckFire(currentUid);
+        
+        // Salviamo l'eventuale badge sbloccato in una variabile
+        final unlockedBadge = await _userRepository.updateCleaningStreakAndCheckFire(currentUid);
+        
+        // ASSEGNAZIONE JOLLY SE HA SBLOCCATO IL BADGE
+        if (unlockedBadge != null) {
+          final userRef = FirebaseFirestore.instance.collection('users').doc(currentUid);
+          await userRef.update({'jollies': FieldValue.increment(1)});
+          
+          _notificationService.showAchievementNotification(
+            id: NotificationService.generateId('jolly_clean_${DateTime.now().millisecondsSinceEpoch}'),
+            title: '🃏 Jolly Bonus Ottenuto!',
+            body: 'Hai sbloccato un nuovo traguardo di pulizia e guadagnato 1 Jolly extra!',
+          );
+        }
+        
+        return unlockedBadge; // Ritorna il badge per mostrare il popup a schermo
       } else {
         await _userRepository.addPoints(currentUid, -10);
       }
@@ -974,8 +990,23 @@ class OrganizzaViewModel extends ChangeNotifier {
     // 2. Controlla SEMPRE la Streak "Eroe Green" a prescindere da quale bidone ha buttato!
     Map<String, dynamic>? streakBadge = await _userRepository.updateGreenHeroStreak(currentUid);
     
-    // Se ha sbloccato il badge del bidone specifico mostra quello, altrimenti mostra l'Eroe Green
-    return specificBadge ?? streakBadge;
+    // 3. Uniamo il risultato per vedere se almeno un badge è stato sbloccato
+    final unlockedBadge = specificBadge ?? streakBadge;
+    
+    // --- NUOVO: ASSEGNAZIONE JOLLY SE HA SBLOCCATO IL BADGE ---
+    if (unlockedBadge != null) {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(currentUid);
+      await userRef.update({'jollies': FieldValue.increment(1)});
+      
+      _notificationService.showAchievementNotification(
+        id: NotificationService.generateId('jolly_waste_${DateTime.now().millisecondsSinceEpoch}'),
+        title: '🃏 Jolly Bonus Ottenuto!',
+        body: 'Hai sbloccato un nuovo traguardo per la spazzatura e guadagnato 1 Jolly extra!',
+      );
+    }
+
+    // Ritorna il badge per mostrarlo a schermo
+    return unlockedBadge;
   }
 
   
