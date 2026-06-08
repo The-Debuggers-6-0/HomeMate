@@ -15,8 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppUser {
 
- String get uid; String get email; String get name; String get surname; String get bio; bool get profileCompleted; String get homeId; String? get photoUrl;// --- PUNTEGGIO CLASSIFICA ---
- int get points;// --- NUOVI CAMPI PER I BADGE ---
+ String get uid; String get email; String get name; String get surname; String get bio; bool get profileCompleted; String get homeId; String? get photoUrl; int get points; int get jollies;// --- NUOVI CAMPI PER I BADGE ---
 // Usiamo @Default per dire a Freezed che se mancano da Firebase, partono vuoti
  Map<String, UserBadge> get unlockedBadges; List<String> get featuredBadges;
 /// Create a copy of AppUser
@@ -31,16 +30,16 @@ $AppUserCopyWith<AppUser> get copyWith => _$AppUserCopyWithImpl<AppUser>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.surname, surname) || other.surname == surname)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.profileCompleted, profileCompleted) || other.profileCompleted == profileCompleted)&&(identical(other.homeId, homeId) || other.homeId == homeId)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.points, points) || other.points == points)&&const DeepCollectionEquality().equals(other.unlockedBadges, unlockedBadges)&&const DeepCollectionEquality().equals(other.featuredBadges, featuredBadges));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.surname, surname) || other.surname == surname)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.profileCompleted, profileCompleted) || other.profileCompleted == profileCompleted)&&(identical(other.homeId, homeId) || other.homeId == homeId)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.points, points) || other.points == points)&&(identical(other.jollies, jollies) || other.jollies == jollies)&&const DeepCollectionEquality().equals(other.unlockedBadges, unlockedBadges)&&const DeepCollectionEquality().equals(other.featuredBadges, featuredBadges));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uid,email,name,surname,bio,profileCompleted,homeId,photoUrl,points,const DeepCollectionEquality().hash(unlockedBadges),const DeepCollectionEquality().hash(featuredBadges));
+int get hashCode => Object.hash(runtimeType,uid,email,name,surname,bio,profileCompleted,homeId,photoUrl,points,jollies,const DeepCollectionEquality().hash(unlockedBadges),const DeepCollectionEquality().hash(featuredBadges));
 
 @override
 String toString() {
-  return 'AppUser(uid: $uid, email: $email, name: $name, surname: $surname, bio: $bio, profileCompleted: $profileCompleted, homeId: $homeId, photoUrl: $photoUrl, points: $points, unlockedBadges: $unlockedBadges, featuredBadges: $featuredBadges)';
+  return 'AppUser(uid: $uid, email: $email, name: $name, surname: $surname, bio: $bio, profileCompleted: $profileCompleted, homeId: $homeId, photoUrl: $photoUrl, points: $points, jollies: $jollies, unlockedBadges: $unlockedBadges, featuredBadges: $featuredBadges)';
 }
 
 
@@ -51,7 +50,7 @@ abstract mixin class $AppUserCopyWith<$Res>  {
   factory $AppUserCopyWith(AppUser value, $Res Function(AppUser) _then) = _$AppUserCopyWithImpl;
 @useResult
 $Res call({
- String uid, String email, String name, String surname, String bio, bool profileCompleted, String homeId, String? photoUrl, int points, Map<String, UserBadge> unlockedBadges, List<String> featuredBadges
+ String uid, String email, String name, String surname, String bio, bool profileCompleted, String homeId, String? photoUrl, int points, int jollies, Map<String, UserBadge> unlockedBadges, List<String> featuredBadges
 });
 
 
@@ -68,7 +67,7 @@ class _$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? uid = null,Object? email = null,Object? name = null,Object? surname = null,Object? bio = null,Object? profileCompleted = null,Object? homeId = null,Object? photoUrl = freezed,Object? points = null,Object? unlockedBadges = null,Object? featuredBadges = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? uid = null,Object? email = null,Object? name = null,Object? surname = null,Object? bio = null,Object? profileCompleted = null,Object? homeId = null,Object? photoUrl = freezed,Object? points = null,Object? jollies = null,Object? unlockedBadges = null,Object? featuredBadges = null,}) {
   return _then(_self.copyWith(
 uid: null == uid ? _self.uid : uid // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -79,6 +78,7 @@ as String,profileCompleted: null == profileCompleted ? _self.profileCompleted : 
 as bool,homeId: null == homeId ? _self.homeId : homeId // ignore: cast_nullable_to_non_nullable
 as String,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
 as String?,points: null == points ? _self.points : points // ignore: cast_nullable_to_non_nullable
+as int,jollies: null == jollies ? _self.jollies : jollies // ignore: cast_nullable_to_non_nullable
 as int,unlockedBadges: null == unlockedBadges ? _self.unlockedBadges : unlockedBadges // ignore: cast_nullable_to_non_nullable
 as Map<String, UserBadge>,featuredBadges: null == featuredBadges ? _self.featuredBadges : featuredBadges // ignore: cast_nullable_to_non_nullable
 as List<String>,
@@ -166,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uid,  String email,  String name,  String surname,  String bio,  bool profileCompleted,  String homeId,  String? photoUrl,  int points,  Map<String, UserBadge> unlockedBadges,  List<String> featuredBadges)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uid,  String email,  String name,  String surname,  String bio,  bool profileCompleted,  String homeId,  String? photoUrl,  int points,  int jollies,  Map<String, UserBadge> unlockedBadges,  List<String> featuredBadges)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
-return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.profileCompleted,_that.homeId,_that.photoUrl,_that.points,_that.unlockedBadges,_that.featuredBadges);case _:
+return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.profileCompleted,_that.homeId,_that.photoUrl,_that.points,_that.jollies,_that.unlockedBadges,_that.featuredBadges);case _:
   return orElse();
 
 }
@@ -187,10 +187,10 @@ return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.p
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uid,  String email,  String name,  String surname,  String bio,  bool profileCompleted,  String homeId,  String? photoUrl,  int points,  Map<String, UserBadge> unlockedBadges,  List<String> featuredBadges)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uid,  String email,  String name,  String surname,  String bio,  bool profileCompleted,  String homeId,  String? photoUrl,  int points,  int jollies,  Map<String, UserBadge> unlockedBadges,  List<String> featuredBadges)  $default,) {final _that = this;
 switch (_that) {
 case _AppUser():
-return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.profileCompleted,_that.homeId,_that.photoUrl,_that.points,_that.unlockedBadges,_that.featuredBadges);case _:
+return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.profileCompleted,_that.homeId,_that.photoUrl,_that.points,_that.jollies,_that.unlockedBadges,_that.featuredBadges);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -207,10 +207,10 @@ return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.p
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uid,  String email,  String name,  String surname,  String bio,  bool profileCompleted,  String homeId,  String? photoUrl,  int points,  Map<String, UserBadge> unlockedBadges,  List<String> featuredBadges)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uid,  String email,  String name,  String surname,  String bio,  bool profileCompleted,  String homeId,  String? photoUrl,  int points,  int jollies,  Map<String, UserBadge> unlockedBadges,  List<String> featuredBadges)?  $default,) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
-return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.profileCompleted,_that.homeId,_that.photoUrl,_that.points,_that.unlockedBadges,_that.featuredBadges);case _:
+return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.profileCompleted,_that.homeId,_that.photoUrl,_that.points,_that.jollies,_that.unlockedBadges,_that.featuredBadges);case _:
   return null;
 
 }
@@ -222,7 +222,7 @@ return $default(_that.uid,_that.email,_that.name,_that.surname,_that.bio,_that.p
 @JsonSerializable()
 
 class _AppUser implements AppUser {
-  const _AppUser({required this.uid, required this.email, this.name = '', this.surname = '', this.bio = '', this.profileCompleted = false, this.homeId = '', this.photoUrl, this.points = 0, final  Map<String, UserBadge> unlockedBadges = const {}, final  List<String> featuredBadges = const []}): _unlockedBadges = unlockedBadges,_featuredBadges = featuredBadges;
+  const _AppUser({required this.uid, required this.email, this.name = '', this.surname = '', this.bio = '', this.profileCompleted = false, this.homeId = '', this.photoUrl, this.points = 0, this.jollies = 0, final  Map<String, UserBadge> unlockedBadges = const {}, final  List<String> featuredBadges = const []}): _unlockedBadges = unlockedBadges,_featuredBadges = featuredBadges;
   factory _AppUser.fromJson(Map<String, dynamic> json) => _$AppUserFromJson(json);
 
 @override final  String uid;
@@ -233,8 +233,8 @@ class _AppUser implements AppUser {
 @override@JsonKey() final  bool profileCompleted;
 @override@JsonKey() final  String homeId;
 @override final  String? photoUrl;
-// --- PUNTEGGIO CLASSIFICA ---
 @override@JsonKey() final  int points;
+@override@JsonKey() final  int jollies;
 // --- NUOVI CAMPI PER I BADGE ---
 // Usiamo @Default per dire a Freezed che se mancano da Firebase, partono vuoti
  final  Map<String, UserBadge> _unlockedBadges;
@@ -267,16 +267,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.surname, surname) || other.surname == surname)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.profileCompleted, profileCompleted) || other.profileCompleted == profileCompleted)&&(identical(other.homeId, homeId) || other.homeId == homeId)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.points, points) || other.points == points)&&const DeepCollectionEquality().equals(other._unlockedBadges, _unlockedBadges)&&const DeepCollectionEquality().equals(other._featuredBadges, _featuredBadges));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.surname, surname) || other.surname == surname)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.profileCompleted, profileCompleted) || other.profileCompleted == profileCompleted)&&(identical(other.homeId, homeId) || other.homeId == homeId)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.points, points) || other.points == points)&&(identical(other.jollies, jollies) || other.jollies == jollies)&&const DeepCollectionEquality().equals(other._unlockedBadges, _unlockedBadges)&&const DeepCollectionEquality().equals(other._featuredBadges, _featuredBadges));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uid,email,name,surname,bio,profileCompleted,homeId,photoUrl,points,const DeepCollectionEquality().hash(_unlockedBadges),const DeepCollectionEquality().hash(_featuredBadges));
+int get hashCode => Object.hash(runtimeType,uid,email,name,surname,bio,profileCompleted,homeId,photoUrl,points,jollies,const DeepCollectionEquality().hash(_unlockedBadges),const DeepCollectionEquality().hash(_featuredBadges));
 
 @override
 String toString() {
-  return 'AppUser(uid: $uid, email: $email, name: $name, surname: $surname, bio: $bio, profileCompleted: $profileCompleted, homeId: $homeId, photoUrl: $photoUrl, points: $points, unlockedBadges: $unlockedBadges, featuredBadges: $featuredBadges)';
+  return 'AppUser(uid: $uid, email: $email, name: $name, surname: $surname, bio: $bio, profileCompleted: $profileCompleted, homeId: $homeId, photoUrl: $photoUrl, points: $points, jollies: $jollies, unlockedBadges: $unlockedBadges, featuredBadges: $featuredBadges)';
 }
 
 
@@ -287,7 +287,7 @@ abstract mixin class _$AppUserCopyWith<$Res> implements $AppUserCopyWith<$Res> {
   factory _$AppUserCopyWith(_AppUser value, $Res Function(_AppUser) _then) = __$AppUserCopyWithImpl;
 @override @useResult
 $Res call({
- String uid, String email, String name, String surname, String bio, bool profileCompleted, String homeId, String? photoUrl, int points, Map<String, UserBadge> unlockedBadges, List<String> featuredBadges
+ String uid, String email, String name, String surname, String bio, bool profileCompleted, String homeId, String? photoUrl, int points, int jollies, Map<String, UserBadge> unlockedBadges, List<String> featuredBadges
 });
 
 
@@ -304,7 +304,7 @@ class __$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? uid = null,Object? email = null,Object? name = null,Object? surname = null,Object? bio = null,Object? profileCompleted = null,Object? homeId = null,Object? photoUrl = freezed,Object? points = null,Object? unlockedBadges = null,Object? featuredBadges = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? uid = null,Object? email = null,Object? name = null,Object? surname = null,Object? bio = null,Object? profileCompleted = null,Object? homeId = null,Object? photoUrl = freezed,Object? points = null,Object? jollies = null,Object? unlockedBadges = null,Object? featuredBadges = null,}) {
   return _then(_AppUser(
 uid: null == uid ? _self.uid : uid // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -315,6 +315,7 @@ as String,profileCompleted: null == profileCompleted ? _self.profileCompleted : 
 as bool,homeId: null == homeId ? _self.homeId : homeId // ignore: cast_nullable_to_non_nullable
 as String,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
 as String?,points: null == points ? _self.points : points // ignore: cast_nullable_to_non_nullable
+as int,jollies: null == jollies ? _self.jollies : jollies // ignore: cast_nullable_to_non_nullable
 as int,unlockedBadges: null == unlockedBadges ? _self._unlockedBadges : unlockedBadges // ignore: cast_nullable_to_non_nullable
 as Map<String, UserBadge>,featuredBadges: null == featuredBadges ? _self._featuredBadges : featuredBadges // ignore: cast_nullable_to_non_nullable
 as List<String>,

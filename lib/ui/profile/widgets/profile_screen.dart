@@ -84,7 +84,81 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 24),
+
+                  // --- JOLLY ---
+                  Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8), // Tolto il margine orizzontale per allinearlo al resto
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                    ),
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          // Icona a forma di ticket/jolly
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.confirmation_num_rounded,
+                              color: Colors.amber,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Testo descrittivo
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "I tuoi Jolly",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Usali per saltare pulizie o spazzatura!",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Contatore dei Jolly
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryGreen.withOpacity(0.1), // Usato il primaryGreen del tuo tema
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Text(
+                              "${viewModel.userProfile?.jollies ?? 0}", // Recupera i jolly
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryGreen,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
 
                   // --- ZONA: I MIEI BADGE ---
                   _buildBadgesSection(context, viewModel.userProfile),

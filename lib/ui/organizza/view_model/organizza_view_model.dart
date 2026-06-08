@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../domain/models/app_user.dart';
@@ -20,6 +21,7 @@ class OrganizzaViewModel extends ChangeNotifier {
   final HouseRepository houseRepository;
 
   bool _isLoading = true;
+  bool _isResettingLeaderboard = false; // <-- Lucchetto per evitare i loop infiniti
   String? _houseId;
 
   StreamSubscription<List<CleaningTask>>? _cleaningSub;
@@ -612,6 +614,12 @@ class OrganizzaViewModel extends ChangeNotifier {
           if (_disposed) return;
           _houseMemberUsers = users;
           _safeNotify();
+
+          // Se abbiamo sia la casa che gli utenti, facciamo il controllo!
+          if (house != null) {
+            checkAndResetMonthlyLeaderboard(house, users);
+          }
+
         });
       } else {
         _houseMemberUsers = [];
@@ -970,5 +978,112 @@ class OrganizzaViewModel extends ChangeNotifier {
     return specificBadge ?? streakBadge;
   }
 
+  
+  // GESTIONE JOLLY
+  
+  /// Usa un Jolly per saltare un turno di pulizie
+  Future<bool> useJollyForCleaningTask(String taskId) async {
+    final currentUser = authRepository.currentFirebaseUser;
+    if (currentUser == null || _houseId == null) return false;
+
+    final userProfile = appUserFor(currentUser.uid);
+    if (userProfile == null || userProfile.jollies <= 0) return false;
+
+    // 1. Consuma il jolly
+    await _userRepository.consumeJolly(currentUser.uid);
+
+    // 2. Segna il task come completato (usiamo direttamente il repo per non assegnare punti extra)
+    await organizeRepository.toggleCleaningTaskCompleted(_houseId!, taskId, true);
+    
+    return true; // Jolly usato con successo
+  }
+
+  /// Usa un Jolly per saltare il turno della spazzatura
+  Future<bool> useJollyForWaste() async {
+    final currentUser = authRepository.currentFirebaseUser;
+    if (currentUser == null || _houseId == null) return false;
+
+    final userProfile = appUserFor(currentUser.uid);
+    if (userProfile == null || userProfile.jollies <= 0) return false;
+
+    // 1. Consuma il jolly
+    await _userRepository.consumeJolly(currentUser.uid);
+
+    // 2. Trova il prossimo utente disponibile per la spazzatura
+    String? nextUserUid;
+    final currentIndex = _houseMembers.indexOf(currentUser.uid);
+    if (currentIndex != -1) {
+      for (int i = 1; i < _houseMembers.length; i++) {
+        final candidateUid = _houseMembers[(currentIndex + i) % _houseMembers.length];
+        if (!isUserAway(candidateUid)) {
+          nextUserUid = candidateUid;
+          break;
+        }
+      }
+    }
+
+    // 3. Riassegna la spazzatura forzatamente su Firestore per questa settimana
+    if (nextUserUid != null) {
+      await organizeRepository.updateWasteResponsible(_houseId!, nextUserUid, _currentWeekStart());
+    }
+
+    return true;
+  }
+
+  // RESET MENSILE DELLA CLASSIFICA + ASSEGNAZIONE JOLLY
+
+  Future<void> checkAndResetMonthlyLeaderboard(House house, List<AppUser> roommates) async {
+    final now = DateTime.now();
+    final currentMonthString = "${now.year}-${now.month.toString().padLeft(2, '0')}";
+
+    if (house.leaderboardMonth != currentMonthString && !_isResettingLeaderboard) {
+      
+      _isResettingLeaderboard = true; // Lucchetto di sicurezza chiuso
+
+      AppUser? winner;
+      int maxPoints = -1;
+      for (var user in roommates) {
+        if (user.points > maxPoints) { 
+          maxPoints = user.points;
+          winner = user;
+        }
+      }
+
+      final batch = FirebaseFirestore.instance.batch();
+      final currentUid = authRepository.currentFirebaseUser?.uid;
+
+      // 1. Assegna il Jolly al vincitore (se ha fatto almeno 1 punto)
+      if (winner != null && maxPoints > 0) {
+        final winnerRef = FirebaseFirestore.instance.collection('users').doc(winner.uid);
+        batch.update(winnerRef, {'jollies': FieldValue.increment(1)});
+      }
+
+      // 2. Azzera i punti di tutti
+      for (var user in roommates) {
+        final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+        batch.update(userRef, {'points': 0});
+      }
+
+      // 3. Aggiorna il mese della casa
+      final houseRef = FirebaseFirestore.instance.collection('houses').doc(house.id);
+      batch.update(houseRef, {'leaderboardMonth': currentMonthString});
+
+      // 4. Invia tutto a Firebase
+      try {
+        await batch.commit();
+
+        // 5. Se sei tu il vincitore, mostra e salva la notifica
+        if (winner != null && winner.uid == currentUid && maxPoints > 0) {
+          _notificationService.showAchievementNotification(
+            id: NotificationService.generateId('monthly_winner_$currentMonthString'),
+            title: '🏆 Campione del Mese!',
+            body: 'Complimenti! Hai vinto la classifica del mese scorso e hai guadagnato 1 Jolly! 🃏',
+          );
+        }
+      } catch (e) {
+        debugPrint("Errore durante il reset mensile: $e");
+      }
+    }
+  }
   
 }

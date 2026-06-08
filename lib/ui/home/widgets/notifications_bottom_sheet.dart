@@ -115,6 +115,10 @@ class _NotificationsBottomSheetState extends State<NotificationsBottomSheet> {
         icon = Icons.cleaning_services;
         iconColor = AppColors.primaryGreen;
         break;
+      case 'achievement':
+        icon = Icons.emoji_events;
+        iconColor = Colors.amber;
+        break;
       default:
         icon = Icons.notifications;
         iconColor = Colors.grey;

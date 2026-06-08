@@ -18,7 +18,7 @@ abstract class AppUser with _$AppUser {
     @Default('') String homeId,
     String? photoUrl,
     @Default(0) int points,
-    
+    @Default(0) int jollies,
     // --- NUOVI CAMPI PER I BADGE ---
     // Usiamo @Default per dire a Freezed che se mancano da Firebase, partono vuoti
     @Default({}) Map<String, UserBadge> unlockedBadges,
@@ -57,6 +57,7 @@ abstract class AppUser with _$AppUser {
       homeId: data['homeId'] as String? ?? '',
       photoUrl: data['photoUrl'] as String?,
       points: data['points'] as int? ?? 0,
+      jollies: data['jollies'] as int? ?? 0,
       unlockedBadges: parsedBadges,
       featuredBadges: parsedFeatured,
     );

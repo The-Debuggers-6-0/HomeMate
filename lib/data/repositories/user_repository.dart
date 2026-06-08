@@ -83,9 +83,14 @@ import 'dart:io';
 /// Repository che astrae l'accesso ai dati utente per i ViewModel.
 class UserRepository {
   final UserService _userService;
+  final FirebaseFirestore _firestore;
 
-  UserRepository({required UserService userService})
-      : _userService = userService;
+  UserRepository({
+    required UserService userService,
+    FirebaseFirestore? firestore, // <-- Parametro opzionale utile per i test
+})  : _userService = userService,
+        _firestore = firestore ?? FirebaseFirestore.instance;
+      
 
   /// Ottiene il profilo utente come singola lettura.
   Future<AppUser?> getUserProfile(String uid) {
@@ -132,6 +137,27 @@ class UserRepository {
   /// Recupera l'elenco degli utenti passandogli gli UID salvati nella casa.
   Stream<List<AppUser>> getRoommatesStream(List<String> memberIds) {
     return _userService.getRoommatesStream(memberIds);
+  }
+
+  Future<void> addJolly(String uid, int amount) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'jollies': FieldValue.increment(amount),
+      });
+    } catch (e) {
+      print('Errore durante l\'aggiunta del jolly: $e');
+    }
+  }
+
+  /// Consuma 1 Jolly dall'utente
+  Future<void> consumeJolly(String uid) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'jollies': FieldValue.increment(-1),
+      });
+    } catch (e) {
+      print('Errore durante l\'utilizzo del jolly: $e');
+    }
   }
 
   // =======================================================

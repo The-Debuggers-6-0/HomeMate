@@ -306,6 +306,25 @@ class NotificationService {
     await show(id: id, title: title, body: body, payload: 'chore_$id');
   }
 
+  /// Notifica per traguardi, badge e premi (come il Jolly).
+  Future<void> showAchievementNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    // 1. Salva nello storico locale
+    await _saveToHistory(AppLocalNotification(
+        id: id.toString(),
+        title: title,
+        body: body,
+        date: DateTime.now(),
+        type: 'achievement' // <-- Nuovo tipo!
+    ));
+
+    // 2. Mostra il popup push
+    await show(id: id, title: title, body: body, payload: 'achievement_$id');
+  }
+
   /// Genera un ID numerico stabile da una stringa (es. document ID di Firestore).
   /// Usa hashCode, che è deterministico per la stessa stringa nella stessa sessione.
   static int generateId(String documentId) => documentId.hashCode.abs() % 100000;

@@ -10,6 +10,7 @@ abstract class House with _$House {
     required String id,
     required String nome,
     @Default(<String>[]) List<String> membri,
+    @Default('') String leaderboardMonth,
   }) = _House;
 
   factory House.fromJson(Map<String, dynamic> json) => _$HouseFromJson(json);
@@ -20,6 +21,7 @@ abstract class House with _$House {
       id: id,
       nome: data['nome'] as String? ?? '',
       membri: List<String>.from(data['membri'] as List? ?? []),
+      leaderboardMonth: data['leaderboardMonth'] as String? ?? '',
     );
   }
 }

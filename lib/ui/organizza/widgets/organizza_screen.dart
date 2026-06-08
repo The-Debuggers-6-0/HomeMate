@@ -1502,32 +1502,62 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                       ],
                     )
                   else if (isMine)
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    Row(
+                      mainAxisSize: MainAxisSize.min, // Aggiunto per evitare che la Row occupi tutto lo spazio
+                      children: [
+                        // --- NUOVO: BOTTONE JOLLY ---
+                        if ((vm.appUserFor(currentUser.uid)?.jollies ?? 0) > 0)
+                          IconButton(
+                            tooltip: 'Usa Jolly per saltare',
+                            icon: const Text('🃏', style: TextStyle(fontSize: 22)),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Usa un Jolly? 🃏'),
+                                  content: const Text('Vuoi spendere 1 Jolly per saltare questo turno senza perdere la streak?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annulla')),
+                                    ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Usa Jolly')),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await vm.useJollyForCleaningTask(task.id);
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Jolly usato! Turno saltato.')));
+                              }
+                            },
+                          ),
+                        
+                        // --- VECCHIO BOTTONE FATTO ---
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          onPressed: () async {
+                            Map<String, dynamic>? newBadge = await vm.toggleTaskCompleted(
+                              task.id,
+                              true,
+                            );
+                            if (newBadge != null && context.mounted) {
+                              showGenericBadgePopup(context, newBadge);
+                            }
+                          },
+                          child: const Text(
+                            'Fatto',
+                            style: TextStyle(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      onPressed: () async {
-                        Map<String, dynamic>? newBadge = await vm.toggleTaskCompleted(
-                          task.id,
-                          true,
-                        );
-                        if (newBadge != null && context.mounted) {
-                          showGenericBadgePopup(context, newBadge);
-                        }
-                      },
-                      child: const Text(
-                        'Fatto',
-                        style: TextStyle(
-                          color: AppColors.primaryDark,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
+                      ],
                     ),
                 ],
               ),
@@ -1906,35 +1936,68 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                             size: 24,
                           ),
                         )
-                      : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isToday
-                                ? AppColors.primaryGreen
-                                : Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                          onPressed: () async {
-                            // Segniamo graficamente come portata fuori
-                            vm.setTomorrowWasteTakenOut(true);
+                      : Row( // <-- AGGIUNTA UNA ROW QUI
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // --- NUOVO: BOTTONE JOLLY IMMONDIZIA ---
+                            if (isToday && isResponsible && (vm.appUserFor(vm.authRepository.currentFirebaseUser?.uid ?? '')?.jollies ?? 0) > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: IconButton(
+                                  tooltip: 'Passa il turno con un Jolly',
+                                  icon: const Text('🃏', style: TextStyle(fontSize: 22)),
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Usa un Jolly? 🃏'),
+                                        content: const Text('Vuoi spendere 1 Jolly per passare il turno di spazzatura al prossimo coinquilino?'),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annulla')),
+                                          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Usa Jolly')),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      await vm.useJollyForWaste();
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Jolly usato! Turno passato.')));
+                                    }
+                                  },
+                                ),
+                              ),
+                            
+                            // --- VECCHIO BOTTONE FATTO ---
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isToday
+                                    ? AppColors.primaryGreen
+                                    : Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
+                              ),
+                              onPressed: () async {
+                                // Segniamo graficamente come portata fuori
+                                vm.setTomorrowWasteTakenOut(true);
 
-                            // Controlliamo se sblocca il badge
-                            Map<String, dynamic>? newBadge = await vm.confirmWasteTakenOut(wasteType);
+                                // Controlliamo se sblocca il badge
+                                Map<String, dynamic>? newBadge = await vm.confirmWasteTakenOut(wasteType);
 
-                            // Se sblocca il badge, mostriamo il popup celebrativo!
-                            if (newBadge != null && context.mounted) {
-                              showGenericBadgePopup(context, newBadge);
-                            }
-                          },
-                          child: Text(
-                            'Fatto',
-                            style: TextStyle(
-                              color: isToday ? Colors.white : AppColors.primaryDark,
-                              fontWeight: FontWeight.bold,
+                                // Se sblocca il badge, mostriamo il popup celebrativo!
+                                if (newBadge != null && context.mounted) {
+                                  showGenericBadgePopup(context, newBadge);
+                                }
+                              },
+                              child: Text(
+                                'Fatto',
+                                style: TextStyle(
+                                  color: isToday ? Colors.white : AppColors.primaryDark,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
           ],
         ),
