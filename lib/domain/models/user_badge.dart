@@ -14,7 +14,7 @@ class UserBadge {
   });
 
   factory UserBadge.fromJson(Map<String, dynamic> json) {
-    // --- IL TRUCCO: Gestione intelligente della data ---
+    // --- Gestione intelligente della data ---
     DateTime parsedDate = DateTime.now();
     
     if (json['unlockedAt'] != null) {
