@@ -1,19 +1,17 @@
-class HouseRule {
-  final String id;
-  final String title;
-  final String description;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  HouseRule({required this.id, required this.title, required this.description});
+part 'house_rule.freezed.dart';
+part 'house_rule.g.dart';
 
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'title': title,
-        'description': description,
-      };
+/// Modello di dominio per una regola della casa.
+@freezed
+abstract class HouseRule with _$HouseRule {
+  const factory HouseRule({
+    @Default('') String id,
+    @Default('') String title,
+    @Default('') String description,
+  }) = _HouseRule;
 
-  factory HouseRule.fromMap(Map<String, dynamic> map) => HouseRule(
-        id: map['id'] ?? '',
-        title: map['title'] ?? '',
-        description: map['description'] ?? '',
-      );
+  factory HouseRule.fromJson(Map<String, dynamic> json) =>
+      _$HouseRuleFromJson(json);
 }

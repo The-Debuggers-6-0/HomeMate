@@ -29,7 +29,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
       for (final d in snap.docs) {
         final data = Map<String, dynamic>.from(d.data());
         data['id'] = d.id;
-        final task = CleaningTask.fromMap(data);
+        final task = CleaningTask.fromJson(data);
 
         final isExpired = task.completed && task.completedAt != null && now.difference(task.completedAt!) >= _cleaningTaskExpiry;
         if (isExpired) {
@@ -85,7 +85,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
       for (final d in snap.docs) {
         final data = Map<String, dynamic>.from(d.data());
         data['id'] = d.id;
-        final item = ShoppingItem.fromMap(data);
+        final item = ShoppingItem.fromJson(data);
 
         final boughtAt = item.boughtAt;
         final isExpired = item.bought && boughtAt != null && now.difference(boughtAt) >= _shoppingItemExpiry;
@@ -140,7 +140,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
         .map((snap) => snap.docs.map((d) {
               final data = Map<String, dynamic>.from(d.data());
               data['id'] = d.id;
-              return HouseEvent.fromMap(data);
+              return HouseEvent.fromJson(data);
             }).toList());
   }
 
@@ -172,7 +172,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
         .map((snap) => snap.docs.map((d) {
               final data = Map<String, dynamic>.from(d.data());
               data['id'] = d.id;
-              return StickyNote.fromMap(data);
+              return StickyNote.fromJson(data);
             }).toList());
   }
 
@@ -202,7 +202,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
         .map((snap) => snap.docs.map((d) {
               final data = Map<String, dynamic>.from(d.data());
               data['id'] = d.id;
-              return HouseRule.fromMap(data);
+              return HouseRule.fromJson(data);
             }).toList());
   }
 

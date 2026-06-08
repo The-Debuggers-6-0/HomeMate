@@ -1,48 +1,19 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'json_converters.dart';
 
-class UserBadge {
-  final String templateId;
-  final DateTime unlockedAt;
-  final int? month;
-  final int? year;
+part 'user_badge.freezed.dart';
+part 'user_badge.g.dart';
 
-  UserBadge({
-    required this.templateId,
-    required this.unlockedAt,
-    this.month,
-    this.year,
-  });
+/// Modello di dominio per un badge/achievement sbloccato da un utente.
+@freezed
+abstract class UserBadge with _$UserBadge {
+  const factory UserBadge({
+    @Default('') String templateId,
+    @DateTimeConverter() required DateTime unlockedAt,
+    int? month,
+    int? year,
+  }) = _UserBadge;
 
-  factory UserBadge.fromJson(Map<String, dynamic> json) {
-    // --- Gestione intelligente della data ---
-    DateTime parsedDate = DateTime.now();
-    
-    if (json['unlockedAt'] != null) {
-      final dynamic dateData = json['unlockedAt'];
-      // Se Firebase ci manda una stringa di testo (il nostro caso!)
-      if (dateData is String) {
-        parsedDate = DateTime.tryParse(dateData) ?? DateTime.now();
-      } 
-      // Se Firebase ci manda un Timestamp nativo (per sicurezza)
-      else if (dateData is Timestamp) {
-        parsedDate = dateData.toDate();
-      }
-    }
-
-    return UserBadge(
-      templateId: json['templateId'] ?? '',
-      unlockedAt: parsedDate,
-      month: json['month'],
-      year: json['year'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'templateId': templateId,
-      'unlockedAt': unlockedAt.toIso8601String(), // Ora salviamo sempre come Stringa per coerenza
-      if (month != null) 'month': month,
-      if (year != null) 'year': year,
-    };
-  }
+  factory UserBadge.fromJson(Map<String, dynamic> json) =>
+      _$UserBadgeFromJson(json);
 }

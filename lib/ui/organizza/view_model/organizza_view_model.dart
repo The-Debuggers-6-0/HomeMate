@@ -861,6 +861,7 @@ class OrganizzaViewModel extends ChangeNotifier {
       name: name.trim(),
       quantity: quantity.trim(),
       addedByUid: currentUid,
+      addedAt: DateTime.now(),
     );
 
     try {

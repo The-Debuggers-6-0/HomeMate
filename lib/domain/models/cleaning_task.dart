@@ -1,63 +1,21 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'json_converters.dart';
 
-class CleaningTask {
-  final String id;
-  final String title;
-  final String assigneeUid;
-  final DateTime weekStart; // settimana di riferimento
-  final bool completed;
-  final DateTime? completedAt;
+part 'cleaning_task.freezed.dart';
+part 'cleaning_task.g.dart';
 
-  CleaningTask({
-    required this.id,
-    required this.title,
-    required this.assigneeUid,
-    required this.weekStart,
-    this.completed = false,
-    this.completedAt,
-  });
+/// Modello di dominio per una faccenda/pulizia assegnata a un coinquilino.
+@freezed
+abstract class CleaningTask with _$CleaningTask {
+  const factory CleaningTask({
+    @Default('') String id,
+    @Default('') String title,
+    @Default('') String assigneeUid,
+    @DateTimeConverter() required DateTime weekStart, // settimana di riferimento
+    @Default(false) bool completed,
+    @NullableDateTimeConverter() DateTime? completedAt,
+  }) = _CleaningTask;
 
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'title': title,
-        'assigneeUid': assigneeUid,
-        'weekStart': weekStart.toIso8601String(),
-        'completed': completed,
-        'completedAt': completedAt?.toIso8601String(),
-      };
-
-  static DateTime? _readDate(dynamic value) {
-    if (value == null) return null;
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    if (value is String && value.isNotEmpty) return DateTime.tryParse(value);
-    return null;
-  }
-
-  factory CleaningTask.fromMap(Map<String, dynamic> map) => CleaningTask(
-        id: map['id'] ?? '',
-        title: map['title'] ?? '',
-        assigneeUid: map['assigneeUid'] ?? '',
-        weekStart: DateTime.parse(map['weekStart'] ?? DateTime.now().toIso8601String()),
-        completed: map['completed'] ?? false,
-        completedAt: _readDate(map['completedAt']),
-      );
-
-  CleaningTask copyWith({
-    String? id,
-    String? title,
-    String? assigneeUid,
-    DateTime? weekStart,
-    bool? completed,
-    DateTime? completedAt,
-  }) {
-    return CleaningTask(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      assigneeUid: assigneeUid ?? this.assigneeUid,
-      weekStart: weekStart ?? this.weekStart,
-      completed: completed ?? this.completed,
-      completedAt: completedAt ?? this.completedAt,
-    );
-  }
+  factory CleaningTask.fromJson(Map<String, dynamic> json) =>
+      _$CleaningTaskFromJson(json);
 }

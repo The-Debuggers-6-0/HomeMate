@@ -1,35 +1,21 @@
-class HouseEvent {
-  final String id;
-  final String title;
-  final DateTime start;
-  final DateTime? end;
-  final String creatorUid;
-  final String? notes;
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'json_converters.dart';
 
-  HouseEvent({
-    required this.id,
-    required this.title,
-    required this.start,
-    this.end,
-    required this.creatorUid,
-    this.notes,
-  });
+part 'house_event.freezed.dart';
+part 'house_event.g.dart';
 
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'title': title,
-        'start': start.toIso8601String(),
-        'end': end?.toIso8601String(),
-        'creatorUid': creatorUid,
-        'notes': notes,
-      };
+/// Modello di dominio per un evento del calendario di casa.
+@freezed
+abstract class HouseEvent with _$HouseEvent {
+  const factory HouseEvent({
+    @Default('') String id,
+    @Default('') String title,
+    @DateTimeConverter() required DateTime start,
+    @NullableDateTimeConverter() DateTime? end,
+    @Default('') String creatorUid,
+    String? notes,
+  }) = _HouseEvent;
 
-  factory HouseEvent.fromMap(Map<String, dynamic> map) => HouseEvent(
-        id: map['id'] ?? '',
-        title: map['title'] ?? '',
-        start: DateTime.parse(map['start'] ?? DateTime.now().toIso8601String()),
-        end: map['end'] != null ? DateTime.parse(map['end']) : null,
-        creatorUid: map['creatorUid'] ?? '',
-        notes: map['notes'],
-      );
+  factory HouseEvent.fromJson(Map<String, dynamic> json) =>
+      _$HouseEventFromJson(json);
 }

@@ -1,35 +1,21 @@
-class StickyNote {
-  final String id;
-  final String content;
-  final String authorUid;
-  final String authorName;
-  final String authorPhotoUrl;
-  final DateTime createdAt;
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'json_converters.dart';
 
-  StickyNote({
-    required this.id,
-    required this.content,
-    required this.authorUid,
-    this.authorName = '',
-    this.authorPhotoUrl = '',
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+part 'sticky_note.freezed.dart';
+part 'sticky_note.g.dart';
 
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'content': content,
-        'authorUid': authorUid,
-      'authorName': authorName,
-        'authorPhotoUrl': authorPhotoUrl,
-        'createdAt': createdAt.toIso8601String(),
-      };
+/// Modello di dominio per una nota della bacheca (Post-it).
+@freezed
+abstract class StickyNote with _$StickyNote {
+  const factory StickyNote({
+    @Default('') String id,
+    @Default('') String content,
+    @Default('') String authorUid,
+    @Default('') String authorName,
+    @Default('') String authorPhotoUrl,
+    @DateTimeConverter() required DateTime createdAt,
+  }) = _StickyNote;
 
-  factory StickyNote.fromMap(Map<String, dynamic> map) => StickyNote(
-        id: map['id'] ?? '',
-        content: map['content'] ?? '',
-        authorUid: map['authorUid'] ?? '',
-      authorName: map['authorName'] ?? '',
-        authorPhotoUrl: map['authorPhotoUrl'] ?? '',
-        createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
-      );
+  factory StickyNote.fromJson(Map<String, dynamic> json) =>
+      _$StickyNoteFromJson(json);
 }
