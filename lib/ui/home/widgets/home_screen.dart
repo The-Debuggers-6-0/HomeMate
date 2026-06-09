@@ -78,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // 2. CHI TOCCA OGGI
                     _buildChoreToday(viewModel),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 30),
 
                     // 3. BACHECA & COMUNICAZIONI
                     Row(
@@ -89,14 +89,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.grey,
-                            fontSize: 13,
+                            fontSize: 14,
                           ),
                         ),
                         IconButton(
                           onPressed: () => _showAddAnnouncementDialog(context, viewModel),
                           icon: const Icon(Icons.add_circle_outline, 
                             color: AppColors.primaryGreen, 
-                            size: 22
+                            size: 24
                           ),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -106,17 +106,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 15),
                     _buildAnnouncementsBoard(viewModel),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 30),
 
-                    // 4. LISTA SPESA & CALENDARIO
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildShoppingFlash(viewModel)),
-                        const SizedBox(width: 15),
-                        Expanded(child: _buildEventCalendar(viewModel)),
-                      ],
-                    ),
+                    // 4. LISTA SPESA (Full Width)
+                    _buildShoppingFlash(viewModel),
+                    const SizedBox(height: 25),
+                    
+                    // 5. CALENDARIO EVENTI (Full Width)
+                    _buildEventCalendar(viewModel),
 
                     const SizedBox(height: 40),
                   ],
@@ -215,18 +212,18 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'SITUAZIONE SPESE',
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.1,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 18),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -235,20 +232,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         viewModel.isInCredit ? 'Credito Totale' : 'Debito Totale',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppColors.textSecondary, 
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       Text(
                         viewModel.balanceFormatted,
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: 38,
                           fontWeight: FontWeight.w900,
                           color: viewModel.isInCredit ? AppColors.primaryDark : AppColors.accentRed,
+                          height: 1.1,
                         ),
                       ),
                     ],
                   ),
                   const Spacer(),
-                  const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 24),
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8.0),
+                    child: Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 28),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -268,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.arrow_downward,
                       ),
                     ),
-                    Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.2)),
+                    Container(width: 1, height: 35, color: Colors.grey.withOpacity(0.2)),
                     Expanded(
                       child: _buildBalanceDetail(
                         label: 'Devi dare',
@@ -298,18 +303,22 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 12, color: color),
+            Icon(icon, size: 14, color: color),
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 13, 
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           '€ ${amount.toStringAsFixed(2).replaceAll('.', ',')}',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
         ),
       ],
     );
@@ -322,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(24),
         onTap: () => widget.tabNotifier.selectTab(2),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -344,12 +353,12 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.cleaning_services_rounded, color: Colors.white, size: 26),
+                child: const Icon(Icons.cleaning_services_rounded, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -359,10 +368,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'PULIZIE DA FARE',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.w900,
                         color: Colors.white.withOpacity(0.8),
-                        letterSpacing: 1.2,
+                        letterSpacing: 1.4,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -371,23 +380,23 @@ class _HomeScreenState extends State<HomeScreen> {
                         viewModel.choreToday,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          fontSize: 22,
                           color: Colors.white,
                         ),
                       )
                     else
-                      Text(
+                      const Text(
                         'Nessuna faccenda per te',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          fontSize: 20,
                           color: Colors.white,
                         ),
                       ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
+              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
             ],
           ),
         ),
@@ -399,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (viewModel.stickyNotes.isEmpty) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(20),
@@ -408,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Text(
           "Nessun avviso pubblicato. Tocca '+' per scriverne uno!",
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic),
+          style: TextStyle(color: Colors.grey, fontSize: 14, fontStyle: FontStyle.italic),
         ),
       );
     }
@@ -443,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final timeLabel = _formatAnnouncementTime(note.createdAt);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
@@ -462,12 +471,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             children: [
               UserAvatar(
-                radius: 20,
+                radius: 22,
                 photoUrl: note.authorPhotoUrl.isNotEmpty ? note.authorPhotoUrl : null,
                 backgroundColor: accent.withOpacity(0.55),
                 iconColor: AppColors.primaryDark,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,7 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Text(
                       'Avviso',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textSecondary,
                       ),
@@ -483,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       authorLabel,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primaryDark,
                       ),
@@ -494,27 +503,28 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 timeLabel,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             note.content,
             style: const TextStyle(
-              fontSize: 14,
-              height: 1.45,
+              fontSize: 17,
+              height: 1.5,
               color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: accent.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(999),
@@ -522,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(
                   'Comunicazione casa',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: Colors.grey.shade700,
                   ),
@@ -530,7 +540,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               IconButton(
                 onPressed: () => _confirmDeleteAnnouncement(context, viewModel, note.id),
-                icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textSecondary),
+                icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textSecondary),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -564,30 +574,34 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           if (viewModel.shoppingList.isNotEmpty)
             const Padding(
-              padding: EdgeInsets.only(bottom: 8.0),
+              padding: EdgeInsets.only(bottom: 12.0),
               child: Text(
                 "Ultimi aggiunti:",
-                style: TextStyle(fontSize: 9, color: Colors.grey, fontStyle: FontStyle.italic),
+                style: TextStyle(fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
               ),
             ),
           ...viewModel.shoppingList.isEmpty
               ? [
                   const Text(
                     "Tutto preso! 🎉",
-                    style: TextStyle(fontSize: 10, color: Colors.grey),
+                    style: TextStyle(fontSize: 17, color: Colors.grey),
                   )
                 ]
               : viewModel.shoppingList.take(3).map((item) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       children: [
-                        const Icon(Icons.circle, size: 6, color: AppColors.primaryGreen),
-                        const SizedBox(width: 8),
+                        const Icon(Icons.circle, size: 8, color: AppColors.primaryGreen),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Text(
                             item.name,
-                            style: const TextStyle(fontSize: 11),
+                            style: const TextStyle(
+                              fontSize: 18, 
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -602,33 +616,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildEventCalendar(HomeViewModel viewModel) {
     return _buildSmallCard(
-      title: 'EVENTI',
+      title: 'EVENTI IN PROGRAMMA',
       icon: Icons.calendar_today_outlined,
       child: Column(
         children: viewModel.events.isEmpty
             ? [
                 const Text(
                   "Nessun evento",
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
+                  style: TextStyle(fontSize: 17, color: Colors.grey),
                 )
               ]
-            : viewModel.events.take(2).map((event) {
+            : viewModel.events.take(3).map((event) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
                     children: [
-                      Text(
-                        event.title,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        child: Text(
+                          '${event.start.day}/${event.start.month}',
+                          style: const TextStyle(
+                            fontSize: 15, 
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primaryGreen,
+                          ),
+                        ),
                       ),
-                      Text(
-                        '${event.start.day}/${event.start.month}',
-                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -644,14 +672,16 @@ class _HomeScreenState extends State<HomeScreen> {
     required Widget child,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -660,19 +690,20 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: AppColors.textSecondary),
-              const SizedBox(width: 6),
+              Icon(icon, size: 20, color: AppColors.textSecondary),
+              const SizedBox(width: 12),
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.textSecondary,
+                  letterSpacing: 0.8,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
           child,
         ],
       ),
