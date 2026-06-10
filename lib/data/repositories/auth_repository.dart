@@ -32,11 +32,9 @@ class AuthRepository {
     final user = userCredential.user!;
 
     // 1. Dobbiamo controllare se l'utente esiste già in Firestore.
-    // (Presumo che tu abbia un metodo nel UserService per leggere l'utente. 
-    // Se si chiama in modo diverso, es: getUserProfile, cambialo qui!)
     final existingUser = await _userService.getUser(user.uid); 
 
-    // 2. Se existingUser è null, significa che è il suo primissimo accesso!
+    // 2. Se l'utente non esiste, inizializziamo i dati base al primo accesso.
     if (existingUser == null) {
       await _userService.updateLastLogin(
         user.uid,
@@ -44,7 +42,7 @@ class AuthRepository {
         user.displayName ?? 'Utente Google',
       );
     } 
-    // Se existingUser NON è null, non facciamo nulla e lasciamo i suoi dati intatti!
+    // Altrimenti i dati esistenti non vengono sovrascritti.
 
     return userCredential;
   }

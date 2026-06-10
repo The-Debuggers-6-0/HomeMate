@@ -48,6 +48,7 @@ class AuthService {
   //   return _firebaseAuth.signInWithCredential(credential);
   // }
 
+  /// Autentica l'utente utilizzando l'account Google tramite Google Sign-In.
   Future<UserCredential> signInWithGoogle() async {
     final GoogleSignIn googleSignIn = GoogleSignIn.instance;
     await googleSignIn.initialize(

@@ -6,6 +6,8 @@ import '../../domain/models/sticky_note.dart';
 import '../../domain/models/house_rule.dart';
 import 'organize_repository.dart';
 
+/// Implementazione concreta di [OrganizeRepository] che utilizza Firebase Firestore
+/// per le operazioni di lettura e scrittura relative all'organizzazione della casa.
 class OrganizeFirestoreRepository implements OrganizeRepository {
   final FirebaseFirestore _firestore;
   static const Duration _shoppingItemExpiry = Duration(days: 1);
@@ -16,7 +18,9 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
   CollectionReference<Map<String, dynamic>> _houseCollection(String houseId, String sub) =>
       _firestore.collection('houses').doc(houseId).collection(sub);
 
-  // Cleaning tasks
+  // --- Turni di pulizia ---
+  
+  /// Recupera lo stream dei turni di pulizia, eliminando in automatico quelli scaduti.
   @override
   Stream<List<CleaningTask>> getCleaningTasksStream(String houseId) {
     return _houseCollection(houseId, 'cleaning_tasks')
@@ -44,6 +48,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
     });
   }
 
+  /// Aggiunge un nuovo turno di pulizia o ne aggiorna uno esistente su Firestore.
   @override
   Future<void> addOrUpdateCleaningTask(String houseId, CleaningTask task) async {
     final col = _houseCollection(houseId, 'cleaning_tasks');
@@ -58,6 +63,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
     });
   }
 
+  /// Segna un turno di pulizia come completato o da fare, registrando l'orario.
   @override
   Future<void> toggleCleaningTaskCompleted(String houseId, String taskId, bool completed) async {
     final doc = _houseCollection(houseId, 'cleaning_tasks').doc(taskId);
@@ -72,7 +78,9 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
     await _houseCollection(houseId, 'cleaning_tasks').doc(taskId).delete();
   }
 
-  // Shopping
+  // --- Lista della spesa ---
+  
+  /// Recupera lo stream della lista della spesa, eliminando in automatico gli articoli già comprati e scaduti.
   @override
   Stream<List<ShoppingItem>> getShoppingListStream(String houseId) {
     return _houseCollection(houseId, 'shopping_list')
@@ -101,6 +109,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
     });
   }
 
+  /// Aggiunge un nuovo articolo alla lista della spesa.
   @override
   Future<bool> addShoppingItem(String houseId, ShoppingItem item) async {
     final col = _houseCollection(houseId, 'shopping_list');
@@ -116,6 +125,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
     return true;
   }
 
+  /// Segna un articolo come acquistato (o non acquistato), salvando chi lo ha comprato.
   @override
   Future<void> markItemBought(String houseId, String itemId, bool bought, String userUid) async {
     final doc = _houseCollection(houseId, 'shopping_list').doc(itemId);
@@ -131,7 +141,9 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
     await _houseCollection(houseId, 'shopping_list').doc(itemId).delete();
   }
 
-  // Events
+  // --- Eventi ---
+  
+  /// Recupera lo stream degli eventi (calendario) ordinati per data di inizio.
   @override
   Stream<List<HouseEvent>> getEventsStream(String houseId) {
     return _houseCollection(houseId, 'events')
@@ -144,6 +156,7 @@ class OrganizeFirestoreRepository implements OrganizeRepository {
             }).toList());
   }
 
+  /// Aggiunge un nuovo evento al calendario di casa o ne aggiorna uno esistente.
   @override
   Future<void> addOrUpdateEvent(String houseId, HouseEvent event) async {
     final col = _houseCollection(houseId, 'events');

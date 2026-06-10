@@ -49,15 +49,15 @@ class ProfileViewModel extends ChangeNotifier {
        _authRepository = authRepository,
        _houseRepository = houseRepository {
     
-    // Il "cane da guardia" che ascolta gli accessi e le uscite
+
     _authSubscription = _authRepository.authStateChanges().listen((user) {
       if (_disposed) return;
 
       if (user != null) {
-        // L'utente è entrato: RIATTACCHIAMO LA SPINA!
+        // Utente autenticato: avvia l'ascolto dei dati
         _startListeningToProfile(user.uid);
       } else {
-        // L'utente è uscito o è stato eliminato: STACCHIAMO TUTTO!
+        // Utente disconnesso o eliminato: cancella le iscrizioni
         _cancelAllSubscriptions();
         _userProfile = null;
         _currentHouse = null;
@@ -105,7 +105,7 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }*/
 
-  /// Metodo interno per attaccare la spina a Firestore
+  /// Avvia l'ascolto in tempo reale del profilo utente da Firestore.
   void _startListeningToProfile(String uid) {
     // Se stiamo già ascoltando, non facciamo nulla per evitare doppioni
     if (_profileSubscription != null) return;
@@ -163,7 +163,7 @@ class ProfileViewModel extends ChangeNotifier {
   }
 
 
-  // Nel tuo ProfileViewModel:
+
   Future<void> reloadProfile() async {
     final user = _authRepository.currentFirebaseUser;
     if (user != null) {
@@ -172,15 +172,14 @@ class ProfileViewModel extends ChangeNotifier {
 
       // Mettiamo un try/catch per sicurezza
       try {
-        // Usa il tuo metodo che legge una sola volta l'utente
-        // (Es. _userRepository.getUser(user.uid) o simile)
+
         final updatedProfile = await _userRepository.getUserProfile(user.uid);
         _userProfile = updatedProfile;
       } catch (e) {
         debugPrint("Errore nel ricaricare il profilo: $e");
       } finally {
         _isLoading = false;
-        _safeNotify(); // Questo farà riapparire la schermata con i nuovi dati!
+        _safeNotify();
       }
     }
   }
@@ -237,7 +236,7 @@ class ProfileViewModel extends ChangeNotifier {
       _safeNotify();
 
       try {
-        // 1. STACCHIAMO LA CORRENTE: cancella ogni ascolto al database
+        // 1. Cancella ogni iscrizione attiva al database
         _cancelAllSubscriptions();
 
         // 2. Eliminiamo i dati da Firestore
@@ -254,8 +253,7 @@ class ProfileViewModel extends ChangeNotifier {
       } catch (e) {
         debugPrint("Errore: $e");
 
-        // Se Firebase si arrabbia e blocca l'eliminazione dell'account, 
-        // l'utente è rimasto senza dati. Lo scolleghiamo a forza per mandarlo al Login!
+        // In caso di eccezione forziamo il logout
         await logout();
 
         rethrow;
