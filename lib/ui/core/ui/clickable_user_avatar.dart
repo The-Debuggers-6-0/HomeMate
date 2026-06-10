@@ -17,7 +17,7 @@ class ClickableUserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // 💥 Apre automaticamente il profilo!
+        // Apre automaticamente il profilo
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,

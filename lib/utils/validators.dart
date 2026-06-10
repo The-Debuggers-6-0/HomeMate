@@ -10,7 +10,7 @@ class Validators {
     return null;
   }
 
-  /// Verifica che la password abbia almeno [minLength] caratteri.
+  /// Verifica che la password abbia almeno minLength caratteri.
   static String? validatePassword(String? value, {int minLength = 8}) {
     if (value == null || value.trim().isEmpty) {
       return 'La password è obbligatoria.';

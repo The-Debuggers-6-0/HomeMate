@@ -17,7 +17,7 @@ void main() {
       final progressIndicatorFinder = find.byType(CircularProgressIndicator);
       expect(progressIndicatorFinder, findsOneWidget);
 
-      // Verifica che il colore sia quello passato (evita falsi positivi su widget hardcoded)
+      // Verifica che il colore sia quello passato
       final CircularProgressIndicator widget = tester.widget(progressIndicatorFinder);
       expect(widget.color, customColor);
     });

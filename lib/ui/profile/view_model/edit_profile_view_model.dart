@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//Adatta questi import al percorso reale del tuo progetto:
 import '../../../data/repositories/user_repository.dart';
 import '../../../domain/models/app_user.dart';
 import 'dart:io';
@@ -20,7 +19,7 @@ class EditProfileViewModel extends ChangeNotifier {
   bool _isSuccess = false;
   bool get isSuccess => _isSuccess;
 
-  // Costruttore: riceve il repository (Dependency Injection come vuole il prof!)
+  // Costruttore: riceve il repository
   EditProfileViewModel({required UserRepository userRepository}) : _userRepository = userRepository;
 
   /// Metodo per salvare le modifiche del profilo

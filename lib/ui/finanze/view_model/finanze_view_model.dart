@@ -32,7 +32,7 @@ class Transaction {
 
 class RoommateBalance {
   final AppUser user;
-  final double balance; // > 0: they owe me, < 0: I owe them.
+  final double balance;
 
   const RoommateBalance({
     required this.user,
@@ -251,7 +251,6 @@ class FinanzeViewModel extends ChangeNotifier {
     );
     await financeRepository.addTransaction(_houseId!, newTransaction);
 
-    // --- 3. GRILLETTO "SALDATORE SERIALE" (A prova di truffa!) ---
     // Il contatore scatta SOLO SE:
     // - C'era un debito vero (maggiore di 0.50€)
     // - L'importo pagato è maggiore o uguale al debito (usiamo -0.01 per tollerare gli arrotondamenti dei centesimi)

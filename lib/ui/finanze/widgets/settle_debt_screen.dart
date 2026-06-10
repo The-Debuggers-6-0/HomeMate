@@ -178,7 +178,7 @@ class _SettleDebtScreenState extends State<SettleDebtScreen> {
                           return 'Massimo rimborsabile: €$maxAmount';
                         }
                       } catch (e) {
-                        // Se non trova il coinquilino nei saldi, ignora (non dovrebbe succedere)
+                        // Se non trova il coinquilino nei saldi, ignora
                       }
                     }
 

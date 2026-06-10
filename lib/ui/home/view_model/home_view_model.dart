@@ -186,10 +186,9 @@ class HomeViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
-    // 3. Post-it
     _stickySub?.cancel();
     _stickySub = _organizeRepository.getStickyNotesStream(houseId).listen((notes) {
-      // --- Notifiche per nuovi post-it ---
+      // --- Notifiche per nuove ---
       final currentIds = notes.map((n) => n.id).toSet();
       if (!_initialLoadComplete) {
         _knownNoteIds = currentIds;

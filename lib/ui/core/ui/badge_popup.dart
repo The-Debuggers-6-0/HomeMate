@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/ui/badge_icon_helper.dart';
 
-// Togliamo il "_" iniziale così può essere usata da tutta l'app!
 void showGenericBadgePopup(BuildContext context, Map<String, dynamic> badgeMeta) {
   final String title = badgeMeta['title'] ?? "Traguardo!";
   final String desc = badgeMeta['description'] ?? "";

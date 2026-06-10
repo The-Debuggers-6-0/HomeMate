@@ -84,8 +84,6 @@ class AchievementsScreen extends StatelessWidget {
             final String badgeId = badges[index].id;
             
             // Verifichiamo se l'utente possiede questo badge
-            // Nota: per i badge mensili la logica sarà leggermente più complessa, 
-            // ma per ora controlliamo se il templateId esiste tra quelli sbloccati.
             final bool isUnlocked = user.unlockedBadges.values.any((b) => b.templateId == badgeId);
 
             return _buildBadgeItem(badgeData, isUnlocked);
@@ -105,26 +103,24 @@ class AchievementsScreen extends StatelessWidget {
     // Leggiamo la descrizione (o mettiamo un default se manca)
     final String description = data['description'] ?? 'Continua a partecipare per sbloccarlo!';
 
-    // TOOLTIP PERSONALIZZATO: mostra la descrizione al tap, con uno stile elegante
     return Tooltip(
       message: description,
           triggerMode: TooltipTriggerMode.tap,
           preferBelow: false,
           showDuration: const Duration(seconds: 3),
           
-          // --- LE NUOVE REGOLE PER RENDERLO BELLISSIMO ---
-          textAlign: TextAlign.center, // Centra il testo su più righe
-          margin: const EdgeInsets.symmetric(horizontal: 50), // Lo costringe a non allargarsi troppo
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Più respiro interno
+          textAlign: TextAlign.center, 
+          margin: const EdgeInsets.symmetric(horizontal: 50), 
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.85), // Un nero leggermente più morbido
-            borderRadius: BorderRadius.circular(12), // Bordi più arrotondati
+            color: Colors.black.withOpacity(0.85), 
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
             color: Colors.white, 
             fontSize: 12,
-            height: 1.4, // Aumenta lo spazio tra una riga e l'altra (interlinea)
+            height: 1.4, 
           ),
       
       // Contenuto del badge

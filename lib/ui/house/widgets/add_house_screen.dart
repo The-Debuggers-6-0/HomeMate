@@ -8,7 +8,7 @@ import '../../core/ui/custom_user_header.dart';
 import '../../main_layout/widgets/main_layout.dart';
 import '../../auth/widgets/login_screen.dart';
 
-/// Schermata per creare o unirsi a una casa. View pura che delega al [HouseViewModel].
+/// Schermata per creare o unirsi a una casa. View pura che delega al HouseViewModel
 class AddHouseScreen extends StatefulWidget {
   const AddHouseScreen({super.key});
 
@@ -162,7 +162,7 @@ class _AddHouseScreenState extends State<AddHouseScreen> {
               // --- HEADER PERSONALIZZATO ---
               const CustomUserHeader(
                 greetingText:
-                    'BENVENUTO', // Puoi personalizzare il testo se vuoi
+                    'BENVENUTO',
                 showBell: true, // Mostrare la campanella delle notifiche
               ),
               const SizedBox(height: 15),

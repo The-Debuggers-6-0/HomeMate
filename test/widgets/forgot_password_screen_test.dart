@@ -74,7 +74,7 @@ void main() {
         ),
       );
 
-      // Inseriamo l'email (ora che abbiamo corretto il TextField col controller)
+      // Inseriamo l'email
       await tester.enterText(find.byType(TextField), 'test@test.it');
       
       // Tap sul bottone

@@ -9,7 +9,7 @@ import 'dart:io'; // Per usare la classe File
 import 'package:image_picker/image_picker.dart'; // Pacchetto per la selezione delle immagini
 import '../../core/themes/app_colors.dart';
 
-/// Schermata di configurazione profilo. View pura che delega al [SetupProfileViewModel].
+/// Schermata di configurazione profilo. View pura che delega al SetupProfileViewModel
 class SetupProfileScreen extends StatefulWidget {
   const SetupProfileScreen({super.key});
 
@@ -22,15 +22,10 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
   final _surnameController = TextEditingController();
   final _bioController = TextEditingController();
 
-  // Colori sostituiti con AppColors e standard Colors
-
-  // Aggiungi questa variabile
   File? _selectedImage;
 
-  // Aggiungi questa funzione
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    // Usiamo le stesse impostazioni di "dimensione ridotta" per non far arrabbiare Firestore!
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 30,
@@ -132,18 +127,16 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                   children: [
                     GestureDetector(
                       onTap:
-                          _pickImage, // <--- 1. Aggiungiamo l'azione al tocco!
+                          _pickImage,
                       child: Stack(
                         alignment: Alignment.bottomRight,
                         children: [
                           CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.grey.shade300,
-                            // 2. Mostriamo la foto se l'utente l'ha scelta
                             backgroundImage: _selectedImage != null
                                 ? FileImage(_selectedImage!)
                                 : null,
-                            // 3. Mostriamo l'icona della fotocamera SOLO se la foto non c'è
                             child: _selectedImage == null
                                 ? Icon(
                                     Icons.camera_alt_outlined,
@@ -152,7 +145,6 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                                   )
                                 : null,
                           ),
-                          // Il tuo fantastico badge con il "+" rimane intatto!
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: const BoxDecoration(

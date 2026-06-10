@@ -29,7 +29,6 @@ class UserAvatar extends StatelessWidget {
         if (effectivePhotoUrl.startsWith('http')) {
           imageProvider = NetworkImage(effectivePhotoUrl);
         } else {
-          // Assume base64, handle potential data:image/... prefix
           final base64String = effectivePhotoUrl.contains(',') 
               ? effectivePhotoUrl.split(',').last 
               : effectivePhotoUrl;

@@ -6,9 +6,7 @@ import 'badge_icon_helper.dart';
 import '../themes/app_colors.dart';
 import 'user_avatar.dart';
 
-// =======================================================================
 // TENDINA PROFILO COINQUILINO 
-// =======================================================================
 class RoommateProfileSheet extends StatelessWidget {
   final AppUser user;
 
@@ -64,7 +62,7 @@ class RoommateProfileSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 5. I BADGE O IL MESSAGGIO DI INCORAGGIAMENTO!
+          // 5. I BADGE O IL MESSAGGIO DI INCORAGGIAMENTO
           if (badges.isEmpty)
             Container(
               padding: const EdgeInsets.all(16),

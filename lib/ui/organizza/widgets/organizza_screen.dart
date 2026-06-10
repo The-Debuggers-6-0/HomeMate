@@ -34,7 +34,7 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
-    // 1. Il ViewModel calcola se c'Ã¨ un badge da sbloccare
+    // 1. Il ViewModel calcola se c'è un badge da sbloccare
     final newBadge = await widget.vm.addEvent(
       title,
       _selectedDate,
@@ -43,7 +43,7 @@ class _EventManagerSheetState extends State<_EventManagerSheet> {
     
     if (!mounted) return;
     
-    // 2. CHIUDIAMO LA TENDINA E CONSEGNIAMO IL BADGE ALLO SCHERMO!
+    // 2. CHIUDIAMO LA TENDINA E CONSEGNIAMO IL BADGE ALLO SCHERMO
     Navigator.pop(context, newBadge); 
   }
 
@@ -353,7 +353,7 @@ class _CleaningManagerSheetState extends State<_CleaningManagerSheet> {
             child: ListView(
               shrinkWrap: true,
               children: [
-                // Task della settimana corrente â€” con possibilitÃ  di riassegnare
+                // Task della settimana corrente con possibilità  di riassegnare
                 if (currentTasks.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
@@ -1505,7 +1505,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min, // Aggiunto per evitare che la Row occupi tutto lo spazio
                       children: [
-                        // --- NUOVO: BOTTONE JOLLY ---
+                        // --- BOTTONE JOLLY ---
                         if ((vm.appUserFor(currentUser.uid)?.jollies ?? 0) > 0)
                           IconButton(
                             tooltip: 'Usa Jolly per saltare',
@@ -1529,7 +1529,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                             },
                           ),
                         
-                        // --- VECCHIO BOTTONE FATTO ---
+                        // --- BOTTONE FATTO ---
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -1832,8 +1832,6 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
     final String title = vm.getWasteTitle(wasteType);
     final String subtitle = vm.getWasteSubtitle(wasteType, isToday);
 
-    // Per "OGGI" usiamo la conferma persistente da Firestore
-    // Per "DOMANI" usiamo lo stato locale del ViewModel
     final bool isTakenOut = isToday ? vm.todayWasteTakenOut : vm.tomorrowWasteTakenOut;
 
     final bool isResponsible = vm.isUserResponsibleForTodayWaste;
@@ -1936,10 +1934,10 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                             size: 24,
                           ),
                         )
-                      : Row( // <-- AGGIUNTA UNA ROW QUI
+                      : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // --- NUOVO: BOTTONE JOLLY IMMONDIZIA ---
+                            // --- BOTTONE JOLLY IMMONDIZIA ---
                             if (isToday && isResponsible && (vm.appUserFor(vm.authRepository.currentFirebaseUser?.uid ?? '')?.jollies ?? 0) > 0)
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
@@ -1966,7 +1964,7 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
                                 ),
                               ),
                             
-                            // --- VECCHIO BOTTONE FATTO ---
+                            // --- BOTTONE FATTO ---
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: isToday
@@ -2033,12 +2031,12 @@ class _OrganizzaScreenState extends State<OrganizzaScreen> {
       },
     );
 
-    // Se la tendina si Ã¨ chiusa restituendoci un badge sbloccato...
+    // Se la tendina si è chiusa restituendoci un badge sbloccato
     if (newBadge != null && context.mounted) {
       // Aspettiamo mezzo secondo per far finire l'animazione di chiusura
       Future.delayed(const Duration(milliseconds: 500), () {
         if (context.mounted) {
-          // Mosrtiamo il popup celebrativo per il nuovo badge sbloccato!
+          // Mosrtiamo il popup celebrativo per il nuovo badge sbloccato
           showGenericBadgePopup(context, newBadge);
         }
       });

@@ -11,7 +11,7 @@ import '../../core/ui/badge_popup.dart';
 import '../../core/ui/clickable_user_avatar.dart';
 import '../../main_layout/widgets/main_layout.dart';
 
-/// Schermata Finanze. View pura che legge i dati da [FinanzeViewModel].
+/// Schermata Finanze. View pura che legge i dati da FinanzeViewModel
 class FinanzeScreen extends StatefulWidget {
   final TabChangeNotifier tabNotifier;
   final int tabIndex;
@@ -159,7 +159,7 @@ class _FinanzeScreenState extends State<FinanzeScreen> {
                                   ),
                                 );
 
-                                // 2. Se SettleDebtScreen ci ha restituito un badge, mostriamo il popup!
+                                // 2. Se SettleDebtScreen ci ha restituito un badge, mostriamo il popup
                                 if (newBadge != null && context.mounted) {
                                   showGenericBadgePopup(
                                     context,

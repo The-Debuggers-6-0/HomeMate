@@ -88,7 +88,7 @@ class ProfileScreen extends StatelessWidget {
 
                   // --- JOLLY ---
                   Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8), // Tolto il margine orizzontale per allinearlo al resto
+                    margin: const EdgeInsets.symmetric(vertical: 8),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -141,7 +141,7 @@ class ProfileScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryGreen.withOpacity(0.1), // Usato il primaryGreen del tuo tema
+                              color: AppColors.primaryGreen.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Text(
@@ -421,9 +421,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // =======================================================================
   // METODI DI SUPPORTO PER I BADGE
-  // =======================================================================
 
   Widget _buildBadgesSection(BuildContext context, AppUser? user) {
     if (user == null) return const SizedBox.shrink();

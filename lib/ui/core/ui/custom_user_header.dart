@@ -75,7 +75,7 @@ class CustomUserHeader extends StatelessWidget {
           ],
         ),
         
-        // --- PARTE DESTRA: Campanella (Opzionale) ---
+        // --- PARTE DESTRA: Campanella ---
         if (showBell)
           ValueListenableBuilder<int>(
             valueListenable: NotificationService().unreadCountNotifier,

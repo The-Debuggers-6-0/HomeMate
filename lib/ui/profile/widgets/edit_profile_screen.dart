@@ -5,7 +5,7 @@ import '../view_model/edit_profile_view_model.dart';
 import '../view_model/profile_view_model.dart';
 import 'dart:io'; // Per usare la classe File
 import 'package:image_picker/image_picker.dart'; // Pacchetto per la selezione delle immagini
-import 'dart:convert'; // Per la codifica e decodifica base64
+import 'dart:convert';
 
 /// View per la modifica del profilo.
 /// Si occupa solo della parte grafica e dell'input utente.
@@ -52,10 +52,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // --- NUOVA FUNZIONE PER APRIRE LA GALLERIA ---
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    // Apriamo la galleria (puoi anche usare ImageSource.camera per la fotocamera)
+    // Apriamo la galleria
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 30,
@@ -97,7 +96,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             // --- Avatar e Pulsante Fotocamera ---
             Center(
               child: GestureDetector(
-                onTap: _pickImage, // Quando tocchi, apre la galleria!
+                onTap: _pickImage, // Quando tocchi, apre la galleria
                 child: Stack(
                   children: [
                     // --- FOTO PROFILO NELLA MODIFICA ---
@@ -195,7 +194,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               controller: _bioController,
               hintText: "Scrivi qualcosa su di te...",
               icon: Icons.edit_note,
-              maxLines: 3, // Rende il campo più alto per il testo lungo
+              maxLines: 3,
             ),
             const SizedBox(height: 48),
 
@@ -219,7 +218,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return;
                   }
 
-                  // 2. Ora chiamiamo il saveProfile passando TUTTI E 3 i parametri!
+                  // 2. Ora chiamiamo il saveProfile passando TUTTI E 3 i parametri
                   await viewModel.saveProfile(
                     currentUser, // 1° parametro: l'utente attuale
                     _nameController.text, // 2° parametro: il nuovo nome
@@ -229,7 +228,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   );
 
                   // 3. Mostriamo il messaggio di successo e torniamo alla pagina precedente
-                  // Nota: usiamo mounted per assicurarci che la pagina esista ancora dopo il salvataggio
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(

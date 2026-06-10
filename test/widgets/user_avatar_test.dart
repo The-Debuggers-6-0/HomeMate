@@ -31,9 +31,6 @@ void main() {
           ),
         ),
       );
-
-      // Se c'è l'immagine, il child del CircleAvatar (le iniziali) deve essere null 
-      // secondo la logica in user_avatar.dart. Quindi 'M' non deve esistere.
       expect(find.text('M'), findsNothing);
     });
   });
