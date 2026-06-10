@@ -96,7 +96,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             // --- Avatar e Pulsante Fotocamera ---
             Center(
               child: GestureDetector(
-                onTap: _pickImage, // Quando tocchi, apre la galleria
+                onTap: _pickImage,
                 child: Stack(
                   children: [
                     // --- FOTO PROFILO NELLA MODIFICA ---

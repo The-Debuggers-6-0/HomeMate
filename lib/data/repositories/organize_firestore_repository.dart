@@ -6,7 +6,7 @@ import '../../domain/models/sticky_note.dart';
 import '../../domain/models/house_rule.dart';
 import 'organize_repository.dart';
 
-/// Implementazione concreta di [OrganizeRepository] che utilizza Firebase Firestore
+/// Implementazione concreta di OrganizeRepository che utilizza Firebase Firestore
 /// per le operazioni di lettura e scrittura relative all'organizzazione della casa.
 class OrganizeFirestoreRepository implements OrganizeRepository {
   final FirebaseFirestore _firestore;

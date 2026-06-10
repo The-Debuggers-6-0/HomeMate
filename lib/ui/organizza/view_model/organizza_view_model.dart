@@ -11,7 +11,6 @@ import '../../../data/services/notification_service.dart';
 import '../../../domain/models/cleaning_task.dart';
 import '../../../domain/models/shopping_item.dart';
 import '../../../domain/models/house_event.dart';
-import '../../../domain/models/sticky_note.dart';
 import '../../../domain/models/house_rule.dart';
 import '../../../data/repositories/auth_repository.dart';
 
@@ -27,7 +26,6 @@ class OrganizzaViewModel extends ChangeNotifier {
   StreamSubscription<List<CleaningTask>>? _cleaningSub;
   StreamSubscription<List<ShoppingItem>>? _shoppingSub;
   StreamSubscription<List<HouseEvent>>? _eventsSub;
-  StreamSubscription<List<StickyNote>>? _notesSub;
   StreamSubscription<List<HouseRule>>? _rulesSub;
   StreamSubscription<Map<String, String>>? _recyclingSub;
   StreamSubscription<House?>? _houseSub;
@@ -39,7 +37,6 @@ class OrganizzaViewModel extends ChangeNotifier {
   List<CleaningTask> _cleaning = [];
   List<ShoppingItem> _shopping = [];
   List<HouseEvent> _events = [];
-  List<StickyNote> _notes = [];
   List<HouseRule> _rules = [];
   Map<String, String> _recyclingSchedule = {};
   bool _tomorrowWasteTakenOut = false;
@@ -134,7 +131,6 @@ class OrganizzaViewModel extends ChangeNotifier {
       );
 
   List<HouseEvent> get events => List.unmodifiable(_events);
-  List<StickyNote> get notes => List.unmodifiable(_notes);
   List<HouseRule> get rules => List.unmodifiable(_rules);
   List<AppUser> get houseMemberUsers => List.unmodifiable(_houseMemberUsers);
 
@@ -266,7 +262,6 @@ class OrganizzaViewModel extends ChangeNotifier {
             _cleaning = [];
             _shopping = [];
             _events = [];
-            _notes = [];
             _rules = [];
             _safeNotify();
           }
@@ -283,7 +278,6 @@ class OrganizzaViewModel extends ChangeNotifier {
         _cleaning = [];
         _shopping = [];
         _events = [];
-        _notes = [];
         _rules = [];
         _isLoading = false;
         _safeNotify();
@@ -303,7 +297,6 @@ class OrganizzaViewModel extends ChangeNotifier {
       final notes = event.notes ?? '';
 
       // LOGICA ASSENZA: Cerca eventi che contengono l'UID dell'utente nelle note
-      // Formato nuovo: absent_uid:UID (affidabile, UID diretto)
       if (notes.startsWith('absent_uid:')) {
         final absentUid = notes.replaceFirst('absent_uid:', '').trim();
         if (absentUid != uid) return false;
@@ -426,7 +419,6 @@ class OrganizzaViewModel extends ChangeNotifier {
     _cleaningSub?.cancel();
     _shoppingSub?.cancel();
     _eventsSub?.cancel();
-    _notesSub?.cancel();
     _rulesSub?.cancel();
     _recyclingSub?.cancel();
     _choreRoomsSub?.cancel();
@@ -543,12 +535,6 @@ class OrganizzaViewModel extends ChangeNotifier {
       _events = list;
       // Quando cambiano gli eventi (es. aggiunta vacanza), ricalcoliamo i task se necessario
       _trySeed();
-      _safeNotify();
-    });
-
-    _notesSub = organizeRepository.getStickyNotesStream(houseId).listen((list) {
-      if (_disposed) return;
-      _notes = list;
       _safeNotify();
     });
 
@@ -704,6 +690,10 @@ class OrganizzaViewModel extends ChangeNotifier {
     currentWeekTasks = uniqueTasks.values.toList();
 
     final weekIndex = currentWeekStart.difference(DateTime(2024, 1, 1)).inDays ~/ 7;
+
+    // =========================================================================
+    // --- (Round Robin Continuo con Gestione Vacanze) ---
+    // =========================================================================
     
     // 1. ESCLUSIONE VACANZE: Creiamo una lista di coinquilini DISPONIBILI per questa settimana.
     // Gli utenti che hanno un evento "Assente" nel calendario vengono saltati.
@@ -766,7 +756,6 @@ class OrganizzaViewModel extends ChangeNotifier {
     _cleaningSub?.cancel();
     _shoppingSub?.cancel();
     _eventsSub?.cancel();
-    _notesSub?.cancel();
     _rulesSub?.cancel();
     _authSub?.cancel();
     _profileSub?.cancel();
@@ -778,7 +767,9 @@ class OrganizzaViewModel extends ChangeNotifier {
     super.dispose();
   }
 
+  // ==========================================================
   // OTTENIMENTO BADGE (Restituisce Map con i dati del Badge)
+  // ==========================================================
   Future<Map<String, dynamic>?> toggleTaskCompleted(String taskId, bool completed) async {
     if (_houseId == null) return null;
 
@@ -891,6 +882,7 @@ class OrganizzaViewModel extends ChangeNotifier {
     await organizeRepository.deleteShoppingItem(_houseId!, itemId);
   }
 
+  // Cambiamo da Future<void> a Future<Map<String, dynamic>?> per restituire il badge
   Future<Map<String, dynamic>?> addEvent(String title, DateTime start, {DateTime? end, String? notes}) async {
     if (_houseId == null || title.isEmpty) return null;
     final currentUid = authRepository.currentFirebaseUser?.uid;
@@ -906,7 +898,9 @@ class OrganizzaViewModel extends ChangeNotifier {
     );
     await organizeRepository.addOrUpdateEvent(_houseId!, event);
 
+    // ==========================================================
     // BADGE: PARTY PLANNER
+    // ==========================================================
     return await _userRepository.updateEventCountAndCheckPlanner(currentUid);
   }
 
@@ -931,7 +925,9 @@ class OrganizzaViewModel extends ChangeNotifier {
     await organizeRepository.updateRecyclingSchedule(_houseId!, schedule);
   }
 
+  // ==========================================================
   // GESTIONE STANZE PERSONALIZZABILI
+  // ==========================================================
   Future<void> addChoreRoom(String roomName) async {
     if (_houseId == null || roomName.trim().isEmpty) return;
     final trimmed = roomName.trim();
@@ -947,7 +943,9 @@ class OrganizzaViewModel extends ChangeNotifier {
     await organizeRepository.updateChoreRooms(_houseId!, updated);
   }
 
+  // ==========================================================
   // CONFERMA IMMONDIZIA OGGI + BADGE
+  // ==========================================================
   Future<Map<String, dynamic>?> confirmWasteTakenOut(String wasteType) async {
     final currentUid = authRepository.currentFirebaseUser?.uid;
     if (currentUid == null) return null;
@@ -975,12 +973,13 @@ class OrganizzaViewModel extends ChangeNotifier {
       specificBadge = await _userRepository.updateUnsortedCountAndCheckKing(currentUid);
     }
 
-    // 2. Controlla SEMPRE la Streak "Eroe Green" a prescindere da quale bidone ha buttato
+    // 2. Controlla SEMPRE la Streak "Eroe Green" a prescindere da quale bidone ha buttato!
     Map<String, dynamic>? streakBadge = await _userRepository.updateGreenHeroStreak(currentUid);
     
     // 3. Uniamo il risultato per vedere se almeno un badge è stato sbloccato
     final unlockedBadge = specificBadge ?? streakBadge;
     
+    // --- NUOVO: ASSEGNAZIONE JOLLY SE HA SBLOCCATO IL BADGE ---
     if (unlockedBadge != null) {
       final userRef = FirebaseFirestore.instance.collection('users').doc(currentUid);
       await userRef.update({'jollies': FieldValue.increment(1)});
@@ -1010,7 +1009,7 @@ class OrganizzaViewModel extends ChangeNotifier {
     // 1. Consuma il jolly
     await _userRepository.consumeJolly(currentUser.uid);
 
-    // 2. Segna il task come completato
+    // 2. Segna il task come completato (usiamo direttamente il repo per non assegnare punti extra)
     await organizeRepository.toggleCleaningTaskCompleted(_houseId!, taskId, true);
     
     return true; // Jolly usato con successo
