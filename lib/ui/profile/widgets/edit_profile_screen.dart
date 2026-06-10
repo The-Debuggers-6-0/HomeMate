@@ -38,7 +38,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Usiamo widget. per accedere alle variabili definite nella classe sopra
+
     _nameController = TextEditingController(text: widget.currentName);
     _surnameController = TextEditingController(text: widget.currentSurname);
     _bioController = TextEditingController(text: widget.currentBio);
@@ -104,18 +104,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       radius: 50,
                       backgroundColor: Colors.grey.shade300,
 
-                      // --- LOGICA DI VISUALIZZAZIONE PRIORITARIA ---
                       backgroundImage: _selectedImage != null
-                          ? FileImage(
-                              _selectedImage!,
-                            ) // 1. Mostra subito la NUOVA foto scelta
-                          : (widget.currentPhotoUrl != null &&
-                                widget.currentPhotoUrl!.isNotEmpty)
-                          ? MemoryImage(
-                              base64Decode(widget.currentPhotoUrl!),
-                            ) // 2. Altrimenti, mostra la VECCHIA in Base64
-                          : null, // 3. Altrimenti, cerchio vuoto
-                      // Mostriamo l'omino bianco solo se non c'è nessuna foto
+                          ? FileImage(_selectedImage!)
+                          : (widget.currentPhotoUrl != null && widget.currentPhotoUrl!.isNotEmpty)
+                              ? MemoryImage(base64Decode(widget.currentPhotoUrl!))
+                              : null,
+                      // Mostra l'icona di default se non c'è nessuna foto
                       child:
                           (_selectedImage == null &&
                               (widget.currentPhotoUrl == null ||
@@ -204,11 +198,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               height: 56,
               child: ElevatedButton(
                 onPressed: () async {
-                  // 1. Leggiamo l'utente attuale dal ProfileViewModel
                   final profileViewModel = context.read<ProfileViewModel>();
                   final currentUser = profileViewModel.userProfile;
 
-                  // Controllo di sicurezza: se per qualche motivo l'utente non c'è, ci fermiamo
                   if (currentUser == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -220,11 +212,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                   // 2. Ora chiamiamo il saveProfile passando TUTTI E 3 i parametri
                   await viewModel.saveProfile(
-                    currentUser, // 1° parametro: l'utente attuale
-                    _nameController.text, // 2° parametro: il nuovo nome
-                    _surnameController.text, // 3° parametro: il nuovo cognome
-                    _bioController.text, // 4° parametro: la nuova bio
-                    _selectedImage, // 5° parametro: l'immagine selezionata (può essere null se non è stata cambiata)
+                    currentUser,
+                    _nameController.text,
+                    _surnameController.text,
+                    _bioController.text,
+                    _selectedImage,
                   );
 
                   // 3. Mostriamo il messaggio di successo e torniamo alla pagina precedente
@@ -258,7 +250,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // --- Metodo helper per creare i campi di testo con lo stesso stile ---
+  /// Crea i campi di testo con stile uniforme.
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
